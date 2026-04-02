@@ -1,0 +1,2250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super M | Growshop & Lab</title>
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-7D1DPB212C"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-7D1DPB212C');
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+    
+    <style>
+        /* Quitar flechas en Chrome, Safari, Edge y Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Esto cambia el color de los iconos automáticos del navegador (ojo, x de borrar, etc.) */
+.input-lab::-webkit-password-reveal-button,
+.input-lab::-webkit-clear-button {
+    filter: invert(100%) sepia(100%) saturate(500%) hue-rotate(280deg); 
+    /* El hue-rotate(280deg) lo lleva hacia el púrpura/rosado */
+    display: none; /* Ocultar botones nativos para usar el personalizado */
+}
+
+/* Para navegadores que no son Chrome/Edge */
+.input-lab::-ms-reveal {
+    filter: invert(100%) sepia(100%) saturate(500%) hue-rotate(280deg);
+    display: none; /* Ocultar botones nativos */
+}
+/* Quitar flechas en Firefox */
+input[type=number] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+        :root {
+            --p: #39ff14; /* Verde Neón */
+            --s: #bc13fe; /* Morado Alquimia */
+            --bg: #232422;
+            --card: #161616;
+            --txt: #f0f0f0;
+        }
+.input-lab {
+    background: #111 !important; /* Fondo casi negro */
+    color: var(--p) !important;  /* Texto verde neón */
+    border: 1px solid var(--s) !important; /* Borde púrpura */
+    padding: 12px;
+    border-radius: 5px;
+    outline: none;
+    font-family: 'Courier New', monospace; /* Estilo técnico */
+}
+
+/* El brillo cuando el usuario hace clic para escribir */
+.input-lab:focus {
+    box-shadow: 0 0 10px var(--p);
+    border-color: var(--p);
+}
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--txt);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        @keyframes alchemist-pulse {
+            0% { box-shadow: 0 0 5px var(--p); }
+            50% { box-shadow: 0 0 20px var(--p), 0 0 10px var(--s); }
+            100% { box-shadow: 0 0 5px var(--p); }
+        }
+
+        .btn:hover, .tarjeta:hover { animation: alchemist-pulse 1.5s infinite; }
+
+        #notificacion {
+            position: fixed; bottom: 20px; right: 20px; background: #000; border: 2px solid var(--p);
+            color: var(--p); padding: 15px 25px; border-radius: 8px; display: none; z-index: 4000;
+            font-weight: bold; box-shadow: 0 0 20px rgba(57, 255, 20, 0.3);
+        }
+
+        #modal-envio {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 9999;
+            backdrop-filter: blur(8px);
+        }
+        .form-box {
+            background: var(--card); border: 2px solid var(--s); padding: 30px; border-radius: 15px;
+            width: 90%; max-width: 450px; box-shadow: 0 0 30px rgba(188, 19, 254, 0.2);
+            overflow-y: auto; max-height: 90vh;
+        }
+        .form-box h3 { color: var(--p); text-align: center; margin-top: 0; letter-spacing: 2px; }
+        .form-box input {
+            width: 100%; padding: 12px; margin: 8px 0; background: #000; border: 1px solid #333;
+            color: #fff; border-radius: 5px; box-sizing: border-box; outline: none;
+        }
+        .form-box input:focus { border-color: var(--p); }
+
+        nav {
+            display: none; background: rgba(0,0,0,0.95); padding: 15px 5%; justify-content: space-between;
+            align-items: center; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid #222; backdrop-filter: blur(10px);
+        }
+        .nav-links { display: flex; align-items: center; }
+        .nav-links span { cursor: pointer; margin-left: 20px; transition: 0.3s; font-weight: bold; }
+        .nav-links span:hover { color: var(--p); }
+
+        #landing {
+            height: 100vh; display: flex; flex-direction: column; justify-content: center;
+            align-items: center; text-align: center; padding: 20px;
+        }
+        .logo-frame { border: 4px solid var(--p); padding: 20px 40px; border-radius: 15px; margin-bottom: 25px; }
+        .logo-txt { font-size: clamp(2.5rem, 8vw, 4rem); font-weight: 900; color: var(--p); margin: 0; letter-spacing: 12px; }
+
+        .buscador {
+            width: 300px; padding: 15px 25px; border-radius: 30px; border: 1px solid #444;
+            background: #111; color: #fff; outline: none; transition: 0.3s; margin-bottom: 40px;
+        }
+        .buscador:focus { border-color: var(--p); width: 350px; }
+
+        .btn { padding: 12px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.3s; display: inline-block; text-align: center; text-decoration: none; }
+        .btn-v { background: var(--p); color: #000; }
+        .btn-m { background: transparent; border: 1px solid var(--s); color: var(--s); }
+        .btn-mp { background: #009ee3; color: #fff; border: none; }
+
+        .contact-link { 
+            text-decoration: none; font-size: 0.9rem; font-weight: bold; 
+            display: flex; align-items: center; gap: 8px; transition: 0.3s;
+            padding: 8px 15px; border-radius: 20px; background: rgba(255,255,255,0.03);
+        }
+        .link-wa { color: var(--p); }
+        .link-wa:hover { text-shadow: 0 0 10px var(--p); }
+        .link-ig { color: var(--s); }
+        .link-ig:hover { text-shadow: 0 0 10px var(--s); }
+
+        footer {
+            width: 100%; background: #111;
+            border-top: 1px solid #222; padding: 30px 0; display: none;
+            justify-content: center; gap: 30px; margin-top: 50px;
+        }
+
+        .seccion { display: none; padding: 60px 5% 20px 5%; max-width: 1200px; margin: auto; min-height: 70vh; }
+        .activa { display: block !important; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; }
+        
+        .tarjeta { 
+            background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid #222; 
+            transition: 0.3s; display: flex; flex-direction: column; overflow: hidden;
+            height: 100%; cursor: pointer;
+        }
+        .tarjeta:hover { border-color: var(--p); transform: translateY(-3px); }
+        
+        .contenedor-img { 
+            width: 100%; height: 220px; 
+            background: #000; border-radius: 10px; display: flex; justify-content: center; 
+            align-items: center; margin-bottom: 15px; overflow: hidden; border: 1px solid #222;
+        }
+        .img-placeholder { font-size: 3.5rem; }
+        .img-real { width: 100%; height: 100%; object-fit: contain; padding: 10px; transition: 0.4s ease; }
+        
+        .producto-detalle { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; background: var(--card); padding: 40px; border-radius: 20px; border: 1px solid #333; margin-bottom: 50px; }
+        .det-info h2 { color: var(--p); font-size: 2.5rem; margin-top: 0; }
+        .det-precio { font-size: 2rem; color: var(--s); font-weight: bold; margin: 20px 0; }
+        .det-ficha { background: #000; padding: 20px; border-radius: 10px; border-left: 4px solid var(--p); margin: 20px 0; }
+        
+        .qty-selector { 
+            display: flex; align-items: center; background: #000; 
+            border: 1px solid var(--p); border-radius: 8px; 
+            height: 40px; overflow: hidden; width: 100%;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.1);
+            margin-bottom: 10px;
+        }
+        .qty-btn { 
+            background: transparent; color: var(--p); border: none; 
+            width: 45px; height: 100%; cursor: pointer; font-size: 1.2rem; 
+            transition: 0.2s; font-weight: 900;
+        }
+        .qty-btn:hover { background: var(--p); color: #000; }
+        .qty-input { 
+            flex: 1; height: 100%; background: transparent; color: #fff; 
+            border: none; border-left: 1px solid #222; border-right: 1px solid #222; 
+            text-align: center; font-weight: bold; font-family: inherit; font-size: 1.1rem; 
+            outline: none; appearance: textfield; -moz-appearance: textfield;
+        }
+        .qty-input::-webkit-outer-spin-button, .qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+        .contenedor-tabla { overflow-x: auto; background: #050505; padding: 20px; border-radius: 12px; border: 1px solid var(--p); }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th { color: var(--p); padding: 15px; border-bottom: 2px solid #222; font-size: 0.8rem; text-transform: uppercase; }
+        td { padding: 8px; border-bottom: 1px solid #111; }
+        .input-tabla { background: transparent; border: 1px solid #222; color: #fff; padding: 8px; border-radius: 4px; width: 90%; text-align: center; }
+
+        #cart-count { background: var(--s); color: #fff; padding: 2px 7px; border-radius: 10px; font-size: 0.7rem; }
+        .aviso-logistica-txt { font-size: 0.75rem; color: var(--s); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: block; margin-top: 10px; text-align: center; border: 1px dashed var(--s); padding: 5px; border-radius: 5px; }
+
+        .error-box { text-align: center; background: var(--card); padding: 40px; border-radius: 20px; border: 2px solid var(--s); max-width: 500px; margin: 20px auto; box-shadow: 0 0 30px rgba(188, 19, 254, 0.1); }
+        .error-icon { font-size: 4rem; color: var(--s); margin-bottom: 20px; text-shadow: 0 0 15px var(--s); }
+        .error-msg { font-size: 1.1rem; color: var(--txt); margin-bottom: 30px; }
+
+        .nota-card { text-align: center; padding: 30px !important; }
+        .nota-icon { font-size: 3rem; margin-bottom: 15px; }
+        .nota-contenido-wrapper { background: var(--card); padding: 40px; border-radius: 20px; border: 2px solid var(--s); max-width: 800px; margin: 0 auto; }
+        .lab-data-box { background: #000; border-left: 4px solid var(--p); padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
+        .lab-data-box h4 { color: var(--p); margin-top: 0; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px; }
+        .rango-ideal { display: flex; justify-content: space-between; background: #111; padding: 10px; border-radius: 5px; margin-top: 5px; border: 1px solid #222; }
+        .val-v { color: var(--p); font-weight: bold; }
+
+        /* Estilos específicos para la calculadora de VPD Avanzada */
+        .selector-etapa {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .etapa-btn {
+            background: #111;
+            border: 1px solid #333;
+            color: #888;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .etapa-btn.active {
+            border-color: var(--p);
+            color: var(--p);
+            background: rgba(57, 255, 20, 0.05);
+        }
+        #vpd-canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 1.5 / 1; 
+            margin: 20px auto;
+            border: 2px solid #444;
+            background-color: #000;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+        #vpd-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        .alerta-alquimista {
+            background: rgba(188, 19, 254, 0.1);
+            border-left: 4px solid var(--s);
+            padding: 12px;
+            border-radius: 0 8px 8px 0;
+            margin-top: 15px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="notificacion"></div>
+
+    <div id="modal-envio">
+        <div class="form-box">
+            <h3 id="form-titulo">DATOS DE ENVÍO</h3>
+            <input type="text" id="f-nombre" placeholder="Nombre y Apellido completo">
+            <input type="text" id="f-dni" placeholder="DNI">
+            <input type="tel" id="f-telefono" placeholder="Teléfono de Contacto">
+            <input type="email" id="f-email" placeholder="Email">
+            <input type="text" id="f-direccion" placeholder="Calle y Número">
+            <input type="text" id="f-localidad" placeholder="Localidad / Provincia">
+            <input type="text" id="f-cp" placeholder="Código Postal">
+            <div style="font-size: 0.7rem; color: var(--s); margin: 10px 0; text-align: center; border: 1px dashed var(--s); padding: 5px;">
+                📦 EMBALAJE DISCRETO GARANTIZADO
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn btn-m" style="flex: 1;" onclick="cerrarModalEnvio()">Cancelar</button>
+                <button class="btn btn-v" style="flex: 2;" id="btn-confirmar-envio">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <section id="landing">
+        <div class="logo-frame"><h1 class="logo-txt">SUPER M</h1></div>
+        <p style="color: #888; margin-bottom: 30px;">Growshop & Laboratorio de Cultivo Técnico</p>
+        <input type="text" class="buscador" id="mainSearch" placeholder="¿Qué buscas, Alquimista?" onkeyup="if(event.key==='Enter') realizarBusqueda()">
+        
+        <div style="display:flex; gap:15px; flex-wrap:wrap; justify-content:center; margin-bottom: 35px;">
+            <button class="btn btn-v" onclick="ver('tienda')">Tienda</button>
+            <button class="btn btn-m" onclick="ver('tablas')">Tablas</button>
+            <button class="btn btn-m" onclick="ver('info')">Notas</button>
+        </div>
+
+        <div style="display: flex; gap: 20px; align-items: center; justify-content: center;">
+            <a href="https://wa.me/5492966637000" target="_blank" class="contact-link link-wa"><span>🟢 WhatsApp</span></a>
+            <a href="https://instagram.com/marveggionicolas/" target="_blank" class="contact-link link-ig"><span>🟣 Instagram</span></a>
+        </div>
+    </section>
+<nav id="navbar">
+    <div style="display: flex; align-items: center;">
+        <span id="btn-login-header" onclick="ver('view-login')" style="color:var(--s); border: 1px solid var(--s); padding: 2px 8px; border-radius: 4px; margin-right: 15px; cursor: pointer; font-size: 0.8rem;">
+            👤 ACCESO
+        </span>
+        <div style="color:var(--p); font-weight:900; letter-spacing:2px; cursor:pointer;" onclick="irAlInicio()">🧪 SUPER M</div>
+    </div>
+    <div class="nav-links">
+        <span onclick="ver('tienda')">TIENDA</span>
+        <span onclick="ver('tablas')">TABLAS</span>
+        <span onclick="ver('info')">NOTAS</span>
+        <span onclick="ver('view-carrito')">🛒 <small id="cart-count">0</small></span>
+    </div>
+</nav>
+
+    <section id="tienda" class="seccion">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+            <h2 id="titulo-tienda" style="color:var(--p); margin:0;">Categorías</h2>
+            <button id="btn-volver-cat" class="btn btn-m" style="display:none;" onclick="mostrarCategorias()">⬅️ Atrás</button>
+        </div>
+        <div id="grid-p" class="grid"></div>
+        <div id="detalle-p" style="display:none;"></div>
+    </section>
+<section id="view-login" class="seccion" style="display:none;">
+        <div class="card-lab" style="background: var(--card); padding: 20px; border-radius: 16px; border: 3px solid var(--p); box-shadow: 0 0 22px rgba(57,255,20,0.45); max-width: 440px; margin: 0 auto;">
+            <h3 style="color: var(--s); margin-bottom: 15px; text-align: center;">🔑 PORTAL DEL ALQUIMISTA</h3>
+            <p style="font-size: 0.8rem; color: #888; margin-bottom: 20px; text-align: center;">Inicia sesión para acceder a tu bitácora personal.</p>
+            
+            <div style="margin-bottom: 20px;">
+                <button class="btn btn-v" style="background: #4285f4; color: #fff; font-weight: bold; width: 100%; border: none; display: flex; align-items: center; justify-content: center; gap: 10px;" onclick="signInWithGoogle()">
+                    <span style="font-size: 1.2rem;">🔥</span> Continuar con Google
+                </button>
+            </div>
+            
+            <div style="text-align: center; margin-bottom: 15px; color: #666; font-size: 0.8rem;">O</div>
+            
+            <div style="margin-bottom: 15px;">
+                <input type="email" id="login-email" placeholder="Tu Email" class="input-lab" style="border-color: var(--s); color: #fff; width: 100%; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 20px; position: relative;">
+                <input type="password" id="login-pass" placeholder="Tu Contraseña" class="input-lab" style="border-color: var(--s); color: #fff; width: 100%; box-sizing: border-box; padding-right: 40px;">
+                <button type="button" id="toggle-pass" onclick="window.togglePasswordVisibility()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--p); cursor: pointer; font-size: 1.2rem; z-index: 1;">👁️‍🗨️</button>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn btn-v" style="background: var(--s); color: #000; font-weight: bold; width: 100%; border: none;" onclick="handleLogin()">ENTRAR</button>
+                <button class="btn btn-v" style="background: transparent; border: 1px solid var(--s); color: var(--s); width: 100%;" onclick="ver('view-register')">REGISTRARME</button>
+            </div>
+        </div>
+    </section>
+<section id="view-register" class="seccion" style="display:none;">
+        <div class="card-lab" style="background: var(--card); padding: 20px; border-radius: 16px; border: 3px solid var(--p); box-shadow: 0 0 22px rgba(57,255,20,0.45); max-width: 440px; margin: 0 auto;">
+            <h3 style="color: var(--s); margin-bottom: 15px; text-align: center;">🧙‍♂️ REGISTRO DE ALQUIMISTA</h3>
+            <p style="font-size: 0.8rem; color: #888; margin-bottom: 20px; text-align: center;">Crea tu cuenta para guardar tus experimentos en la nube.</p>
+            
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="register-name" placeholder="Tu Nombre" class="input-lab" style="border-color: var(--s); color: #fff; width: 100%; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <input type="email" id="register-email" placeholder="Tu Email" class="input-lab" style="border-color: var(--s); color: #fff; width: 100%; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 15px; position: relative;">
+                <input type="password" id="register-pass" placeholder="Tu Contraseña" class="input-lab" style="border-color: var(--s); color: #fff; width: 100%; box-sizing: border-box; padding-right: 40px;">
+                <button type="button" onclick="window.togglePasswordVisibilityRegister()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--p); cursor: pointer; font-size: 1.2rem; z-index: 1;">👁️‍🗨️</button>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <input type="password" id="register-pass-confirm" placeholder="Confirmar Contraseña" class="input-lab" style="border-color: var(--s); color: #fff; width: 100%; box-sizing: border-box;">
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn btn-v" style="background: var(--s); color: #000; font-weight: bold; width: 100%; border: none;" onclick="registerUser()">CREAR CUENTA</button>
+                <button class="btn btn-v" style="background: transparent; border: 1px solid var(--s); color: var(--s); width: 100%;" onclick="ver('view-login')">⬅️ VOLVER AL LOGIN</button>
+            </div>
+        </div>
+    </section>
+    <section id="tablas" class="seccion">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h2 id="titulo-lab" style="color:var(--p); margin-bottom: 20px;">LABORATORIO ALQUIMISTA</h2>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn btn-m" id="btn-nav-seg" onclick="verSubSeccionLab('seguimiento')">Seguimiento</button>
+                <button class="btn btn-m" id="btn-nav-calc" onclick="verSubSeccionLab('calculadora')">Calculadora</button>
+                <button class="btn btn-m" id="btn-nav-rec" onclick="verSubSeccionLab('recetarios')">Recetarios</button>
+            </div>
+        </div>
+
+        <div id="lab-seguimiento">
+            <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 16px;">
+                <button id="btn-sg-tabla" class="btn btn-m" style="border-color: var(--p);" onclick="mostrarPanelSeguimiento('tabla')">Tabla de seguimiento</button>
+                <button id="btn-sg-diario" class="btn btn-m" style="border-color: var(--s);" onclick="mostrarPanelSeguimiento('diario')">Diario de cultivo</button>
+            </div>
+
+            <div id="vista-seguimiento-tabla">
+                <div id="area-descarga" class="contenedor-tabla">
+                    <table id="tabla-lab">
+                        <thead><tr><th>Semana</th><th>Fase</th><th>pH</th><th>EC</th><th>T° C</th><th>H %</th><th>Riego</th><th>Observaciones</th></tr></thead>
+                        <tbody id="cuerpo-tabla"></tbody>
+                    </table>
+                </div>
+                <div style="margin-top:20px; display:flex; gap:10px; flex-wrap: wrap;">
+                    <button class="btn btn-v" onclick="nuevaFila()">+ Fila</button>
+                    <button class="btn btn-m" onclick="descargarImagen()">📸 descargar</button>
+                    <button class="btn btn-m" style="border-color:#ff4444; color:#ff4444;" onclick="borrarTablas()">Reset</button>
+                </div>
+            </div>
+
+            <div id="vista-diario-cultivo" style="display:none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
+                    <h4 style="color: var(--p); margin: 0;">Tu Diario de Cultivo</h4>
+                    <button class="btn btn-m" style="border-color: var(--p);" onclick="mostrarFormularioDiario()">+ Nuevo registro</button>
+                </div>
+
+                <div id="formulario-diario" style="display:none; background: var(--card); border: 2px solid var(--s); border-radius: 18px; padding: 20px; margin-bottom: 20px; box-shadow: 0 0 20px rgba(188, 19, 254, 0.12);">
+                    <h4 style="color: var(--p); margin-top: 0;">Registrar seguimiento semanal</h4>
+                    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 15px;">
+                        <div style="grid-column: span 2;">
+                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Nombre del registro</label>
+                            <input type="text" id="diario-nombre" class="input-lab" placeholder="Ej. Blue Dream, Armario 1" style="width:100%; border-color: var(--s); color:#fff;" />
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Fecha</label>
+                            <input type="date" id="diario-fecha" class="input-lab" style="width:100%; border-color: var(--s); color:#fff;" />
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Semana</label>
+                            <input type="number" id="diario-semana" class="input-lab" min="1" value="1" style="width:100%; border-color: var(--s); color:#fff;" />
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Etapa</label>
+                            <select id="diario-etapa" class="input-lab" style="width:100%; border-color: var(--s); color:#fff;">
+                                <option value="esqueje">Esqueje</option>
+                                <option value="vege">Vegetativo</option>
+                                <option value="flora_t">Flora temprana</option>
+                                <option value="flora_l">Flora tardía</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">pH</label>
+                            <input type="number" id="diario-ph" class="input-lab" step="0.1" min="0" max="14" value="6.0" style="width:100%; border-color: var(--s); color:#fff;" />
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">EC</label>
+                            <input type="number" id="diario-ec" class="input-lab" step="0.1" value="1.2" style="width:100%; border-color: var(--s); color:#fff;" />
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Temp °C</label>
+                            <input type="number" id="diario-temp" class="input-lab" step="0.5" value="24" style="width:100%; border-color: var(--s); color:#fff;" />
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Humedad %</label>
+                            <input type="number" id="diario-hum" class="input-lab" step="1" min="0" max="100" value="60" style="width:100%; border-color: var(--s); color:#fff;" />
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Observaciones</label>
+                            <textarea id="diario-notas" class="input-lab" rows="3" style="width:100%; border-color: var(--s); color:#fff; resize: vertical;"></textarea>
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Fotos</label>
+                            <input type="file" id="diario-imagenes" class="input-lab" accept="image/*" multiple style="width:100%; border-color: var(--s); color:#fff; background: transparent;" onchange="mostrarPrevisualizacionDiario()" />
+                            <div id="diario-imagenes-preview" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;"></div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
+                        <button class="btn btn-v" style="flex:1; min-width:160px;" onclick="guardarRegistroDiario()">💾 Guardar registro</button>
+                        <button class="btn btn-m" style="flex:1; min-width:160px;" onclick="ocultarFormularioDiario()">Cancelar</button>
+                    </div>
+                </div>
+
+                <p id="sin-datos-diario" style="color:#888; text-align:center; margin-top:12px; display:none;">No hay entradas de diario de cultivo para tu usuario.</p>
+                <div id="diario-registros" style="display:grid; gap:16px; margin-top:20px;"></div>
+            </div>
+        </div>
+
+        <div id="lab-calculadora" style="display: none;">
+            <div class="nota-contenido-wrapper" style="border-color: var(--p); max-width: 600px;">
+                <h3 style="color: var(--p); text-align: center; margin-top:0;">CENTRO DE CÁLCULO</h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 25px;">
+                    <button class="btn btn-m" style="font-size: 0.7rem; padding: 5px;" onclick="verCalc('c-ferti')">🧪 Dosis</button>
+                    <button class="btn btn-m" style="font-size: 0.7rem; padding: 5px;" onclick="verCalc('c-luz')">⚡ Consumo</button>
+                    <button class="btn btn-m" style="font-size: 0.7rem; padding: 5px;" onclick="verCalc('c-sustrato')">📦 Sustrato</button>
+                    <button class="btn btn-m" style="font-size: 0.7rem; padding: 5px;" onclick="verCalc('c-vpd')">🌡️ VPD</button>
+                    <button class="btn btn-m" style="font-size: 0.7rem; padding: 5px; grid-column: span 2; border-color: var(--p);" onclick="verCalc('c-diagnostico')">👁️ Diagnóstico de medicion</button>
+                </div>
+
+                <div id="c-ferti" class="calc-panel">
+                    <h4 style="color:var(--p)">Dosis de Nutrientes</h4>
+                    <label style="font-size:0.75rem; color:#888;">LITROS DE AGUA</label>
+                    <div class="qty-selector">
+                        <button class="qty-btn" onclick="changeQtyValue('f-litros', -1)">-</button>
+                        <input type="number" id="f-litros" class="qty-input" value="1" min="1">
+                        <button class="qty-btn" onclick="changeQtyValue('f-litros', 1)">+</button>
+                    </div>
+                    <label style="font-size:0.75rem; color:#888;">DOSIS (ml/L)</label>
+                    <div class="qty-selector">
+                        <button class="qty-btn" onclick="changeQtyValue('f-dosis', -0.5)">-</button>
+                        <input type="number" id="f-dosis" class="qty-input" value="2" step="0.5">
+                        <button class="qty-btn" onclick="changeQtyValue('f-dosis', 0.5)">+</button>
+                    </div>
+                    <button class="btn btn-v" style="width:100%; margin-top:10px;" onclick="calcFerti()">Calcular Mezcla</button>
+                    <div id="res-ferti" class="lab-data-box" style="display:none"></div>
+                </div>
+
+                <div id="c-luz" class="calc-panel" style="display:none">
+                    <h4 style="color:var(--p)">Costo Eléctrico (Mensual)</h4>
+                    <label style="font-size:0.75rem; color:#888;">WATTS TOTALES</label>
+                    <div class="qty-selector">
+                        <button class="qty-btn" onclick="changeQtyValue('l-watts', -50)">-</button>
+                        <input type="number" id="l-watts" class="qty-input" value="200" min="0" step="10">
+                        <button class="qty-btn" onclick="changeQtyValue('l-watts', 50)">+</button>
+                    </div>
+                    <label style="font-size:0.75rem; color:#888;">HORAS DIARIAS</label>
+                    <div class="qty-selector">
+                        <button class="qty-btn" onclick="changeQtyValue('l-horas', -1)">-</button>
+                        <input type="number" id="l-horas" class="qty-input" value="18" min="1" max="24">
+                        <button class="qty-btn" onclick="changeQtyValue('l-horas', 1)">+</button>
+                    </div>
+                    <input type="number" id="l-precio" class="input-tabla" placeholder="Precio kWh (ver factura)" style="margin-top:10px; background:#000;">
+                    <button class="btn btn-v" style="width:100%; margin-top:10px;" onclick="calcLuz()">Calcular Costo</button>
+                    <div id="res-luz" class="lab-data-box" style="display:none"></div>
+                </div>
+
+                <div id="c-sustrato" class="calc-panel" style="display:none">
+                    <h4 style="color:var(--p)">Calculadora de Mezcla</h4>
+                    <label style="font-size:0.75rem; color:#888;">LITROS A PREPARAR (O POR MACETA)</label>
+                    <div class="qty-selector">
+                        <button class="qty-btn" onclick="changeQtyValue('s-capacidad', -5)">-</button>
+                        <input type="number" id="s-capacidad" class="qty-input" value="10" min="1">
+                        <button class="qty-btn" onclick="changeQtyValue('s-capacidad', 5)">+</button>
+                    </div>
+                    <label style="font-size:0.75rem; color:#888;">CANTIDAD DE MACETAS (1 si es mezcla suelta)</label>
+                    <div class="qty-selector">
+                        <button class="qty-btn" onclick="changeQtyValue('s-cantidad', -1)">-</button>
+                        <input type="number" id="s-cantidad" class="qty-input" value="1" min="1">
+                        <button class="qty-btn" onclick="changeQtyValue('s-cantidad', 1)">+</button>
+                    </div>
+                    
+                    <p style="text-align:center; font-size:0.8rem; color:var(--s); margin:15px 0 10px 0; font-weight:bold;">SELECCIONA TU ESTILO DE MEZCLA:</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                        <button class="btn btn-m" style="font-size: 0.65rem; padding: 8px 2px;" onclick="calcSustratoReceta('estandar')">⚖️ ESTÁNDAR</button>
+                        <button class="btn btn-m" style="font-size: 0.65rem; padding: 8px 2px;" onclick="calcSustratoReceta('auto')">🚀 AUTO</button>
+                        <button class="btn btn-m" style="font-size: 0.65rem; padding: 8px 2px;" onclick="calcSustratoReceta('organico')">🌿 BIO +</button>
+                    </div>
+                    <div id="res-sustrato" class="lab-data-box" style="display:none"></div>
+                </div>
+
+                <div id="c-vpd" class="calc-panel" style="display:none">
+                    <h4 style="color:var(--p); margin-bottom:5px;">Déficit de Presión (VPD)</h4>
+                    <p style="font-size: 0.95rem; color: #ccc; margin-bottom: 10px; line-height: 1.4;">Calcula el equilibrio justo entre temperatura y humedad según la etapa en la que se encuentra tu planta.</p>
+                    <p style="font-size: 0.7rem; color: #666; margin-bottom: 15px;">Referencia: Just4Growers</p>
+                    
+                    <div class="selector-etapa">
+                        <button class="etapa-btn active" onclick="setEtapaVPD('esqueje', this)">ESQUEJE</button>
+                        <button class="etapa-btn" onclick="setEtapaVPD('vege', this)">VEGETATIVO</button>
+                        <button class="etapa-btn" onclick="setEtapaVPD('flora_t', this)">FLORA TEMPRANA</button>
+                        <button class="etapa-btn" onclick="setEtapaVPD('flora_l', this)">FLORA TARDÍA</button>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+    
+    <div>
+        <label style="font-size:0.7rem; color:#888; display: block; margin-bottom: 5px;">TEMP. AIRE °C</label>
+        <div class="qty-selector" style="width: 100%;">
+            <button class="qty-btn" onclick="changeQtyValue('v-temp', -1); updateVPDRealtime()">-</button>
+            <input type="number" id="v-temp" class="qty-input" value="24" oninput="updateVPDRealtime()" style="width: 100%;">
+            <button class="qty-btn" onclick="changeQtyValue('v-temp', 1); updateVPDRealtime()">+</button>
+        </div>
+    </div>
+
+    <div>
+        <label style="font-size:0.7rem; color:#888; display: block; margin-bottom: 5px;">HUMEDAD %</label>
+        <div class="qty-selector" style="width: 100%;">
+            <button class="qty-btn" onclick="changeQtyValue('v-hum', -1); updateVPDRealtime()">-</button>
+            <input type="number" id="v-hum" class="qty-input" value="60" min="0" max="100" oninput="updateVPDRealtime()" style="width: 100%;">
+            <button class="qty-btn" onclick="changeQtyValue('v-hum', 1); updateVPDRealtime()">+</button>
+        </div>
+    </div>
+
+</div>
+
+                    <div id="vpd-canvas-container" style="margin-top:20px;">
+                        <canvas id="vpd-canvas"></canvas>
+                    </div>
+
+                    <button onclick="guardarVPD()" class="btn btn-v" style="width:100%; margin-top:15px; background:transparent; border:1px solid var(--p); color:var(--p); padding:10px; cursor:pointer;">
+                        💾 GUARDAR EN MI BITÁCORA
+                    </button>
+
+                    <div id="res-vpd" class="lab-data-box" style="display:none; margin-top:15px; border-color: var(--s);"></div>
+                    <div id="consejo-alquimista" class="alerta-alquimista" style="display:none;"></div>
+                </div>
+
+                <div id="c-diagnostico" class="calc-panel" style="display:none; background: #0d0d0d; border: 2px solid var(--s); border-radius: 15px; padding: 25px; max-width: 500px; margin: 20px auto; box-shadow: 0 0 20px rgba(188, 19, 254, 0.2);">
+    <h4 style="color:var(--p); text-align: center; letter-spacing: 2px; margin-top: 0;">🔮 DIAGNÓSTICO BIOQUÍMICO</h4>
+    <p style="font-size: 0.8rem; color: #888; text-align: center; margin-bottom: 20px;">Análisis de precisión del Oráculo de Super M</p>
+
+    <label style="font-size:0.7rem; color:#888; display: block; margin-bottom: 5px;">SEMANA DE VIDA</label>
+    <select id="diag-semana" class="input-tabla" style="width:100%; background:#000; color:var(--p); border: 1px solid var(--p); padding: 10px; border-radius: 8px; font-weight: bold; height: 41px; box-sizing: border-box; outline: none;">
+        <option value="1">Semana 1 (Plántula)</option>
+        <option value="2">Semana 2 (Vegetativo Inicial)</option>
+        <option value="3">Semana 3 (Vegetativo)</option>
+        <option value="4">Semana 4 (Vegetativo Pleno)</option>
+        <option value="5">Semana 5 (Pre-floración)</option>
+        <option value="6">Semana 6 (Floración Temprana)</option>
+        <option value="7">Semana 7 (Floración)</option>
+        <option value="8">Semana 8 (Floración)</option>
+        <option value="9">Semana 9 (Engorde)</option>
+        <option value="10">Semana 10 (Engorde)</option>
+        <option value="11">Semana 11 (Maduración)</option>
+        <option value="12">Semana 12+ (Lavado/Cosecha)</option>
+    </select>
+
+<div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px; width: 100%; box-sizing: border-box;">
+    <div style="width: 100%; margin-bottom: 5px;">
+    <label style="font-size:0.7rem; color:#888; display: block; margin-bottom: 5px;">NOMBRE DE LA PLANTA (CATEGORÍA)</label>
+    <input type="text" id="diag-planta" placeholder="Ej: Gorilla Glue #4" 
+           style="width:100%; background:#000; color:var(--p); border: 1px solid var(--p); padding: 10px; border-radius: 8px; font-weight: bold; height: 41px; box-sizing: border-box; outline: none;">
+</div>
+
+<div style="width: 100%; margin-bottom: 5px;">
+    <label style="font-size:0.7rem; color:#888; display: block; margin-bottom: 5px;">SEMANA DE CULTIVO</label>
+    <div style="display: flex; align-items: center; background: #000; border: 1px solid var(--p); border-radius: 8px; overflow: hidden; height: 41px;">
+        <button onclick="document.getElementById('diag-semana').stepDown()" type="button" style="background:transparent; color:var(--p); border:none; padding:0 15px; font-weight:bold; cursor:pointer; font-size:1.2rem;">-</button>
+        <input type="number" id="diag-semana" value="1" min="1" max="20"
+               style="width:100%; background: transparent; border: none; color: var(--p); text-align: center; font-weight: bold; outline: none; appearance: none; margin:0;">
+        <button onclick="document.getElementById('diag-semana').stepUp()" type="button" style="background:transparent; color:var(--p); border:none; padding:0 15px; font-weight:bold; cursor:pointer; font-size:1.2rem;">+</button>
+    </div>
+</div>
+    <div style="width: 100%;">
+        <label style="font-size:0.7rem; color:#888; display: block; margin-bottom: 5px;">CONDUCTIVIDAD</label>
+        <div style="display: flex; align-items: center; background: #000; border: 1px solid var(--p); border-radius: 8px; overflow: hidden; height: 41px;">
+            <button onclick="document.getElementById('diag-ec-val').stepDown()" type="button" style="background:transparent; color:var(--p); border:none; padding:0 15px; font-weight:bold; cursor:pointer; font-size:1.2rem;">-</button>
+            <input type="number" id="diag-ec-val" value="1.2" step="0.1" 
+                   style="width:100%; background: transparent; border: none; color: var(--p); text-align: center; font-weight: bold; outline: none; -moz-appearance: textfield; appearance: none; margin:0;">
+            <button onclick="document.getElementById('diag-ec-val').stepUp()" type="button" style="background:transparent; color:var(--p); border:none; padding:0 15px; font-weight:bold; cursor:pointer; font-size:1.2rem;">+</button>
+        </div>
+    </div>
+
+    <div style="width: 100%;">
+        <label style="font-size:0.7rem; color:#888; display: block; margin-bottom: 5px;">UNIDAD</label>
+        <select id="diag-unidad" class="input-tabla" style="width:100%; background:#000; color:var(--p); border: 1px solid var(--p); padding: 0 10px; border-radius: 8px; font-weight: bold; height: 41px; box-sizing: border-box; outline: none;">
+            <option value="ec">EC (mS/cm)</option>
+            <option value="ppm500">PPM </option>
+        
+        </select>
+    </div>
+</div>
+
+  <div style="width: 100%;">
+    <label style="font-size:0.7rem; color:#888; display: block; margin-bottom: 5px;">pH DEL RIEGO</label>
+    <div style="display: flex; align-items: center; background: #000; border: 1px solid var(--p); border-radius: 8px; overflow: hidden; height: 41px; margin-bottom: 20px;">
+        <button onclick="document.getElementById('diag-ph').stepDown()" type="button" style="background:transparent; color:var(--p); border:none; padding:0 15px; font-weight:bold; cursor:pointer; font-size:1.2rem;">-</button>
+        
+        <input type="number" id="diag-ph" value="6.0" step="0.1" 
+               style="width:100%; background: transparent; border: none; color: var(--p); text-align: center; font-weight: bold; outline: none; -moz-appearance: textfield; appearance: none; margin:0;">
+        
+        <button onclick="document.getElementById('diag-ph').stepUp()" type="button" style="background:transparent; color:var(--p); border:none; padding:0 15px; font-weight:bold; cursor:pointer; font-size:1.2rem;">+</button>
+    </div>
+</div>
+
+    <button class="btn btn-v" style="width:100%; background: var(--s); color: white; border: none; box-shadow: 0 0 10px rgba(188, 19, 254, 0.4);" onclick="ejecutarDiagnostico()">Consultar Oráculo</button>
+    
+    <div id="res-diagnostico" class="lab-data-box" style="display:none; margin-top:20px; padding: 15px; border-radius: 8px; background: rgba(57, 255, 20, 0.05); border-left: 4px solid var(--p);">
+    </div>
+</div>
+            </div>
+        </div>
+
+        <div id="lab-recetarios" style="display: none;">
+            <div class="grid" id="grid-recetarios"></div>
+        </div>
+    </section>
+
+    <section id="info" class="seccion">
+        <div style="text-align: center; margin-bottom: 40px;">
+            <h2 style="color:var(--s); font-size: 2.5rem; margin-bottom: 10px;">NOTAS DEL ALQUIMISTA</h2>
+            <p style="color: #888; font-style: italic;">"Conocimiento para la transmutación de la materia vegetal."</p>
+        </div>
+        <div id="menu-notas" class="grid"></div>
+        <div id="visor-notas" style="display:none;">
+            <div class="nota-contenido-wrapper">
+                <div id="contenido-nota"></div>
+                <button class="btn btn-m" style="margin-top:30px; width:100%" onclick="cerrarNota()">⬅️ Volver a la Biblioteca</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="view-carrito" class="seccion">
+        <h2 style="color:var(--s)">Tu Pedido</h2>
+        <div id="lista-carrito" style="background:#111; padding:20px; border-radius:12px;">Tu Carrito está vacío.</div>
+        <div style="text-align:right; font-size:1.5rem; margin-top:20px;">
+            <div style="font-size:0.8rem; color:var(--s); font-weight:bold; margin-bottom:5px;">📦 LOGÍSTICA: ENVÍO A CONVENIR</div>
+            <span style="font-size: 1rem; color: #888;">Total: </span>
+            <span id="total-carrito" style="color:var(--p); font-weight: 900;">$0</span>
+        </div>
+        <button class="btn btn-v" id="btn-finalizar-carrito" style="width:100%; margin-top:20px" onclick="abrirModalEnvio('carrito')">Confirmar y Enviar Pedido</button>
+    </section>
+
+    <section id="view-gracias" class="seccion" style="text-align: center;">
+        <div class="logo-frame" style="border-color: var(--s); display: inline-block; margin-top: 30px;">
+            <h2 style="color: var(--s); margin: 0; letter-spacing: 5px; font-weight: 900;">¡TRANSFORMACIÓN INICIADA!</h2>
+        </div>
+        <p style="font-size: 1.3rem; margin: 30px 0; color: var(--txt); font-style: italic;">"La transmutación de tu jardín ha comenzado."</p>
+        <div style="background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid var(--p); max-width: 550px; margin: 0 auto; text-align: left;">
+            <h3 style="color: var(--p); text-align: center; margin-top: 0;">Protocolo de Despacho</h3>
+            <p>1. <b>Registro:</b> Tus datos ya están en nuestra base de datos segura.</p>
+            <p>2. <b>Confirmación:</b> Si elegiste Mercado Pago, procesaremos el pago.</p>
+            <p>3. <b>WhatsApp:</b> Te contactaremos en breve para coordinar logística.</p>
+        </div>
+        <div style="margin-top: 40px; display: flex; gap: 15px; justify-content: center;">
+            <button class="btn btn-v" onclick="ver('info')">revisar Notas</button>
+            <button class="btn btn-m" onclick="irAlInicio()">Volver al Inicio</button>
+        </div>
+    </section>
+
+    <footer id="main-footer">
+        <a href="https://wa.me/5492966637000" target="_blank" class="contact-link link-wa"><span>🟢 WhatsApp</span></a>
+        <a href="https://instagram.com/marveggionicolas/" target="_blank" class="contact-link link-ig"><span>🟣 Instagram</span></a>
+    </footer>
+
+    <script>
+        const mp = new MercadoPago('APP_USR-b1a36115-fd8e-4b35-ae27-fc6be6a9d178', { locale: 'es-AR' });
+        const MI_NUMERO = "5492966637000";
+        const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbzk6fUHwGdI4wCgL_ZPBuV_pXFuWiLsSRo3TxPKs_KCWRBzaU4-Aw8B0emmy7OBg9A/exec";
+        const URL_SHEET_INVENTARIO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?output=csv";
+        const URL_SHEET_RECETARIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=654571090&single=true&output=csv";
+        const URL_SHEET_NOTAS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=188672931&single=true&output=tsv";
+
+        let carrito = JSON.parse(localStorage.getItem('superm_cart')) || [];
+        let productos = [];
+        let recetarios = []; 
+        let notasDinamicas = [];
+        let contextoEnvio = null;
+        let etapaVPDActual = 'esqueje';
+
+        const categorias = [
+            { id: "cat-sustratos", n: "Sustratos", i: "📦" },
+            { id: "cat-nutricion", n: "Nutrición", i: "🧪" },
+            { id: "cat-iluminacion", n: "Iluminación", i: "☀️" },
+            { id: "cat-control", n: "Control", i: "🔬" },
+            { id: "cat-carpas", n: "Indoor", i: "⛺" },
+            { id: "cat-hidro", n: "Hidroponía", i: "🌊" },
+            { id: "cat-semillas", n: "Semillas", i: "🌱" }
+        ];
+
+        async function cargarInventario() {
+            try {
+                const r = await fetch(URL_SHEET_INVENTARIO);
+                const t = await r.text();
+                const f = t.split('\n').slice(1); 
+                productos = f.filter(x => x.trim() !== "").map(fila => {
+                    const c = fila.split(',');
+                    return {
+                        id: parseInt(c[0]), cat: c[1]?.trim() || "", n: c[2]?.trim() || "Sin Nombre",
+                        p: parseInt(c[3]) || 0, i: c[4]?.trim() || "🌿", desc: c[5]?.trim() || "",
+                        specs: c[6] ? c[6].split('|') : [], linkPago: c[7]?.trim() || ""
+                    };
+                });
+            } catch (e) { console.error("Error Hoja 1:", e); }
+        }
+
+        async function cargarRecetarios() {
+            try {
+                const r = await fetch(URL_SHEET_RECETARIOS);
+                const t = await r.text();
+                const f = t.split('\n').slice(1);
+                recetarios = f.filter(x => x.trim() !== "").map(fila => {
+                    const c = fila.split(',');
+                    return { marca: c[1]?.trim(), imagen: c[2]?.trim(), link: c[3]?.trim(), desc: c[4]?.trim() };
+                });
+                renderRecetarios();
+            } catch (e) { console.error("Error Hoja 3:", e); }
+        }
+
+        async function cargarNotasDesdeSheet() {
+            try {
+                const r = await fetch(URL_SHEET_NOTAS);
+                const t = await r.text();
+                const filas = t.split(/\r?\n/).slice(1); 
+                notasDinamicas = filas.filter(x => x.trim() !== "").map(fila => {
+                    const c = fila.split('\t');
+                    const limpia = (txt) => txt ? txt.trim() : "";
+                    return {
+                        id: limpia(c[0]), titulo: limpia(c[1]), cat: limpia(c[2]),
+                        resumen: limpia(c[3]), contenido: limpia(c[4]),
+                        icono: limpia(c[5]) || "📜", fecha: limpia(c[6])
+                    };
+                });
+                renderMenuNotas();
+            } catch (e) { console.error("Error Hoja Notas:", e); }
+        }
+
+        function renderRecetarios() {
+            const grid = document.getElementById('grid-recetarios');
+            if(!grid) return;
+            grid.innerHTML = recetarios.map(r => `
+                <div class="tarjeta" style="border-color: var(--p);">
+                    <div class="contenedor-img">
+                        <img src="${r.imagen}" class="img-real" onerror="this.src='https://placehold.co/400x400?text=${r.marca}'">
+                    </div>
+                    <div style="padding:15px; text-align:center;">
+                        <h3 style="color: var(--p); margin-bottom: 5px;">${r.marca}</h3>
+                        <p style="font-size: 0.8rem; color: #888; margin-bottom: 15px;">${r.desc}</p>
+                        <button class="btn btn-v" style="width: 100%;" onclick="descargarTablaDirecta('${r.link}', '${r.marca}')">📥 Descargar Tabla</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        function renderMenuNotas() {
+            const menu = document.getElementById('menu-notas');
+            if (!menu) return;
+            menu.innerHTML = notasDinamicas.map(n => `
+                <div class="tarjeta nota-card" onclick="verNotaDinamica('${n.id}')">
+                    <div class="nota-icon">${n.icono}</div>
+                    <h3 style="color:var(--p)">${n.titulo}</h3>
+                    <p style="font-size:0.75rem; color:var(--s); text-transform:uppercase; font-weight:bold;">${n.cat}</p>
+                    <p>${n.resumen}</p>
+                    <small style="color:#555; margin-top:10px; display:block;">${n.fecha}</small>
+                </div>`).join('');
+        }
+
+        function verNotaDinamica(id) {
+            const n = notasDinamicas.find(x => x.id === id);
+            if (!n) return;
+            document.getElementById('menu-notas').style.display = 'none';
+            document.getElementById('visor-notas').style.display = 'block';
+            document.getElementById('contenido-nota').innerHTML = `
+                <div style="text-align:center; margin-bottom:20px;">
+                    <span style="font-size:4rem;">${n.icono}</span>
+                    <h2 style="color:var(--p); margin-top:10px;">${n.titulo}</h2>
+                    <span style="color:var(--s); font-weight:bold; text-transform:uppercase;">${n.cat}</span>
+                </div>
+                <div class="lab-data-box" style="font-size:1.1rem; line-height:1.8;">${n.contenido}</div>
+                <p style="text-align:right; font-size:0.7rem; color:#555;">Registro: ${n.fecha}</p>`;
+            window.scrollTo(0,0);
+        }
+
+        function cerrarNota() {
+            document.getElementById('visor-notas').style.display = 'none';
+            document.getElementById('menu-notas').style.display = 'grid';
+        }
+
+        window.onload = async () => {
+            await cargarInventario();
+            await cargarRecetarios(); 
+            await cargarNotasDesdeSheet();
+            updateCartUI();
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('status') === 'approved') {
+                ver('view-gracias');
+                carrito = []; localStorage.removeItem('superm_cart'); updateCartUI();
+            } else {
+                const seccionActual = localStorage.getItem('superm_seccion');
+                if (seccionActual) ver(seccionActual, false);
+            }
+        };
+
+        function irAlInicio() { localStorage.removeItem('superm_seccion'); location.href = window.location.pathname; }
+
+        function ver(id, guardar = true) {
+            if (guardar) localStorage.setItem('superm_seccion', id);
+            document.getElementById('landing').style.display = 'none';
+            document.getElementById('navbar').style.display = 'flex';
+            document.getElementById('main-footer').style.display = 'flex';
+            document.querySelectorAll('.seccion').forEach(s => s.classList.remove('activa'));
+            const sec = document.getElementById(id);
+            if(sec) sec.classList.add('activa');
+            if(id === 'tienda') mostrarCategorias();
+            if(id === 'tablas') { verSubSeccionLab('calculadora'); cargarTablasPersistentes(); }
+            if(id === 'view-carrito') renderCarrito();
+            if(id === 'info') { 
+                document.getElementById('menu-notas').style.display = 'grid'; 
+                document.getElementById('visor-notas').style.display = 'none';
+                renderMenuNotas();
+            }
+            window.scrollTo(0,0);
+        }
+
+        function verSubSeccionLab(sub) {
+            document.getElementById('lab-seguimiento').style.display = (sub === 'seguimiento') ? 'block' : 'none';
+            document.getElementById('lab-calculadora').style.display = (sub === 'calculadora') ? 'block' : 'none';
+            document.getElementById('lab-recetarios').style.display = (sub === 'recetarios') ? 'block' : 'none';
+            const mapeo = { 'seguimiento': 'btn-nav-seg', 'calculadora': 'btn-nav-calc', 'recetarios': 'btn-nav-rec' };
+            ['btn-nav-seg', 'btn-nav-calc', 'btn-nav-rec'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (id === mapeo[sub]) { btn.style.background = 'var(--p)'; btn.style.color = '#000'; }
+                else { btn.style.background = 'transparent'; btn.style.color = 'var(--s)'; }
+            });
+            if (sub === 'seguimiento') {
+                mostrarPanelSeguimiento('tabla');
+            }
+        }
+
+        function mostrarPanelSeguimiento(panel) {
+            const tablaView = document.getElementById('vista-seguimiento-tabla');
+            const diarioView = document.getElementById('vista-diario-cultivo');
+            const btnTabla = document.getElementById('btn-sg-tabla');
+            const btnDiario = document.getElementById('btn-sg-diario');
+            if (!tablaView || !diarioView || !btnTabla || !btnDiario) return;
+
+            if (panel === 'diario') {
+                tablaView.style.display = 'none';
+                diarioView.style.display = 'block';
+                btnTabla.style.background = 'transparent';
+                btnTabla.style.color = 'var(--s)';
+                btnDiario.style.background = 'var(--p)';
+                btnDiario.style.color = '#000';
+                window.cargarDiarioCultivo();
+            } else {
+                tablaView.style.display = 'block';
+                diarioView.style.display = 'none';
+                btnTabla.style.background = 'var(--p)';
+                btnTabla.style.color = '#000';
+                btnDiario.style.background = 'transparent';
+                btnDiario.style.color = 'var(--s)';
+            }
+        }
+
+        function changeQtyValue(id, delta) {
+            const input = document.getElementById(id);
+            let val = parseFloat(input.value) || 0;
+            let step = parseFloat(input.step) || 1;
+            let newVal = val + (delta * step);
+            if (input.min !== "" && newVal < parseFloat(input.min)) newVal = parseFloat(input.min);
+            if (input.max !== "" && newVal > parseFloat(input.max)) newVal = parseFloat(input.max);
+            input.value = newVal;
+        }
+
+        function mostrarCategorias() {
+            document.getElementById('btn-volver-cat').style.display = 'none';
+            document.getElementById('detalle-p').style.display = 'none';
+            document.getElementById('grid-p').style.display = 'grid';
+            document.getElementById('titulo-tienda').innerText = "Categorías";
+            const grid = document.getElementById('grid-p');
+            grid.innerHTML = categorias.map(c => `
+                <div class="tarjeta" onclick="filtrarProductos('${c.id}', '${c.n}')">
+                    <div class="contenedor-img">${obtenerImagenHTML(c.i)}</div>
+                    <h3 style="text-align:center">${c.n}</h3>
+                </div>`).join('');
+        }
+
+        function filtrarProductos(catId, nombre) {
+            document.getElementById('btn-volver-cat').style.display = 'block';
+            document.getElementById('titulo-tienda').innerText = nombre;
+            document.getElementById('detalle-p').style.display = 'none';
+            const fil = productos.filter(p => p.cat === catId);
+            renderGrid(fil);
+        }
+
+        function renderGrid(lista) {
+            const grid = document.getElementById('grid-p');
+            grid.innerHTML = lista.map(p => `
+                <div class="tarjeta" onclick="verProducto(${p.id})">
+                    <div class="contenedor-img">${obtenerImagenHTML(p.i)}</div>
+                    <h3 style="margin: 10px 0; text-align: center;">${p.n}</h3>
+                    <div style="text-align: center; color: var(--p); font-weight: bold; margin-top: auto;">$${p.p.toLocaleString()}</div>
+                </div>`).join('');
+        }
+
+        function obtenerImagenHTML(dato) {
+            if (dato.includes("http")) return `<img src="${dato.split('|')[0]}" class="img-real">`;
+            return `<div class="img-placeholder">${dato}</div>`;
+        }
+
+function verProducto(id) {
+    const p = productos.find(x => x.id === id);
+    document.getElementById('grid-p').style.display = 'none';
+    document.getElementById('detalle-p').style.display = 'block';
+    document.getElementById('btn-volver-cat').style.display = 'block';
+    const btnMP = p.linkPago ? `<button class="btn btn-mp" style="width:100%; margin-top:10px" onclick="abrirModalEnvio('${p.linkPago}')">Pagar con Mercado Pago</button>` : '';
+    
+    document.getElementById('detalle-p').innerHTML = `
+        <div class="producto-detalle">
+            <div class="contenedor-img" style="height:350px">${obtenerImagenHTML(p.i)}</div>
+            <div class="det-info">
+                <h2>${p.n}</h2>
+                <p>${p.desc}</p>
+                <div class="det-ficha">
+                    <strong>ESPECIFICACIONES:</strong>
+                    <ul style="color:var(--p);">${p.specs.map(s => `<li>${s}</li>`).join('')}</ul>
+                </div>
+                <div class="det-precio">$${p.p.toLocaleString()}</div>
+                
+                <div style="display:flex; gap:15px; flex-direction:column; margin-top:10px;">
+                    <div class="qty-selector" style="width:100%; display:flex; justify-content:space-between; align-items:center;">
+                        <button class="qty-btn" onclick="changeQtyDet(-1)" style="flex:1;">-</button>
+                        <input type="number" class="qty-input" id="qty-det" value="1" min="1" style="flex:1; text-align:center; background:transparent; border:none; color:var(--p); font-weight:bold;">
+                        <button class="qty-btn" onclick="changeQtyDet(1)" style="flex:1;">+</button>
+                    </div>
+                    
+                    <button class="btn btn-v" style="width:100%; height:45px;" onclick="add(${p.id})">Añadir al Carrito</button>
+                    
+                    ${btnMP} 
+                    <span class="aviso-logistica-txt" style="text-align:center; display:block;">⚠️ Logística: Envío a convenir</span>
+                </div>
+            </div>
+        </div>`;
+}
+
+        function changeQtyDet(d) { let i = document.getElementById('qty-det'); let val = parseInt(i.value) || 1; if(val + d > 0) i.value = val + d; }
+
+        function add(id) {
+            const p = productos.find(x => x.id === id);
+            const q = parseInt(document.getElementById('qty-det').value) || 1;
+            const ex = carrito.find(i => i.id === id);
+            if(ex) ex.q += q; else carrito.push({id: p.id, n: p.n, p: p.p, q: q});
+            localStorage.setItem('superm_cart', JSON.stringify(carrito));
+            updateCartUI(); notify(`Añadido: ${p.n}`);
+        }
+
+        function notify(m) {
+            const n = document.getElementById('notificacion');
+            n.innerText = m; n.style.display = 'block';
+            setTimeout(() => n.style.display = 'none', 3000);
+        }
+
+        function updateCartUI() { document.getElementById('cart-count').innerText = carrito.reduce((a, b) => a + b.q, 0); }
+
+        function renderCarrito() {
+            const lista = document.getElementById('lista-carrito');
+            let total = 0;
+            if(!carrito.length) { lista.innerHTML = "Carrito vacío."; document.getElementById('total-carrito').innerText = "$0"; return; }
+            lista.innerHTML = carrito.map((it, idx) => {
+                const sub = it.p * it.q;
+                total += sub;
+                return `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #222; padding-bottom:10px;">
+                    <div><b>${it.n}</b><br><small>$${it.p.toLocaleString()}</small></div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="qty-selector">
+                            <button class="qty-btn" onclick="ajustarCarrito(${idx}, -1)">-</button>
+                           <input type="number" class="qty-input" value="${it.q}" onchange="inputCarrito(${idx}, this.value)" style="width: 35px; text-align: center; background: transparent; border: none; color: white; font-weight: bold;">
+                            <button class="qty-btn" onclick="ajustarCarrito(${idx}, 1)">+</button>
+                        </div>
+                        <button onclick="quitar(${idx})" style="color:red; background:none; border:none; cursor:pointer; font-size:1.2rem;">&times;</button>
+                    </div>
+                </div>`;
+            }).join('');
+            document.getElementById('total-carrito').innerText = "$" + total.toLocaleString();
+        }
+
+        function ajustarCarrito(idx, cambio) {
+            carrito[idx].q += cambio;
+            if (carrito[idx].q < 1) carrito.splice(idx, 1);
+            localStorage.setItem('superm_cart', JSON.stringify(carrito));
+            renderCarrito(); updateCartUI();
+        }
+
+        function inputCarrito(idx, valor) {
+            let n = parseInt(valor);
+            if(isNaN(n) || n < 1) carrito.splice(idx, 1); else carrito[idx].q = n;
+            localStorage.setItem('superm_cart', JSON.stringify(carrito));
+            renderCarrito(); updateCartUI();
+        }
+
+        function quitar(idx) { carrito.splice(idx,1); localStorage.setItem('superm_cart', JSON.stringify(carrito)); renderCarrito(); updateCartUI(); }
+
+        function abrirModalEnvio(contexto) { contextoEnvio = contexto; document.getElementById('modal-envio').style.display = 'flex'; }
+        function cerrarModalEnvio() { document.getElementById('modal-envio').style.display = 'none'; }
+
+        document.getElementById('btn-confirmar-envio').onclick = async function() {
+            const btn = this;
+            
+            // 1. Captura de datos (IDs verificados de tu HTML)
+            const n = document.getElementById('f-nombre').value;
+            const t = document.getElementById('f-tel').value; 
+            const d = document.getElementById('f-dir').value;
+            const dni = document.getElementById('f-dni').value;
+            const e = document.getElementById('f-email').value;
+            const loc = document.getElementById('f-localidad').value;
+            const cp = document.getElementById('f-cp').value;
+
+            // 2. Validación simple
+            if(!n || !t || !d) {
+                alert("Por favor completa Nombre, Teléfono y Dirección.");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "PROCESANDO...";
+
+            try {
+                let pedidoTexto = "";
+                let totalPedido = 0;
+                let origenVenta = (contextoEnvio === 'carrito') ? "Carrito" : "Compra Directa";
+
+                // 3. Lógica de Captura de Producto (Para evitar el error de "Indoor Lab")
+                if (contextoEnvio === 'carrito') {
+                    pedidoTexto = carrito.map(i => `${i.q}x ${i.n}`).join(", ");
+                    totalPedido = carrito.reduce((a, b) => a + (b.p * b.q), 0);
+                } else {
+                    // Leemos lo que hay en pantalla en el detalle del producto
+                    const tituloActual = document.querySelector('#detalle-p h2')?.innerText || "Producto";
+                    const precioActual = document.querySelector('.det-precio')?.innerText.replace(/[^0-9]/g, '') || "0";
+                    pedidoTexto = tituloActual;
+                    totalPedido = parseInt(precioActual);
+                }
+
+                const objetoParaSheets = {
+                    fecha: new Date().toLocaleString(),
+                    nombre: n,
+                    dni: dni,
+                    telefono: t,
+                    email: e,
+                    direccion: `${d}, ${loc} (CP: ${cp})`,
+                    pedido: pedidoTexto,
+                    total: totalPedido,
+                    origen: origenVenta
+                };
+
+                // 4. Envío a Google Sheets
+                await enviarAGoogleSheets(objetoParaSheets);
+
+                // 5. ¿Es Mercado Pago o WhatsApp?
+                const esPagoDirecto = contextoEnvio !== 'carrito' && contextoEnvio.toLowerCase().includes('mercadopago');
+
+                if (esPagoDirecto) {
+                    // COMPRA DIRECTA -> VA A MERCADO PAGO EN PESTAÑA NUEVA
+                    window.open(contextoEnvio, '_blank');
+                    // Cambiamos a la vista de agradecimiento en la pestaña actual
+                    ver('view-gracias');
+                }
+                else {
+                    // CARRITO O CONSULTA -> VA A WHATSAPP
+                    let msgWA = `🧪 *NUEVO PEDIDO SUPER M* (${origenVenta})\n\n👤 *Cliente:* ${n}\n📦 *Pedido:* ${pedidoTexto}\n💰 *Total:* $${totalPedido}\n📍 *Dirección:* ${d}, ${loc}\n📞 *Tel:* ${t}`;
+                    window.open(`https://wa.me/${MI_NUMERO}?text=${encodeURIComponent(msgWA)}`, '_blank');
+                    
+                    if(contextoEnvio === 'carrito') {
+                        carrito = [];
+                        localStorage.removeItem('superm_cart');
+                        updateCartUI();
+                    }
+                    ver('view-gracias');
+                }
+            } catch (err) {
+                console.error("Error en el proceso:", err);
+                alert("Hubo un error. Por favor intenta de nuevo.");
+            } finally {
+                cerrarModalEnvio();
+                btn.disabled = false;
+                btn.innerText = "Confirmar";
+            }
+        };
+
+        function realizarBusqueda() {
+            const q = document.getElementById('mainSearch').value.toLowerCase();
+            ver('tienda');
+            renderGrid(productos.filter(p => p.n.toLowerCase().includes(q)));
+        }
+
+        function cargarTablasPersistentes() {
+            const guardado = JSON.parse(localStorage.getItem('superm_tablas')) || [];
+            document.getElementById('cuerpo-tabla').innerHTML = "";
+            if(guardado.length === 0) for(let i=0; i<4; i++) nuevaFila();
+            else guardado.forEach(f => nuevaFila(f));
+        }
+
+        function nuevaFila(datos = ["", "", "", "", "", "", "", ""]) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = datos.map(d => `<td><input type="text" class="input-tabla" value="${d}" oninput="guardarTablas()"></td>`).join('');
+            document.getElementById('cuerpo-tabla').appendChild(tr);
+        }
+
+        function guardarTablas() {
+            const filas = [];
+            document.querySelectorAll('#cuerpo-tabla tr').forEach(tr => {
+                const c = Array.from(tr.querySelectorAll('input')).map(i => i.value);
+                filas.push(c);
+            });
+            localStorage.setItem('superm_tablas', JSON.stringify(filas));
+        }
+
+        function borrarTablas() { if(confirm("¿Resetear laboratorio?")) { localStorage.removeItem('superm_tablas'); cargarTablasPersistentes(); } }
+
+        function descargarImagen() {
+            const area = document.getElementById('area-descarga');
+            html2canvas(area, { backgroundColor: '#050505' }).then(canvas => {
+                const link = document.createElement('a'); link.download = 'SuperM_Lab_Report.png';
+                link.href = canvas.toDataURL(); link.click();
+            });
+        }
+
+        async function descargarTablaDirecta(url, nombreMarca) {
+            try {
+                const response = await fetch(url); const blob = await response.blob();
+                const urlBlob = window.URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.style.display = 'none';
+                a.href = urlBlob; a.download = `Tabla_Cultivo_${nombreMarca}_SuperM.jpg`;
+                document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(urlBlob);
+                notify("Descargando Tabla de " + nombreMarca);
+            } catch (e) { window.open(url, '_blank'); }
+        }
+
+        function verCalc(id) {
+            document.querySelectorAll('.calc-panel').forEach(p => p.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
+            if(id === 'c-vpd') setTimeout(updateVPDRealtime, 100);
+        }
+
+        function calcFerti() {
+            const l = parseFloat(document.getElementById('f-litros').value), d = parseFloat(document.getElementById('f-dosis').value);
+            if(l && d) {
+                const res = document.getElementById('res-ferti'); res.style.display = 'block';
+                res.innerHTML = `<h4>RESULTADO:</h4><p>Debes aplicar <span class="val-v">${(l * d).toFixed(1)} ml</span> en tus ${l}L de agua.</p>`;
+            }
+        }
+
+        function calcLuz() {
+            const w = parseFloat(document.getElementById('l-watts').value), h = parseFloat(document.getElementById('l-horas').value), p = parseFloat(document.getElementById('l-precio').value) || 0;
+            if(w && h) {
+                const mensualKwh = (w * h * 30) / 1000, costo = mensualKwh * p;
+                const res = document.getElementById('res-luz'); res.style.display = 'block';
+                res.innerHTML = `<h4>CONSUMO:</h4><p>Gasto mensual: <span class="val-v">${mensualKwh.toFixed(1)} kWh</span><br>Costo est.: <span class="val-v">$${costo.toFixed(2)}</span></p>`;
+            }
+        }
+
+        function calcSustratoReceta(tipo) {
+            const l = parseFloat(document.getElementById('s-capacidad').value), c = parseFloat(document.getElementById('s-cantidad').value);
+            if(!l || !c) return alert("Ingresa litros y cantidad.");
+            const totalLitros = l * c, res = document.getElementById('res-sustrato');
+            res.style.display = 'block';
+            let t, p, h, v, o, nombre, desc;
+            if(tipo === 'estandar') {
+                nombre = "⚖️ MEZCLA ESTÁNDAR"; desc = "Equilibrada para fotoperiódicas.";
+                t = totalLitros * 0.50; p = totalLitros * 0.20; h = totalLitros * 0.15; v = totalLitros * 0.10; o = totalLitros * 0.05;
+            } else if(tipo === 'auto') {
+                nombre = "🚀 MEZCLA AUTO"; desc = "Máxima aireación radicular.";
+                t = totalLitros * 0.45; p = totalLitros * 0.35; h = totalLitros * 0.10; v = totalLitros * 0.10; o = 0;
+            } else {
+                nombre = "🌿 MEZCLA BIO +"; desc = "Alta carga nutricional orgánica.";
+                t = totalLitros * 0.40; p = totalLitros * 0.20; h = totalLitros * 0.25; v = totalLitros * 0.15; o = 0;
+            }
+            res.innerHTML = `<h4 style="color:var(--p); border-bottom:1px solid #333; padding-bottom:10px; margin:0;">${nombre}</h4>
+                <p style="font-size:0.75rem; color:#888; margin:5px 0 15px 0;">${desc}</p>
+                <div style="text-align:left; font-size:0.9rem;">
+                    <p>🌿 <b>Turba/Coco:</b> <span class="val-v">${t.toFixed(1)}L</span></p>
+                    <p>⚪ <b>Perlita:</b> <span class="val-v">${p.toFixed(1)}L</span></p>
+                    <p>🪱 <b>Humus:</b> <span class="val-v">${h.toFixed(1)}L</span></p>
+                    <p>💎 <b>Vermiculita:</b> <span class="val-v">${v.toFixed(1)}L</span></p>
+                    ${o > 0 ? `<p>🍂 <b>Otros:</b> <span class="val-v">${o.toFixed(1)}L</span></p>` : ''}
+                </div><div style="background:#000; padding:8px; border-radius:5px; margin-top:15px; border:1px dashed var(--s); text-align:center;">
+                <span style="font-size:0.8rem; color:var(--s); font-weight:bold;">TOTAL: ${totalLitros} LITROS</span></div>`;
+        }
+
+        // --- LÓGICA VPD AVANZADA ---
+        function setEtapaVPD(etapa, btn) {
+            etapaVPDActual = etapa;
+            document.querySelectorAll('.etapa-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            updateVPDRealtime();
+        }
+
+        function updateVPDRealtime() {
+            const t = parseFloat(document.getElementById('v-temp').value) || 0;
+            const h = parseFloat(document.getElementById('v-hum').value) || 0;
+            const svp = 0.61078 * Math.exp((17.27 * t) / (t + 237.3));
+            const vpd = svp * (1 - (h / 100));
+            drawVPDGraph(t, h, vpd);
+            analizarVPD(vpd, t, h);
+        }
+
+        function drawVPDGraph(temp, hum, currentVPD) {
+            const canvas = document.getElementById('vpd-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width = canvas.offsetWidth;
+            const h = canvas.height = canvas.offsetHeight;
+            const hMin = 20, hMax = 95, tMin = 15, tMax = 35, pad = 40; 
+            const graphW = w - pad * 1.5, graphH = h - pad * 1.5;
+
+            let idealMin, idealMax;
+            if(etapaVPDActual === 'esqueje') { idealMin = 0.4; idealMax = 0.8; }
+            else if(etapaVPDActual === 'vege') { idealMin = 0.8; idealMax = 1.0; }
+            else if(etapaVPDActual === 'flora_t') { idealMin = 1.0; idealMax = 1.2; }
+            else { idealMin = 1.2; idealMax = 1.5; }
+
+            ctx.clearRect(0, 0, w, h);
+            for (let t = tMin; t <= tMax; t++) {
+                for (let hu = hMin; hu <= hMax; hu++) {
+                    const localSvp = 0.61078 * Math.exp((17.27 * t) / (t + 237.3));
+                    const localVpd = localSvp * (1 - (hu / 100));
+                    let color = "#3c1053"; 
+                    if (localVpd >= idealMin && localVpd <= idealMax) color = "#1b5e20"; 
+                    if (localVpd > idealMax) color = "#b71c1c"; 
+                    const x = pad + ((hu - hMin) / (hMax - hMin)) * graphW;
+                    const y = (h - pad) - ((t - tMin) / (tMax - tMin)) * graphH;
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, y, graphW/(hMax-hMin) + 1, -graphH/(tMax-tMin) - 1);
+                }
+            }
+            ctx.fillStyle = "#aaa"; ctx.font = "10px monospace"; ctx.textAlign = "center";
+            for (let i = 20; i <= 90; i += 10) { const x = pad + ((i - hMin) / (hMax - hMin)) * graphW; ctx.fillText(i, x, h - 15); }
+            ctx.fillText("HUMEDAD %", w/2, h - 5);
+            ctx.textAlign = "right";
+            for (let i = 15; i <= 35; i += 5) { const y = (h - pad) - ((i - tMin) / (tMax - tMin)) * graphH; ctx.fillText(i + "°", pad - 5, y + 3); }
+
+            if (temp >= tMin && temp <= tMax && hum >= hMin && hum <= hMax) {
+                const px = pad + ((hum - hMin) / (hMax - hMin)) * graphW, py = (h - pad) - ((temp - tMin) / (tMax - tMin)) * graphH;
+                ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.setLineDash([5, 5]);
+                ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h-pad); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(pad, py); ctx.lineTo(w, py); ctx.stroke();
+                ctx.setLineDash([]); ctx.shadowBlur = 15; ctx.shadowColor = "#39ff14"; ctx.fillStyle = "white";
+                ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+            }
+        }
+
+        function analizarVPD(vpd, t, h) {
+            const res = document.getElementById('res-vpd'), consejo = document.getElementById('consejo-alquimista');
+            res.style.display = 'block'; consejo.style.display = 'block';
+            let idealMin, idealMax, msg;
+            if(etapaVPDActual === 'esqueje') { idealMin = 0.4; idealMax = 0.8; }
+            else if(etapaVPDActual === 'vege') { idealMin = 0.8; idealMax = 1.0; }
+            else if(etapaVPDActual === 'flora_t') { idealMin = 1.0; idealMax = 1.2; }
+            else { idealMin = 1.2; idealMax = 1.5; }
+            let status = (vpd < idealMin) ? "BAJO" : (vpd > idealMax) ? "ALTO" : "IDEAL ✨";
+            let colorStatus = (status === "IDEAL ✨") ? "var(--p)" : "var(--s)";
+            res.innerHTML = `<span>VPD ACTUAL: <b style="color:${colorStatus}; font-size:1.2rem;">${vpd.toFixed(2)} kPa</b></span><br><small>Estado: <b style="color:${colorStatus}">${status}</b></small>`;
+            if(vpd < idealMin) msg = `🧪 <b>Nota:</b> Aire muy saturado. <b>Sube la temperatura</b> o <b>baja la humedad</b>.`;
+            else if(vpd > idealMax) msg = `🧪 <b>Nota:</b> Aire muy seco. <b>Baja la temperatura</b> o <b>sube la humedad</b>.`;
+            else msg = `🧪 <b>¡Perfecto!</b> Estás en el Sweet Spot. Transpiración y fotosíntesis óptimas.`;
+            consejo.innerHTML = msg;
+        }
+
+        // --- LÓGICA DE DIAGNÓSTICO DEL ORÁCULO (MEJORADA CON PPM Y SEMANAS) ---
+        function ejecutarDiagnostico() {
+            const semana = parseInt(document.getElementById('diag-semana').value);
+            const valOriginal = parseFloat(document.getElementById('diag-ec-val').value);
+            const unidad = document.getElementById('diag-unidad').value;
+            const ph = parseFloat(document.getElementById('diag-ph').value);
+            const res = document.getElementById('res-diagnostico');
+            res.style.display = 'block';
+
+            // 1. CONVERSIÓN DE UNIDADES (Escala 500 o EC directa)
+            let ec = (unidad === 'ppm500') ? valOriginal / 500 : valOriginal;
+
+            let veredictoNutricion = "";
+            let recomendacionNutricion = "";
+            let phMensaje = "";
+            let phEstado = "CORRECTO";
+            let colorFinal = "var(--p)"; // Verde neón de Super M
+
+            // 2. EVALUACIÓN DE PH (Diferenciando semana 1 por su fragilidad)
+            let phLimiteSuperior = (semana === 1) ? 6.0 : 6.5;
+            let phLimiteInferior = 5.5;
+
+            if (ph > phLimiteSuperior) {
+                colorFinal = "#ff4444";
+                phEstado = "ALTO (Alcalino)";
+                phMensaje = `❌ **pH ${ph} - ALTO:** Las raíces están "cerradas". La planta no puede absorber Hierro ni Fósforo. Si no lo bajás a 5.8-6.0, se pondrá amarilla y se detendrá el crecimiento.`;
+            } else if (ph < phLimiteInferior) {
+                colorFinal = "#ff4444";
+                phEstado = "BAJO (Ácido)";
+                phMensaje = `❌ **pH ${ph} - BAJO:** El agua está muy ácida. Esto puede quemar los pelos radiculares y bloquea el Calcio/Magnesio. Subilo a 6.0.`;
+            } else {
+                phMensaje = `✅ **pH ${ph} - ÓPTIMO:** La "puerta" de las raíces está abierta para recibir comida.`;
+            }
+
+            // 3. EVALUACIÓN DE NUTRICIÓN (EC) POR ETAPAS
+            if (semana === 1) { // Plántula
+                if (ec > 0.7) { veredictoNutricion = "🔥 EXCESO"; recomendacionNutricion = "EC muy alta para plántula. Puede ser letal. Diluí con agua pura hasta 0.4."; }
+                else if (ec < 0.3) { veredictoNutricion = "📉 BAJA"; recomendacionNutricion = "Agua muy pura. Sube a 0.4 con un toque de CalMag."; }
+                else { veredictoNutricion = "✨ ÓPTIMA"; recomendacionNutricion = "Nivel de nutrientes perfecto para el inicio."; }
+            } 
+            else if (semana >= 2 && semana <= 4) { // Vegetativo
+                if (ec > 1.3) { veredictoNutricion = "🔥 ALTA"; recomendacionNutricion = "Bajá la dosis para evitar estrés y hojas 'garra'."; }
+                else if (ec < 0.7) { veredictoNutricion = "🍽️ BAJA"; recomendacionNutricion = "La planta pide más base. Subí a EC 1.0."; }
+                else { veredictoNutricion = "✨ ÓPTIMA"; recomendacionNutricion = "Nutrición equilibrada para crecer con fuerza."; }
+            } 
+            else if (semana >= 5 && semana <= 10) { // Floración y Engorde
+                if (ec > 2.0) { veredictoNutricion = "🔥 ALTA"; recomendacionNutricion = "Riesgo de sobrefertilización en flores. Bajá a 1.7."; }
+                else if (ec < 1.3) { veredictoNutricion = "🍽️ BAJA"; recomendacionNutricion = "Tus flores necesitan más PK. Subí la dosis."; }
+                else { veredictoNutricion = "✨ ÓPTIMA"; recomendacionNutricion = "Balance de floración maestro."; }
+            } 
+            else { // Lavado (Semana 11+)
+                if (ec > 0.5) { veredictoNutricion = "⚠️ ALTA"; recomendacionNutricion = "Lava con agua pura para limpiar sabores minerales."; }
+                else { veredictoNutricion = "✨ LIMPIEZA"; recomendacionNutricion = "Sabor premium y ceniza blanca garantizada."; }
+            }
+
+            // 4. CONSTRUCCIÓN DEL RESULTADO VISUAL (Doble Canal)
+            let infoNutricion = "";
+            if (colorFinal === "#ff4444") {
+                // Si el pH está mal, el aviso de nutrición es secundario al bloqueo
+                infoNutricion = `
+                    <div style="background:rgba(255,68,68,0.1); padding:10px; border-radius:5px; margin-top:10px; border-left: 3px solid #ff4444;">
+                        <span style="color:#ff4444; font-weight:bold;">¡BLOQUEO ACTIVO!</span><br>
+                        <small style="color:#eee;">Nutrición medida: <strong>${veredictoNutricion}</strong>. Pero con pH ${phEstado}, la planta NO está comiendo.</small>
+                    </div>`;
+            } else {
+                infoNutricion = `<p style="margin-top:10px; font-weight:bold;">Nutrición: <span style="color:var(--p)">${veredictoNutricion}</span></p>`;
+            }
+
+            res.innerHTML = `
+                <h4 style="color:var(--p); margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:5px;">DIAGNÓSTICO DE MEDICIÓN</h4>
+                
+                <p style="font-size:0.95rem; line-height:1.4; color:#fff; margin-bottom:10px;">${phMensaje}</p>
+                
+                ${infoNutricion}
+
+                <p style="font-size:0.85rem; color:#ccc; margin-top:10px; font-style:italic;">"${recomendacionNutricion}"</p>
+
+                <div style="margin-top:15px; padding:8px; background:#111; border-radius:5px; font-size:0.75rem; color:#888; display:flex; justify-content:space-between;">
+                    <span>Lectura: ${ec.toFixed(2)} mS/cm</span>
+                    <span>pH: ${ph}</span>
+                    <span>Semana: ${semana}</span>
+                </div>
+
+                <button onclick="prepararGuardado()" class="btn btn-v" style="width:100%; margin-top:15px; background:transparent; border:1px solid var(--p); color:var(--p); padding:10px; cursor:pointer;">
+                    💾 GUARDAR EN MI BITÁCORA
+                </button>
+            `;
+        }
+    </script>
+    <script type="module">
+        // Importamos las herramientas necesarias de Firebase Auth
+import { 
+    getAuth, 
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword, 
+    onAuthStateChanged, 
+    signOut,
+    updateProfile,
+    GoogleAuthProvider,
+    signInWithPopup 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyArXS-nRFGb7MRQ30BsPM4vYdqXWfxNdg4",
+  authDomain: "super-m-growshop.firebaseapp.com",
+  projectId: "super-m-growshop",
+  storageBucket: "super-m-growshop.firebasestorage.app",
+  messagingSenderId: "851787326044",
+  appId: "1:851787326044:web:727818a787e52d9a19fc99",
+  measurementId: "G-KEPKJYST55"
+};
+
+const app = initializeApp(firebaseConfig);
+const authInstance = getAuth(app);
+const db = getFirestore(app);
+
+// Configurar Google Sign-In
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+    prompt: 'select_account'
+});
+
+window.auth = authInstance;
+window.db = db;
+
+// 1. Función para REGISTRARSE
+window.handleRegister = async () => {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-pass').value;
+    try {
+        await createUserWithEmailAndPassword(authInstance, email, pass);
+        alert("¡Bienvenido Alquimista! Cuenta creada.");
+        ver('tablas'); // Lo mandamos directo a las tablas
+    } catch (e) { alert("Error: " + e.message); }
+};
+
+// Función para registrar desde la vista de registro
+window.registerUser = async () => {
+    const name = document.getElementById('register-name').value.trim();
+    const email = document.getElementById('register-email').value;
+    const pass = document.getElementById('register-pass').value;
+    const passConfirm = document.getElementById('register-pass-confirm').value;
+    
+    if (!name || !email || !pass || !passConfirm) {
+        alert("❌ Completa todos los campos.");
+        return;
+    }
+    
+    if (pass !== passConfirm) {
+        alert("❌ Las contraseñas no coinciden.");
+        return;
+    }
+    
+    if (pass.length < 6) {
+        alert("❌ La contraseña debe tener al menos 6 caracteres.");
+        return;
+    }
+    
+    try {
+        await createUserWithEmailAndPassword(authInstance, email, pass);
+        // Actualizar el perfil con el nombre
+        await updateProfile(authInstance.currentUser, { displayName: name });
+        alert("¡Bienvenido " + name + "! Cuenta creada exitosamente.");
+        ver('tablas'); // Lo mandamos directo a las tablas
+    } catch (e) {
+        let mensajeError = "Error al crear cuenta: " + e.message;
+        if (e.code === 'auth/email-already-in-use') {
+            mensajeError = "❌ Este email ya está registrado. Intenta iniciar sesión.";
+        } else if (e.code === 'auth/invalid-email') {
+            mensajeError = "❌ Email inválido. Verifica el formato.";
+        } else if (e.code === 'auth/weak-password') {
+            mensajeError = "❌ Contraseña muy débil. Usa al menos 6 caracteres.";
+        }
+        alert(mensajeError);
+    }
+};
+
+// Función para iniciar sesión con Google
+window.signInWithGoogle = async () => {
+    try {
+        const result = await signInWithPopup(authInstance, googleProvider);
+        const user = result.user;
+        alert("¡Bienvenido " + (user.displayName || "Alquimista") + "! Sesión iniciada con Google.");
+        ver('tablas');
+    } catch (e) {
+        let mensajeError = "Error al iniciar sesión con Google: " + e.message;
+        if (e.code === 'auth/popup-closed-by-user') {
+            mensajeError = "Inicio de sesión cancelado.";
+        } else if (e.code === 'auth/popup-blocked') {
+            mensajeError = "Popup bloqueado. Permite popups para este sitio.";
+        }
+        alert(mensajeError);
+    }
+};
+
+// 2. Función para ENTRAR
+window.handleLogin = async () => {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-pass').value;
+    try {
+        await signInWithEmailAndPassword(authInstance, email, pass);
+        ver('tablas');
+    } catch (e) { alert("Error: " + e.message); }
+};
+
+// --- 1. EL OBSERVADOR DE SESIÓN (Línea 1015 aprox) ---
+onAuthStateChanged(authInstance, (user) => {
+    const btnAcceso = document.getElementById('btn-login-header');
+    if (user) {
+        const displayName = user.displayName || user.email.split('@')[0].toUpperCase();
+        btnAcceso.innerText = "👤 " + displayName;
+        btnAcceso.onclick = () => { if(confirm("¿Cerrar sesión?")) signOut(authInstance); };
+        
+        // ¡ESTO ES LO QUE TE FALTABA! Carga automática al reconocer al usuario
+        console.log("Sesión activa detectada. Cargando diario...");
+        window.cargarSeguimiento(); 
+    } else {
+        btnAcceso.innerText = "👤 ACCESO";
+        btnAcceso.onclick = () => ver('view-login');
+        const tbody = document.getElementById('cuerpo-tabla');
+        if (tbody) tbody.innerHTML = ""; // Limpia si no hay sesión
+    }
+});
+
+// --- 2. MOTOR DE GUARDADO POR CARPETAS ---
+window.prepararGuardado = async function() {
+    if (!authInstance.currentUser) {
+        alert("Debes iniciar sesión para guardar en tu diario.");
+        return;
+    }
+
+    const phVal = document.getElementById('diag-ph').value;
+    const ecVal = document.getElementById('diag-ec-val').value;
+    const semVal = document.getElementById('diag-semana').value;
+
+    if (!phVal || !ecVal || !semVal) {
+        alert("Completa PH, EC y Semana.");
+        return;
+    }
+
+    try {
+        const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        
+        // Estructura de sub-colección: seguimientos > UID > semanas > semana_X > mediciones
+        const rutaCarpeta = `seguimientos/${authInstance.currentUser.uid}/semanas/semana_${semVal}/mediciones`;
+
+        await addDoc(collection(window.db, rutaCarpeta), {
+            ph: phVal,
+            ec: ecVal,
+            semana: parseInt(semVal),
+            fecha: new Date().toLocaleString(),
+            timestamp: serverTimestamp(),
+            uid: authInstance.currentUser.uid // Clave para el filtrado
+        });
+
+        alert("✅ Medición archivada correctamente.");
+        document.getElementById('diag-ph').value = "";
+        document.getElementById('diag-ec-val').value = "";
+        window.cargarSeguimiento();
+    } catch (e) {
+        console.error("Error al guardar:", e);
+    }
+};
+
+// --- 3. MOTOR DE CARGA (Busca en todas las carpetas del usuario) ---
+window.cargarSeguimiento = async function() {
+    const tbody = document.getElementById('cuerpo-tabla'); 
+    if (!tbody || !authInstance.currentUser) return;
+
+    try {
+        const { collectionGroup, query, where, getDocs, orderBy } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        
+        // Traemos todas las "mediciones" que tengan el UID del usuario activo
+        const q = query(
+            collectionGroup(window.db, "mediciones"),
+            where("uid", "==", authInstance.currentUser.uid),
+            orderBy("timestamp", "desc")
+        );
+
+        const querySnapshot = await getDocs(q);
+        tbody.innerHTML = ""; 
+
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const pathParts = docSnap.ref.path.split('/');
+            const nombreSemana = pathParts[3].replace('_', ' ').toUpperCase();
+
+            tbody.innerHTML += `
+                <tr style="border-bottom: 1px solid #333; text-align: center;">
+                    <td style="padding:10px; color:#888; font-size:0.8rem;">${data.fecha.split(',')[0]}</td>
+                    <td style="color:var(--p); font-weight:bold;">${data.ph}</td>
+                    <td style="color:#00ffff">${data.ec}</td>
+                    <td style="color:var(--s); font-weight:bold;">${nombreSemana}</td>
+                    <td><button onclick="borrarDato('${docSnap.ref.path}')" style="background:transparent; border:none; color:#ff4444; cursor:pointer;">✕</button></td>
+                </tr>
+            `;
+        });
+    } catch (error) {
+        console.error("Error al leer archivos:", error);
+    }
+};
+
+window.borrarDato = async function(rutaCompleta) {
+    if(confirm("¿Eliminar este registro?")) {
+        try {
+            const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+            await deleteDoc(doc(window.db, rutaCompleta));
+            window.cargarSeguimiento();
+        } catch (e) {
+            console.error("Error al borrar:", e);
+        }
+    }
+};
+
+// Función para guardar cálculos de VPD en la bitácora
+window.guardarVPD = async function() {
+    const temp = document.getElementById('v-temp').value;
+    const humedad = document.getElementById('v-hum').value;
+    const etapa = window.etapaVPDActual || 'esqueje';
+
+    const usuarioActivo = window.auth?.currentUser?.uid || 'anon';
+    const nuevoCalculoVPD = {
+        tipo: 'vpd',
+        temp: temp,
+        humedad: humedad,
+        etapa: etapa,
+        fecha: new Date().toLocaleString(),
+        usuario: usuarioActivo
+    };
+
+    try {
+        const { addDoc, collection } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        await addDoc(collection(window.db, "seguimientos"), nuevoCalculoVPD);
+        alert("✅ ¡Cálculo de VPD guardado en tu bitácora!");
+    } catch (e) {
+        console.error("Error guardando VPD:", e);
+        alert("❌ Error al guardar el cálculo de VPD.");
+    }
+};
+
+window.mostrarFormularioDiario = () => {
+    window.diarioGrupoActivo = null;
+    const form = document.getElementById('formulario-diario');
+    if (!form) return;
+    const fechaInput = document.getElementById('diario-fecha');
+    if (fechaInput && !fechaInput.value) {
+        fechaInput.value = new Date().toISOString().slice(0, 10);
+    }
+    form.style.display = 'block';
+};
+
+window.ocultarFormularioDiario = () => {
+    window.diarioGrupoActivo = null;
+    const form = document.getElementById('formulario-diario');
+    if (!form) return;
+    form.style.display = 'none';
+    const imagenesInput = document.getElementById('diario-imagenes');
+    if (imagenesInput) imagenesInput.value = '';
+    const preview = document.getElementById('diario-imagenes-preview');
+    if (preview) preview.innerHTML = '';
+};
+
+window.cargarRegistroEnFormulario = (registro) => {
+    try {
+        if (typeof registro === 'string') {
+            registro = JSON.parse(decodeURIComponent(registro));
+        }
+        window.diarioGrupoActivo = registro.grupoId || registro.id || window.generarIdDiario();
+        if (!registro.grupoId) {
+            registro.grupoId = window.diarioGrupoActivo;
+            if (registro.id) window.actualizarGrupoIdLocalDiario(registro.id, registro.grupoId);
+        }
+        window.mostrarFormularioDiario();
+        const nombreInput = document.getElementById('diario-nombre');
+        const fechaInput = document.getElementById('diario-fecha');
+        const semanaInput = document.getElementById('diario-semana');
+        const etapaInput = document.getElementById('diario-etapa');
+        const phInput = document.getElementById('diario-ph');
+        const ecInput = document.getElementById('diario-ec');
+        const tempInput = document.getElementById('diario-temp');
+        const humInput = document.getElementById('diario-hum');
+        const notasInput = document.getElementById('diario-notas');
+        const imagenesInput = document.getElementById('diario-imagenes');
+        const preview = document.getElementById('diario-imagenes-preview');
+
+        if (nombreInput) nombreInput.value = registro.nombre || '';
+        if (fechaInput) fechaInput.value = new Date().toISOString().slice(0, 10);
+        if (semanaInput) {
+            const semanaNum = parseInt(registro.semana, 10);
+            semanaInput.value = !isNaN(semanaNum) ? String(semanaNum + 1) : registro.semana || '';
+        }
+        if (etapaInput) etapaInput.value = registro.etapa || 'esqueje';
+        if (phInput) phInput.value = registro.ph || '';
+        if (ecInput) ecInput.value = registro.ec || '';
+        if (tempInput) tempInput.value = registro.temp || '';
+        if (humInput) humInput.value = registro.humedad || '';
+        if (notasInput) notasInput.value = registro.notas || '';
+        if (imagenesInput) imagenesInput.value = '';
+        if (preview) preview.innerHTML = '';
+    } catch (error) {
+        console.error('No se pudo cargar el registro en el formulario:', error);
+        alert('No se pudo cargar ese registro. Intenta con otro.');
+    }
+};
+
+window.mostrarPrevisualizacionDiario = () => {
+    const input = document.getElementById('diario-imagenes');
+    const preview = document.getElementById('diario-imagenes-preview');
+    if (!input || !preview) return;
+    preview.innerHTML = '';
+    Array.from(input.files).forEach((file) => {
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid rgba(255,255,255,0.15); border-radius:12px; background: rgba(255,255,255,0.04); color:#fff;';
+        const label = document.createElement('span');
+        label.textContent = file.name;
+        wrapper.appendChild(label);
+
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const thumb = document.createElement('img');
+                thumb.src = reader.result;
+                thumb.style.cssText = 'width:48px; height:48px; object-fit:cover; border-radius:10px;';
+                wrapper.insertBefore(thumb, label);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        preview.appendChild(wrapper);
+    });
+};
+
+window.guardarRegistroDiario = async function() {
+    const usuario = window.auth?.currentUser;
+    const nombre = document.getElementById('diario-nombre')?.value.trim() || '';
+    const fechaValor = document.getElementById('diario-fecha')?.value || '';
+    const semana = document.getElementById('diario-semana')?.value || '';
+    const etapa = document.getElementById('diario-etapa')?.value || '';
+    const ph = document.getElementById('diario-ph')?.value || '';
+    const ec = document.getElementById('diario-ec')?.value || '';
+    const temp = document.getElementById('diario-temp')?.value || '';
+    const hum = document.getElementById('diario-hum')?.value || '';
+    const notas = document.getElementById('diario-notas')?.value.trim() || '';
+    const imagenesInput = document.getElementById('diario-imagenes');
+    const imagenes = imagenesInput?.files ? Array.from(imagenesInput.files).map(file => file.name) : [];
+
+    if (!nombre || !fechaValor || !semana || !etapa || !ph || !ec) {
+        alert('Completa al menos nombre, fecha, semana, etapa, pH y EC antes de guardar.');
+        return;
+    }
+
+    const registro = {
+        tipo: 'diario',
+        nombre: nombre,
+        fecha: new Date(fechaValor).toLocaleString(),
+        semana: semana,
+        etapa: etapa,
+        ph: ph,
+        ec: ec,
+        temp: temp,
+        humedad: hum,
+        notas: notas,
+        imagenes: imagenes,
+        usuario: usuario?.uid || 'anon',
+        usuarioNombre: usuario?.displayName || usuario?.email || 'Anon'
+    };
+    registro.id = window.generarIdDiario();
+    registro.grupoId = window.diarioGrupoActivo || registro.id;
+
+    if (!usuario) {
+        window.guardarDiarioLocal(registro);
+        alert('Registro guardado localmente en el diario de cultivo. Inicia sesión para sincronizarlo en la nube.');
+        window.ocultarFormularioDiario();
+        const diarioContainer = document.getElementById('diario-registros');
+        const sinDatos = document.getElementById('sin-datos-diario');
+        if (sinDatos) sinDatos.style.display = 'none';
+        if (diarioContainer) window.renderDiarioCard(diarioContainer, registro);
+        window.diarioGrupoActivo = null;
+        return;
+    }
+
+    try {
+        window.guardarDiarioLocal(registro);
+        const { addDoc, collection } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        await addDoc(collection(window.db, 'seguimientos'), registro);
+        alert('✅ Registro guardado en tu diario de cultivo.');
+        window.ocultarFormularioDiario();
+        const diarioContainer = document.getElementById('diario-registros');
+        const sinDatos = document.getElementById('sin-datos-diario');
+        if (sinDatos) sinDatos.style.display = 'none';
+        if (diarioContainer) window.renderDiarioCard(diarioContainer, registro);
+        window.diarioGrupoActivo = null;
+        window.cargarDiarioCultivo();
+    } catch (e) {
+        console.error('Error guardando registro de diario:', e);
+        window.guardarDiarioLocal(registro);
+        alert('❌ No se pudo guardar en la nube. Registro guardado localmente.');
+        window.ocultarFormularioDiario();
+        const diarioContainer = document.getElementById('diario-registros');
+        const sinDatos = document.getElementById('sin-datos-diario');
+        if (sinDatos) sinDatos.style.display = 'none';
+        if (diarioContainer) window.renderDiarioCard(diarioContainer, registro);
+        window.diarioGrupoActivo = null;
+    }
+};
+
+window.guardarDiarioLocal = (registro) => {
+    try {
+        if (!registro.id) registro.id = window.generarIdDiario();
+        if (!registro.grupoId) registro.grupoId = registro.id;
+        const almacenado = JSON.parse(localStorage.getItem('superm_diario') || '[]');
+        almacenado.unshift(registro);
+        localStorage.setItem('superm_diario', JSON.stringify(almacenado));
+    } catch (e) {
+        console.error('Error guardando localmente el diario:', e);
+    }
+};
+
+window.actualizarGrupoIdLocalDiario = (id, grupoId) => {
+    if (!id || !grupoId) return;
+    try {
+        const almacenado = JSON.parse(localStorage.getItem('superm_diario') || '[]');
+        let cambiado = false;
+        const actualizado = almacenado.map(item => {
+            if (item.id === id && !item.grupoId) {
+                item.grupoId = grupoId;
+                cambiado = true;
+            }
+            return item;
+        });
+        if (cambiado) localStorage.setItem('superm_diario', JSON.stringify(actualizado));
+    } catch (e) {
+        console.error('Error actualizando grupoId localmente:', e);
+    }
+};
+
+window.generarIdDiario = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    return Date.now().toString() + '-' + Math.random().toString(36).slice(2, 8);
+};
+
+window.renderDiarioCard = (container, data) => {
+    if (!container || !data) return;
+    if (!data.id) data.id = window.generarIdDiario();
+    if (!data.grupoId) data.grupoId = data.id;
+
+    const groupId = data.grupoId;
+    const sanitizedGroupId = 'diario-grupo-' + String(groupId).replace(/[^\w-]/g, '_');
+    const existingGroup = container.querySelector(`#${sanitizedGroupId}`);
+    const existingCards = Array.from(container.querySelectorAll(`[data-grupo-id="${groupId}"]`));
+
+    const card = document.createElement('div');
+    card.dataset.diarioId = data.id;
+    card.dataset.grupoId = groupId;
+    card.style.cssText = 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.14); border-radius: 18px; padding: 18px; color: #fff; display: grid; gap: 14px;';
+
+    const nombre = data.nombre || 'Registro';
+    const fechaTexto = typeof data.fecha === 'string'
+        ? data.fecha.split(',')[0]
+        : (data.fecha?.toDate ? data.fecha.toDate().toLocaleDateString() : 'Fecha no disponible');
+
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;';
+
+    const titleBlock = document.createElement('div');
+    const dateLabel = document.createElement('div');
+    dateLabel.style.cssText = 'font-size:0.85rem; color:#888; margin-bottom:4px;';
+    dateLabel.textContent = fechaTexto;
+    const nameLabel = document.createElement('div');
+    nameLabel.style.cssText = 'font-size:1.2rem; font-weight:700; color:var(--p);';
+    nameLabel.textContent = nombre;
+    const subtitle = document.createElement('div');
+    subtitle.style.cssText = 'font-size:0.9rem; color:#ccc;';
+    subtitle.textContent = `Semana ${data.semana || '-'} · ${data.etapa || '-'}`;
+
+    titleBlock.appendChild(dateLabel);
+    titleBlock.appendChild(nameLabel);
+    titleBlock.appendChild(subtitle);
+
+    const actions = document.createElement('div');
+    actions.style.cssText = 'display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;';
+
+    const loadButton = document.createElement('button');
+    loadButton.className = 'btn btn-m';
+    loadButton.style.cssText = 'border-color: var(--s);';
+    loadButton.textContent = 'Cargar';
+    loadButton.addEventListener('click', () => window.cargarRegistroEnFormulario(data));
+
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'btn btn-m';
+    deleteButton.style.cssText = 'border-color: rgba(255,80,80,0.35); background: rgba(255,80,80,0.08); color: #ff9a9a;';
+    deleteButton.textContent = 'Eliminar';
+    deleteButton.addEventListener('click', () => window.eliminarRegistroDiario(data.id, card));
+
+    actions.appendChild(loadButton);
+    actions.appendChild(deleteButton);
+
+    header.appendChild(titleBlock);
+    header.appendChild(actions);
+    card.appendChild(header);
+
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap:10px; font-size:0.9rem; color:#fff;';
+    const metrics = [
+        ['pH', data.ph],
+        ['EC', data.ec],
+        ['Temp', data.temp],
+        ['Humedad', data.humedad]
+    ];
+    metrics.forEach(([label, value]) => {
+        const block = document.createElement('div');
+        block.innerHTML = `<span style="color:#888;">${label}</span><div>${value || '-'}</div>`;
+        grid.appendChild(block);
+    });
+    card.appendChild(grid);
+
+    const notes = document.createElement('div');
+    notes.style.cssText = 'color:#ccc; font-size:0.9rem; white-space:pre-wrap;';
+    notes.textContent = data.notas || 'Sin observaciones';
+    card.appendChild(notes);
+
+    if (Array.isArray(data.imagenes) && data.imagenes.length) {
+        const imagesRow = document.createElement('div');
+        imagesRow.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px;';
+        const label = document.createElement('strong');
+        label.style.cssText = 'color:#fff; min-width:80px;';
+        label.textContent = 'Fotos';
+        imagesRow.appendChild(label);
+
+        data.imagenes.forEach((name) => {
+            const chip = document.createElement('span');
+            chip.style.cssText = 'padding:5px 10px; border-radius:10px; background: rgba(255,255,255,0.08); color:#ddd; font-size:0.8rem;';
+            chip.textContent = name;
+            imagesRow.appendChild(chip);
+        });
+        card.appendChild(imagesRow);
+    }
+
+    if (existingGroup) {
+        const cardsWrapper = existingGroup.querySelector('.diario-group-cards');
+        if (cardsWrapper) {
+            cardsWrapper.appendChild(card);
+            return;
+        }
+    }
+
+    if (existingCards.length > 0) {
+        const groupWrapper = document.createElement('div');
+        groupWrapper.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.12); border-radius: 18px; padding: 16px; display: grid; gap: 12px;';
+
+        const groupHeader = document.createElement('div');
+        groupHeader.style.cssText = 'display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;';
+
+        const groupTitle = document.createElement('h3');
+        groupTitle.textContent = nombre;
+        groupTitle.style.cssText = 'margin:0; color: var(--p);';
+
+        const groupMeta = document.createElement('span');
+        groupMeta.textContent = 'Registro agrupado';
+        groupMeta.style.cssText = 'color:#888; font-size:0.85rem;';
+
+        groupHeader.appendChild(groupTitle);
+        groupHeader.appendChild(groupMeta);
+
+        const cardsWrapper = document.createElement('div');
+        cardsWrapper.id = sanitizedGroupId;
+        cardsWrapper.className = 'diario-group-cards';
+        cardsWrapper.style.cssText = 'display:grid; gap:14px;';
+
+        const insertBeforeNode = existingCards[0];
+        existingCards.forEach(existingCard => {
+            container.removeChild(existingCard);
+            cardsWrapper.appendChild(existingCard);
+        });
+
+        groupWrapper.appendChild(groupHeader);
+        groupWrapper.appendChild(cardsWrapper);
+        container.insertBefore(groupWrapper, insertBeforeNode);
+        cardsWrapper.appendChild(card);
+        return;
+    }
+
+    container.appendChild(card);
+};
+
+window.eliminarRegistroDiarioLocal = (id) => {
+    if (!id) return;
+    try {
+        const almacenado = JSON.parse(localStorage.getItem('superm_diario') || '[]');
+        const filtrado = almacenado.filter(item => item.id !== id);
+        localStorage.setItem('superm_diario', JSON.stringify(filtrado));
+    } catch (error) {
+        console.error('Error eliminando registro localmente:', error);
+    }
+};
+
+window.eliminarRegistroDiario = async (id, card) => {
+    if (!id) return;
+    if (!confirm('¿Eliminar este registro de diario?')) return;
+
+    if (card && card.parentElement) {
+        const parent = card.parentElement;
+        parent.removeChild(card);
+        if (parent.classList.contains('diario-group-cards') && parent.childElementCount === 0) {
+            const groupWrapper = parent.parentElement;
+            if (groupWrapper) {
+                groupWrapper.remove();
+            }
+        }
+    }
+
+    window.eliminarRegistroDiarioLocal(id);
+
+    const container = document.getElementById('diario-registros');
+    const sinDatos = document.getElementById('sin-datos-diario');
+    if (container && sinDatos && container.children.length === 0) {
+        sinDatos.style.display = 'block';
+    }
+
+    const usuarioActivo = window.auth?.currentUser?.uid;
+    if (!usuarioActivo) return;
+
+    try {
+        const { collection, query, where, getDocs, deleteDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        const q = query(
+            collection(window.db, 'seguimientos'),
+            where('usuario', '==', usuarioActivo),
+            where('id', '==', id)
+        );
+        const snapshot = await getDocs(q);
+        snapshot.forEach((docSnap) => {
+            deleteDoc(doc(window.db, 'seguimientos', docSnap.id));
+        });
+    } catch (error) {
+        console.error('Error eliminando registro en la nube:', error);
+    }
+};
+
+window.cargarDiarioLocal = () => {
+    const container = document.getElementById('diario-registros');
+    const sinDatos = document.getElementById('sin-datos-diario');
+    if (!container || !sinDatos) return;
+    const almacenado = JSON.parse(localStorage.getItem('superm_diario') || '[]');
+    let actualizado = false;
+    almacenado.forEach(data => {
+        if (!data.id) {
+            data.id = window.generarIdDiario();
+            actualizado = true;
+        }
+    });
+    if (actualizado) localStorage.setItem('superm_diario', JSON.stringify(almacenado));
+
+    container.innerHTML = '';
+
+    if (!almacenado.length) {
+        sinDatos.style.display = 'block';
+        return;
+    }
+
+    sinDatos.style.display = 'none';
+    almacenado.forEach(data => window.renderDiarioCard(container, data));
+};
+
+window.cargarDiarioCultivo = async function() {
+    const container = document.getElementById('diario-registros');
+    const sinDatos = document.getElementById('sin-datos-diario');
+    if (!container || !sinDatos) return;
+    container.innerHTML = '';
+    sinDatos.style.display = 'none';
+
+    const usuarioActivo = window.auth?.currentUser?.uid;
+    if (!usuarioActivo) {
+        window.cargarDiarioLocal();
+        return;
+    }
+
+    try {
+        const { collection, query, getDocs, orderBy, where } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        const q = query(
+            collection(window.db, "seguimientos"),
+            where("usuario", "==", usuarioActivo),
+            orderBy("fecha", "desc")
+        );
+        const querySnapshot = await getDocs(q);
+        const registros = querySnapshot.docs
+            .map(doc => doc.data() || {})
+            .filter(data => data.tipo !== 'vpd');
+
+        if (!registros.length) {
+            const localStorageSaved = JSON.parse(localStorage.getItem('superm_diario') || '[]');
+            if (localStorageSaved.length) {
+                localStorageSaved.forEach(data => window.renderDiarioCard(container, data));
+                return;
+            }
+            sinDatos.style.display = 'block';
+            return;
+        }
+
+        registros.forEach(data => window.renderDiarioCard(container, data));
+    } catch (error) {
+        console.error('Error al cargar diario de cultivo:', error);
+        window.cargarDiarioLocal();
+    }
+};
+
+// --- CIRUGÍA DE PRECISIÓN: SISTEMA DE CARPETAS (Líneas 2025 - 2104) ---
+
+window.prepararGuardado = async function() {
+    // 1. Verificamos que el usuario esté logueado para que la carpeta sea SUYA
+    if (!auth.currentUser) {
+        alert("¡Alto ahí, Alquimista! Debes iniciar sesión para que tus datos se guarden en tu laboratorio personal.");
+        return;
+    }
+
+    const phVal = document.getElementById('diag-ph').value;
+    const ecVal = document.getElementById('diag-ec-val').value;
+    const semVal = document.getElementById('diag-semana').value;
+
+    if (!phVal || !ecVal || !semVal) {
+        alert("Faltan datos. El laboratorio requiere PH, EC y Semana para un registro válido.");
+        return;
+    }
+
+    try {
+        const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        
+        // 2. ESTRUCTURA DE CARPETAS (Sub-colecciones)
+        // Ruta: seguimientos -> [UID del usuario] -> semanas -> semana_[X] -> mediciones -> [Documento Auto-generado]
+        const rutaCarpeta = `seguimientos/${auth.currentUser.uid}/semanas/semana_${semVal}/mediciones`;
+
+        const nuevaMedicion = {
+            ph: phVal,
+            ec: ecVal,
+            semana: parseInt(semVal),
+            fecha: new Date().toLocaleString(),
+            timestamp: serverTimestamp(), // Esto nos permite ordenar por tiempo real
+            uid: auth.currentUser.uid
+        };
+
+        // Guardamos un "papel" nuevo dentro de la carpeta "mediciones"
+        await addDoc(collection(window.db, rutaCarpeta), nuevaMedicion);
+        
+        alert(`✅ Registrado en la carpeta de la Semana ${semVal}. ¡Excelente seguimiento!`);
+        
+        // Limpiamos solo PH y EC para facilitar la carga múltiple
+        document.getElementById('diag-ph').value = "";
+        document.getElementById('diag-ec-val').value = "";
+        
+        window.cargarSeguimiento(); // Actualizamos la vista
+    } catch (e) {
+        console.error("Error al archivar:", e);
+        alert("❌ Error en los archivos del laboratorio. Revisa la consola.");
+    }
+}
+
+window.cargarSeguimiento = async function() {
+    const tbody = document.getElementById('cuerpo-tabla'); 
+    if (!tbody || !auth.currentUser) return;
+
+    try {
+        const { collectionGroup, query, where, getDocs, orderBy } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        
+        // 3. BUSCADOR DE ARCHIVOS: collectionGroup busca en todas las carpetas "mediciones"
+        // Pero filtramos solo las que pertenecen a este UID de usuario por seguridad
+        const q = query(
+            collectionGroup(window.db, "mediciones"),
+            where("uid", "==", auth.currentUser.uid),
+            orderBy("timestamp", "desc")
+        );
+
+        const querySnapshot = await getDocs(q);
+        tbody.innerHTML = ""; 
+
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            // Sacamos el nombre de la semana de la ruta del documento
+            const pathParts = docSnap.ref.path.split('/');
+            const nombreSemana = pathParts[3].replace('_', ' ').toUpperCase();
+
+            const fila = `
+                <tr style="border-bottom: 1px solid #333; text-align: center;">
+                    <td style="padding:10px; color:#888; font-size:0.8rem;">${data.fecha.split(',')[0]}</td>
+                    <td style="color:var(--p); font-weight:bold;">${data.ph}</td>
+                    <td style="color:#00ffff">${data.ec}</td>
+                    <td style="color:var(--s); font-weight:bold;">${nombreSemana}</td>
+                    <td><button onclick="borrarDato('${docSnap.ref.path}')" style="background:transparent; border:none; color:#ff4444; cursor:pointer;">✕</button></td>
+                </tr>
+            `;
+            tbody.innerHTML += fila;
+        });
+    } catch (error) {
+        console.error("Error al leer archivos:", error);
+    }
+};
+
+// Reemplazo de la función de borrado para manejar rutas completas
+window.borrarDato = async function(rutaCompleta) {
+    if(confirm("¿Seguro que querés eliminar este registro del archivo?")) {
+        try {
+            const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+            await deleteDoc(doc(window.db, rutaCompleta));
+            window.cargarSeguimiento();
+        } catch (e) {
+            console.error("Error al borrar:", e);
+        }
+    }
+}
+
+// Función para alternar la visibilidad de la contraseña
+window.togglePasswordVisibility = () => {
+    const input = document.getElementById('login-pass');
+    const button = document.getElementById('toggle-pass');
+    if (input.type === 'password') {
+        input.type = 'text';
+        button.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        button.textContent = '👁️‍🗨️';
+    }
+};
+</script>
+</body>
+</html>
