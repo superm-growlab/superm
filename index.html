@@ -44,7 +44,7 @@ input[type=number] {
         :root {
             --p: #39ff14; /* Verde Neón */
             --s: #bc13fe; /* Morado Alquimia */
-            --bg: #232422;
+            --bg: #050505;
             --card: #161616;
             --txt: #f0f0f0;
         }
@@ -190,12 +190,23 @@ input[type=number] {
         }
         .qty-input::-webkit-outer-spin-button, .qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-        .contenedor-tabla { overflow-x: auto; background: #050505; padding: 20px; border-radius: 12px; border: 1px solid var(--p); }
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
-        th { color: var(--p); padding: 15px; border-bottom: 2px solid #222; font-size: 0.8rem; text-transform: uppercase; }
-        td { padding: 8px; border-bottom: 1px solid #111; }
-        .input-tabla { background: transparent; border: 1px solid #222; color: #fff; padding: 8px; border-radius: 4px; width: 90%; text-align: center; }
-
+        .contenedor-tabla { 
+            overflow-x: auto; background: #000; padding: 20px; border-radius: 12px; 
+            border: 1px solid var(--s); box-shadow: 0 0 15px rgba(188, 19, 254, 0.1); 
+        }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 900px; font-family: 'Courier New', monospace; }
+        th { 
+            color: var(--p); padding: 15px; border-bottom: 2px solid var(--p); 
+            font-size: 0.85rem; text-transform: uppercase; letter-spacing: 2px;
+            text-shadow: 0 0 8px var(--p); background: rgba(57, 255, 20, 0.05);
+        }
+        td { padding: 10px; border-bottom: 1px solid #1a1a1a; color: var(--txt); }
+        .input-tabla { 
+            background: rgba(188, 19, 254, 0.05); border: 1px solid #333; color: var(--p); 
+            padding: 8px; border-radius: 4px; width: 90%; text-align: center; outline: none;
+            transition: 0.3s;
+        }
+        .input-tabla:focus { border-color: var(--p); box-shadow: 0 0 5px var(--p); }
         #cart-count { background: var(--s); color: #fff; padding: 2px 7px; border-radius: 10px; font-size: 0.7rem; }
         .aviso-logistica-txt { font-size: 0.75rem; color: var(--s); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: block; margin-top: 10px; text-align: center; border: 1px dashed var(--s); padding: 5px; border-radius: 5px; }
 
@@ -257,6 +268,31 @@ input[type=number] {
             margin-top: 15px;
             font-size: 0.85rem;
         }
+        /* Estilos para el Historial Interno del Diario */
+        .tabla-historial-diario { width: 100%; border-collapse: collapse; margin-top: 10px; font-family: 'Courier New', monospace; font-size: 0.8rem; }
+        .tabla-historial-diario th { color: var(--s); border-bottom: 1px solid var(--s); padding: 5px; text-align: center; font-size: 0.65rem; }
+        .tabla-historial-diario td { padding: 8px 5px; border-bottom: 1px solid #222; text-align: center; color: #fff; }
+        .tabla-historial-diario tr:hover { background: rgba(57, 255, 20, 0.05); }
+        .badge-etapa { padding: 2px 5px; border-radius: 4px; border: 1px solid var(--p); color: var(--p); font-size: 0.6rem; text-transform: uppercase; }
+
+        /* Personalización del botón "Elegir archivo" para el Diario de Cultivo */
+        #diario-imagenes::file-selector-button {
+            background: var(--s); /* Morado Alquimia */
+            color: #000;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-right: 15px;
+            transition: 0.3s ease;
+        }
+        #diario-imagenes::file-selector-button:hover {
+            background: var(--p); /* Verde Neón al pasar el mouse */
+            box-shadow: 0 0 15px var(--p);
+        }
     </style>
 </head>
 <body>
@@ -268,7 +304,7 @@ input[type=number] {
             <h3 id="form-titulo">DATOS DE ENVÍO</h3>
             <input type="text" id="f-nombre" placeholder="Nombre y Apellido completo">
             <input type="text" id="f-dni" placeholder="DNI">
-            <input type="tel" id="f-telefono" placeholder="Teléfono de Contacto">
+            <input type="tel" id="f-tel" placeholder="Teléfono de Contacto">
             <input type="email" id="f-email" placeholder="Email">
             <input type="text" id="f-direccion" placeholder="Calle y Número">
             <input type="text" id="f-localidad" placeholder="Localidad / Provincia">
@@ -280,6 +316,95 @@ input[type=number] {
                 <button class="btn btn-m" style="flex: 1;" onclick="cerrarModalEnvio()">Cancelar</button>
                 <button class="btn btn-v" style="flex: 2;" id="btn-confirmar-envio">Confirmar</button>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE DIAGNÓSTICO -->
+    <div id="modal-diagnostico" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10002; justify-content: center; align-items: center; backdrop-filter: blur(8px);">
+        <div id="diagnostico-contenido" style="background: var(--card); border: 2px solid var(--p); padding: 30px; border-radius: 15px; width: 90%; max-width: 600px; box-shadow: 0 0 30px rgba(57, 255, 20, 0.2); overflow-y: auto; max-height: 90vh; position: relative;">
+            <button class="close-btn" onclick="document.getElementById('modal-diagnostico').style.display='none'" style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--s); font-size: 1.8rem; cursor: pointer;">&times;</button>
+            <h3 style="color: var(--s); text-align: center; margin-top: 0; letter-spacing: 2px;">🔮 REPORTE DE ALQUIMIA</h3>
+            <p style="font-size: 0.8rem; color: #888; text-align: center; margin-bottom: 20px;">Análisis detallado de tu registro.</p>
+
+            <div id="diag-output-modal" class="lab-data-box" style="margin-bottom: 20px; border-color: var(--s);"></div>
+
+            <h4 style="color:var(--p); margin-top: 25px; margin-bottom: 15px; text-align: center;">ANÁLISIS DE VPD</h4>
+            <div id="vpd-canvas-container-modal" style="position: relative; width: 100%; aspect-ratio: 1.5 / 1; margin: 0 auto; border: 2px solid #444; background-color: #000; border-radius: 8px; box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);">
+                <canvas id="vpd-canvas-modal"></canvas>
+            </div>
+            <div id="res-vpd-modal" class="lab-data-box" style="margin-top:15px; border-color: var(--s);"></div>
+            <div id="consejo-alquimista-modal" class="alerta-alquimista" style="display:none;"></div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn btn-m" onclick="document.getElementById('modal-diagnostico').style.display='none'">Cerrar Reporte</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORMULARIO DIARIO DE CULTIVO (MOVIMIENTO A POSICIÓN GLOBAL) -->
+    <div id="formulario-diario" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; justify-content: center; align-items: center; backdrop-filter: blur(8px); padding: 20px; box-sizing: border-box;">
+        <div style="background: var(--card); border: 2px solid var(--s); border-radius: 18px; padding: 25px; width: 100%; max-width: 500px; max-height: 95vh; overflow-y: auto; box-shadow: 0 0 30px rgba(188, 19, 254, 0.2); position: relative;">
+            <h4 style="color: var(--p); margin-top: 0;">Registrar seguimiento semanal</h4>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 15px;">
+                <div style="grid-column: span 2;">
+                    <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Nombre del registro</label>
+                    <input type="text" id="diario-nombre" class="input-lab" placeholder="Ej. Blue Dream, Armario 1" style="width:100%; border-color: var(--s); color:#fff;" />
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Fecha</label>
+                    <input type="date" id="diario-fecha" class="input-lab" style="width:100%; border-color: var(--s); color:#fff;" />
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Semana</label>
+                    <input type="number" id="diario-semana" class="input-lab" min="1" value="1" style="width:100%; border-color: var(--s); color:#fff;" />
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Etapa</label>
+                    <select id="diario-etapa" class="input-lab" style="width:100%; border-color: var(--s); color:#fff;">
+                        <option value="esqueje">Esqueje</option>
+                        <option value="vege">Vegetativo</option>
+                        <option value="flora_t">Flora temprana</option>
+                        <option value="flora_l">Flora tardía</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">pH</label>
+                    <input type="number" id="diario-ph" class="input-lab" step="0.1" min="0" max="14" value="6.0" style="width:100%; border-color: var(--s); color:#fff;" />
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">EC</label>
+                    <input type="number" id="diario-ec" class="input-lab" step="0.1" value="1.2" style="width:100%; border-color: var(--s); color:#fff;" />
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Temp °C</label>
+                    <input type="number" id="diario-temp" class="input-lab" step="0.5" value="24" style="width:100%; border-color: var(--s); color:#fff;" />
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Humedad %</label>
+                    <input type="number" id="diario-hum" class="input-lab" step="1" min="0" max="100" value="60" style="width:100%; border-color: var(--s); color:#fff;" />
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Observaciones</label>
+                    <textarea id="diario-notas" class="input-lab" rows="3" style="width:100%; border-color: var(--s); color:#fff; resize: vertical;"></textarea>
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Fotos</label>
+                    <input type="file" id="diario-imagenes" class="input-lab" accept="image/*" multiple style="width:100%; border-color: var(--s); color:#fff; background: transparent; padding: 6px 12px;" onchange="mostrarPrevisualizacionDiario()" />
+                    <div id="diario-imagenes-preview" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;"></div>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
+                <button class="btn btn-v" style="flex:1; min-width:160px;" onclick="guardarRegistroDiario()">💾 Guardar registro</button>
+                <button class="btn btn-m" style="flex:1; min-width:160px;" onclick="ocultarFormularioDiario()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL VISOR DE IMÁGENES -->
+    <div id="modal-visor-imagen" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 12000; justify-content: center; align-items: center; backdrop-filter: blur(12px); padding: 20px; box-sizing: border-box;" onclick="this.style.display='none'">
+        <div style="position: relative; max-width: 100%; display: flex; flex-direction: column; align-items: center;">
+            <img id="imagen-ampliada" src="" style="max-width: 95vw; max-height: 85vh; border: 2px solid var(--s); border-radius: 12px; box-shadow: 0 0 40px rgba(188, 19, 254, 0.4); object-fit: contain;">
+            <button class="btn btn-m" style="margin-top: 20px; border-color: var(--p); color: var(--p); background: rgba(0,0,0,0.5);">CERRAR VISOR</button>
         </div>
     </div>
 
@@ -393,7 +518,7 @@ input[type=number] {
             <div id="vista-seguimiento-tabla">
                 <div id="area-descarga" class="contenedor-tabla">
                     <table id="tabla-lab">
-                        <thead><tr><th>Semana</th><th>Fase</th><th>pH</th><th>EC</th><th>T° C</th><th>H %</th><th>Riego</th><th>Observaciones</th></tr></thead>
+                        <thead><tr><th>PLANTA</th><th>SEMANA</th><th>PH</th><th>EC</th><th>TEMP °C</th><th>HUM %</th><th>RIEGO</th><th>NOTAS</th></tr></thead>
                         <tbody id="cuerpo-tabla"></tbody>
                     </table>
                 </div>
@@ -408,62 +533,6 @@ input[type=number] {
                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
                     <h4 style="color: var(--p); margin: 0;">Tu Diario de Cultivo</h4>
                     <button class="btn btn-m" style="border-color: var(--p);" onclick="mostrarFormularioDiario()">+ Nuevo registro</button>
-                </div>
-
-                <div id="formulario-diario" style="display:none; background: var(--card); border: 2px solid var(--s); border-radius: 18px; padding: 20px; margin-bottom: 20px; box-shadow: 0 0 20px rgba(188, 19, 254, 0.12);">
-                    <h4 style="color: var(--p); margin-top: 0;">Registrar seguimiento semanal</h4>
-                    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 15px;">
-                        <div style="grid-column: span 2;">
-                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Nombre del registro</label>
-                            <input type="text" id="diario-nombre" class="input-lab" placeholder="Ej. Blue Dream, Armario 1" style="width:100%; border-color: var(--s); color:#fff;" />
-                        </div>
-                        <div>
-                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Fecha</label>
-                            <input type="date" id="diario-fecha" class="input-lab" style="width:100%; border-color: var(--s); color:#fff;" />
-                        </div>
-                        <div>
-                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Semana</label>
-                            <input type="number" id="diario-semana" class="input-lab" min="1" value="1" style="width:100%; border-color: var(--s); color:#fff;" />
-                        </div>
-                        <div style="grid-column: span 2;">
-                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Etapa</label>
-                            <select id="diario-etapa" class="input-lab" style="width:100%; border-color: var(--s); color:#fff;">
-                                <option value="esqueje">Esqueje</option>
-                                <option value="vege">Vegetativo</option>
-                                <option value="flora_t">Flora temprana</option>
-                                <option value="flora_l">Flora tardía</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">pH</label>
-                            <input type="number" id="diario-ph" class="input-lab" step="0.1" min="0" max="14" value="6.0" style="width:100%; border-color: var(--s); color:#fff;" />
-                        </div>
-                        <div>
-                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">EC</label>
-                            <input type="number" id="diario-ec" class="input-lab" step="0.1" value="1.2" style="width:100%; border-color: var(--s); color:#fff;" />
-                        </div>
-                        <div>
-                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Temp °C</label>
-                            <input type="number" id="diario-temp" class="input-lab" step="0.5" value="24" style="width:100%; border-color: var(--s); color:#fff;" />
-                        </div>
-                        <div>
-                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Humedad %</label>
-                            <input type="number" id="diario-hum" class="input-lab" step="1" min="0" max="100" value="60" style="width:100%; border-color: var(--s); color:#fff;" />
-                        </div>
-                        <div style="grid-column: span 2;">
-                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Observaciones</label>
-                            <textarea id="diario-notas" class="input-lab" rows="3" style="width:100%; border-color: var(--s); color:#fff; resize: vertical;"></textarea>
-                        </div>
-                        <div style="grid-column: span 2;">
-                            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Fotos</label>
-                            <input type="file" id="diario-imagenes" class="input-lab" accept="image/*" multiple style="width:100%; border-color: var(--s); color:#fff; background: transparent;" onchange="mostrarPrevisualizacionDiario()" />
-                            <div id="diario-imagenes-preview" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;"></div>
-                        </div>
-                    </div>
-                    <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
-                        <button class="btn btn-v" style="flex:1; min-width:160px;" onclick="guardarRegistroDiario()">💾 Guardar registro</button>
-                        <button class="btn btn-m" style="flex:1; min-width:160px;" onclick="ocultarFormularioDiario()">Cancelar</button>
-                    </div>
                 </div>
 
                 <p id="sin-datos-diario" style="color:#888; text-align:center; margin-top:12px; display:none;">No hay entradas de diario de cultivo para tu usuario.</p>
@@ -582,10 +651,6 @@ input[type=number] {
                         <canvas id="vpd-canvas"></canvas>
                     </div>
 
-                    <button onclick="guardarVPD()" class="btn btn-v" style="width:100%; margin-top:15px; background:transparent; border:1px solid var(--p); color:var(--p); padding:10px; cursor:pointer;">
-                        💾 GUARDAR EN MI BITÁCORA
-                    </button>
-
                     <div id="res-vpd" class="lab-data-box" style="display:none; margin-top:15px; border-color: var(--s);"></div>
                     <div id="consejo-alquimista" class="alerta-alquimista" style="display:none;"></div>
                 </div>
@@ -595,7 +660,7 @@ input[type=number] {
     <p style="font-size: 0.8rem; color: #888; text-align: center; margin-bottom: 20px;">Análisis de precisión del Oráculo de Super M</p>
 
     <label style="font-size:0.7rem; color:#888; display: block; margin-bottom: 5px;">SEMANA DE VIDA</label>
-    <select id="diag-semana" class="input-tabla" style="width:100%; background:#000; color:var(--p); border: 1px solid var(--p); padding: 10px; border-radius: 8px; font-weight: bold; height: 41px; box-sizing: border-box; outline: none;">
+    <select id="diag-semana-select" class="input-tabla" style="width:100%; background:#000; color:var(--p); border: 1px solid var(--p); padding: 10px; border-radius: 8px; font-weight: bold; height: 41px; box-sizing: border-box; outline: none;">
         <option value="1">Semana 1 (Plántula)</option>
         <option value="2">Semana 2 (Vegetativo Inicial)</option>
         <option value="3">Semana 3 (Vegetativo)</option>
@@ -1321,8 +1386,9 @@ function verProducto(id) {
         }
 
         // --- LÓGICA DE DIAGNÓSTICO DEL ORÁCULO (MEJORADA CON PPM Y SEMANAS) ---
+        // --- LÓGICA DE DIAGNÓSTICO DEL ORÁCULO (MEJORADA CON PPM Y SEMANAS) --- (Original function, now calls internal)
         function ejecutarDiagnostico() {
-            const semana = parseInt(document.getElementById('diag-semana').value);
+            const semana = parseInt(document.getElementById('diag-semana-select').value);
             const valOriginal = parseFloat(document.getElementById('diag-ec-val').value);
             const unidad = document.getElementById('diag-unidad').value;
             const ph = parseFloat(document.getElementById('diag-ph').value);
@@ -1334,41 +1400,55 @@ function verProducto(id) {
 
             let veredictoNutricion = "";
             let recomendacionNutricion = "";
+            // NUEVA LÓGICA DINÁMICA DE PH (Sincronizada con Tabla THC)
             let phMensaje = "";
             let phEstado = "CORRECTO";
-            let colorFinal = "var(--p)"; // Verde neón de Super M
+            let colorFinal = "var(--p)";
 
-            // 2. EVALUACIÓN DE PH (Diferenciando semana 1 por su fragilidad)
-            let phLimiteSuperior = (semana === 1) ? 6.0 : 6.5;
-            let phLimiteInferior = 5.5;
-
-            if (ph > phLimiteSuperior) {
-                colorFinal = "#ff4444";
-                phEstado = "ALTO (Alcalino)";
-                phMensaje = `❌ **pH ${ph} - ALTO:** Las raíces están "cerradas". La planta no puede absorber Hierro ni Fósforo. Si no lo bajás a 5.8-6.0, se pondrá amarilla y se detendrá el crecimiento.`;
-            } else if (ph < phLimiteInferior) {
-                colorFinal = "#ff4444";
-                phEstado = "BAJO (Ácido)";
-                phMensaje = `❌ **pH ${ph} - BAJO:** El agua está muy ácida. Esto puede quemar los pelos radiculares y bloquea el Calcio/Magnesio. Subilo a 6.0.`;
-            } else {
-                phMensaje = `✅ **pH ${ph} - ÓPTIMO:** La "puerta" de las raíces está abierta para recibir comida.`;
+            if (semana <= 4) { 
+                // Etapa Vegetativa: Buscamos 5.5 - 6.0 (Punto dulce 5.8)
+                if (ph > 6.2) {
+                    colorFinal = "#ff4444"; phEstado = "ALTO (Vege)";
+                    phMensaje = `⚠️ pH ${ph}: Alto para Vegetativo. Riesgo de bloqueo de Microelementos. Baja a 5.8.`;
+                } else if (ph < 5.5) {
+                    colorFinal = "#ff4444"; phEstado = "BAJO";
+                    phMensaje = `❌ pH ${ph}: Muy bajo. Riesgo de toxicidad radicular. Sube a 5.8.`;
+                } else {
+                    phMensaje = `✅ pH ${ph}: Óptimo para Crecimiento (5.5 - 6.0).`;
+                }
+            } else { 
+                // Etapa de Floración: Buscamos 6.0 - 6.5 (Máximo Fósforo/Magnesio)
+                if (ph > 6.8) {
+                    colorFinal = "#ff4444"; phEstado = "ALTO (Flora)";
+                    phMensaje = `⚠️ pH ${ph}: Muy alto para Floración. Riesgo de bloqueo de sales. Baja a 6.4.`;
+                } else if (ph < 6.0) {
+                    colorFinal = "#ffaa00"; phEstado = "UN POCO BAJO";
+                    phMensaje = `⚠️ pH ${ph}: Un poco bajo para Floración. Súbelo a 6.3-6.5 para maximizar Fósforo (engorde).`;
+                } else {
+                    phMensaje = `✅ pH ${ph}: Óptimo para Floración y Engorde (6.0 - 6.7).`;
+                }
             }
 
             // 3. EVALUACIÓN DE NUTRICIÓN (EC) POR ETAPAS
             if (semana === 1) { // Plántula
-                if (ec > 0.7) { veredictoNutricion = "🔥 EXCESO"; recomendacionNutricion = "EC muy alta para plántula. Puede ser letal. Diluí con agua pura hasta 0.4."; }
+                if (ec > 0.6) { veredictoNutricion = "🔥 EXCESO"; recomendacionNutricion = "EC superior a 0.6 mS. Muy alta para brotes nuevos. Diluí con agua pura hasta 0.4."; }
                 else if (ec < 0.3) { veredictoNutricion = "📉 BAJA"; recomendacionNutricion = "Agua muy pura. Sube a 0.4 con un toque de CalMag."; }
                 else { veredictoNutricion = "✨ ÓPTIMA"; recomendacionNutricion = "Nivel de nutrientes perfecto para el inicio."; }
             } 
-            else if (semana >= 2 && semana <= 4) { // Vegetativo
-                if (ec > 1.3) { veredictoNutricion = "🔥 ALTA"; recomendacionNutricion = "Bajá la dosis para evitar estrés y hojas 'garra'."; }
-                else if (ec < 0.7) { veredictoNutricion = "🍽️ BAJA"; recomendacionNutricion = "La planta pide más base. Subí a EC 1.0."; }
-                else { veredictoNutricion = "✨ ÓPTIMA"; recomendacionNutricion = "Nutrición equilibrada para crecer con fuerza."; }
+            else if (semana >= 2 && semana <= 3) { // Vege Inicial
+                if (ec > 1.2) { veredictoNutricion = "🔥 ALTA"; recomendacionNutricion = "Tu tabla marca 1.1-1.2 para esta etapa. Estás superando el límite de seguridad."; }
+                else if (ec < 0.8) { veredictoNutricion = "🍽️ BAJA"; recomendacionNutricion = "La planta tiene hambre de estructura. Subí a EC 1.1."; }
+                else { veredictoNutricion = "✨ ÓPTIMA"; recomendacionNutricion = "Aceleración controlada. Nivel ideal para vege inicial."; }
             } 
+            else if (semana === 4) { // Vege Avanzado
+                if (ec > 1.6) { veredictoNutricion = "🔥 ALTA"; recomendacionNutricion = "Por encima de 1.6 mS en semana 4 arriesgas quemaduras de puntas."; }
+                else if (ec < 1.3) { veredictoNutricion = "🍽️ BAJA"; recomendacionNutricion = "Semana de transición. Subí la dosis a 1.4-1.5 para armar el 'esqueleto' de la flora."; }
+                else { veredictoNutricion = "✨ ÓPTIMA"; recomendacionNutricion = "Potencia máxima de crecimiento sin riesgo. ¡Perfecto!"; }
+            }
             else if (semana >= 5 && semana <= 10) { // Floración y Engorde
-                if (ec > 2.0) { veredictoNutricion = "🔥 ALTA"; recomendacionNutricion = "Riesgo de sobrefertilización en flores. Bajá a 1.7."; }
-                else if (ec < 1.3) { veredictoNutricion = "🍽️ BAJA"; recomendacionNutricion = "Tus flores necesitan más PK. Subí la dosis."; }
-                else { veredictoNutricion = "✨ ÓPTIMA"; recomendacionNutricion = "Balance de floración maestro."; }
+                if (ec > 2.2) { veredictoNutricion = "🔥 EXCESO"; recomendacionNutricion = "Superaste el límite maestro de 2.2 mS. Lavado preventivo o bajar dosis urgente."; }
+                else if (ec < 1.8) { veredictoNutricion = "🍽️ BAJA"; recomendacionNutricion = "Falta comida para el engorde. La tabla permite hasta 2.2 para reventar las flores."; }
+                else { veredictoNutricion = "✨ ÓPTIMA"; recomendacionNutricion = "Pico de engorde alcanzado. Balance nutricional maestro."; }
             } 
             else { // Lavado (Semana 11+)
                 if (ec > 0.5) { veredictoNutricion = "⚠️ ALTA"; recomendacionNutricion = "Lava con agua pura para limpiar sabores minerales."; }
@@ -1402,10 +1482,6 @@ function verProducto(id) {
                     <span>pH: ${ph}</span>
                     <span>Semana: ${semana}</span>
                 </div>
-
-                <button onclick="prepararGuardado()" class="btn btn-v" style="width:100%; margin-top:15px; background:transparent; border:1px solid var(--p); color:var(--p); padding:10px; cursor:pointer;">
-                    💾 GUARDAR EN MI BITÁCORA
-                </button>
             `;
         }
     </script>
@@ -1448,7 +1524,6 @@ googleProvider.setCustomParameters({
 window.auth = authInstance;
 window.db = db;
 
-// 1. Función para REGISTRARSE
 window.handleRegister = async () => {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-pass').value;
@@ -1518,17 +1593,16 @@ window.signInWithGoogle = async () => {
     }
 };
 
-// 2. Función para ENTRAR
 window.handleLogin = async () => {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-pass').value;
+    if (!email || !pass) return alert("Por favor, completa todos los campos.");
     try {
         await signInWithEmailAndPassword(authInstance, email, pass);
         ver('tablas');
     } catch (e) { alert("Error: " + e.message); }
 };
 
-// --- 1. EL OBSERVADOR DE SESIÓN (Línea 1015 aprox) ---
 onAuthStateChanged(authInstance, (user) => {
     const btnAcceso = document.getElementById('btn-login-header');
     if (user) {
@@ -1536,132 +1610,20 @@ onAuthStateChanged(authInstance, (user) => {
         btnAcceso.innerText = "👤 " + displayName;
         btnAcceso.onclick = () => { if(confirm("¿Cerrar sesión?")) signOut(authInstance); };
         
-        // ¡ESTO ES LO QUE TE FALTABA! Carga automática al reconocer al usuario
-        console.log("Sesión activa detectada. Cargando diario...");
-        window.cargarSeguimiento(); 
+        console.log("Sesión activa detectada.");
+        if (document.getElementById('vista-diario-cultivo').style.display === 'block') {
+            window.cargarDiarioCultivo();
+        }
     } else {
         btnAcceso.innerText = "👤 ACCESO";
         btnAcceso.onclick = () => ver('view-login');
         const tbody = document.getElementById('cuerpo-tabla');
-        if (tbody) tbody.innerHTML = ""; // Limpia si no hay sesión
+        if (tbody) tbody.innerHTML = "";
+        const diarioContainer = document.getElementById('diario-registros');
+        if (diarioContainer) diarioContainer.innerHTML = "";
+        window.cargarDiarioCultivo();
     }
 });
-
-// --- 2. MOTOR DE GUARDADO POR CARPETAS ---
-window.prepararGuardado = async function() {
-    if (!authInstance.currentUser) {
-        alert("Debes iniciar sesión para guardar en tu diario.");
-        return;
-    }
-
-    const phVal = document.getElementById('diag-ph').value;
-    const ecVal = document.getElementById('diag-ec-val').value;
-    const semVal = document.getElementById('diag-semana').value;
-
-    if (!phVal || !ecVal || !semVal) {
-        alert("Completa PH, EC y Semana.");
-        return;
-    }
-
-    try {
-        const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        
-        // Estructura de sub-colección: seguimientos > UID > semanas > semana_X > mediciones
-        const rutaCarpeta = `seguimientos/${authInstance.currentUser.uid}/semanas/semana_${semVal}/mediciones`;
-
-        await addDoc(collection(window.db, rutaCarpeta), {
-            ph: phVal,
-            ec: ecVal,
-            semana: parseInt(semVal),
-            fecha: new Date().toLocaleString(),
-            timestamp: serverTimestamp(),
-            uid: authInstance.currentUser.uid // Clave para el filtrado
-        });
-
-        alert("✅ Medición archivada correctamente.");
-        document.getElementById('diag-ph').value = "";
-        document.getElementById('diag-ec-val').value = "";
-        window.cargarSeguimiento();
-    } catch (e) {
-        console.error("Error al guardar:", e);
-    }
-};
-
-// --- 3. MOTOR DE CARGA (Busca en todas las carpetas del usuario) ---
-window.cargarSeguimiento = async function() {
-    const tbody = document.getElementById('cuerpo-tabla'); 
-    if (!tbody || !authInstance.currentUser) return;
-
-    try {
-        const { collectionGroup, query, where, getDocs, orderBy } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        
-        // Traemos todas las "mediciones" que tengan el UID del usuario activo
-        const q = query(
-            collectionGroup(window.db, "mediciones"),
-            where("uid", "==", authInstance.currentUser.uid),
-            orderBy("timestamp", "desc")
-        );
-
-        const querySnapshot = await getDocs(q);
-        tbody.innerHTML = ""; 
-
-        querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            const pathParts = docSnap.ref.path.split('/');
-            const nombreSemana = pathParts[3].replace('_', ' ').toUpperCase();
-
-            tbody.innerHTML += `
-                <tr style="border-bottom: 1px solid #333; text-align: center;">
-                    <td style="padding:10px; color:#888; font-size:0.8rem;">${data.fecha.split(',')[0]}</td>
-                    <td style="color:var(--p); font-weight:bold;">${data.ph}</td>
-                    <td style="color:#00ffff">${data.ec}</td>
-                    <td style="color:var(--s); font-weight:bold;">${nombreSemana}</td>
-                    <td><button onclick="borrarDato('${docSnap.ref.path}')" style="background:transparent; border:none; color:#ff4444; cursor:pointer;">✕</button></td>
-                </tr>
-            `;
-        });
-    } catch (error) {
-        console.error("Error al leer archivos:", error);
-    }
-};
-
-window.borrarDato = async function(rutaCompleta) {
-    if(confirm("¿Eliminar este registro?")) {
-        try {
-            const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-            await deleteDoc(doc(window.db, rutaCompleta));
-            window.cargarSeguimiento();
-        } catch (e) {
-            console.error("Error al borrar:", e);
-        }
-    }
-};
-
-// Función para guardar cálculos de VPD en la bitácora
-window.guardarVPD = async function() {
-    const temp = document.getElementById('v-temp').value;
-    const humedad = document.getElementById('v-hum').value;
-    const etapa = window.etapaVPDActual || 'esqueje';
-
-    const usuarioActivo = window.auth?.currentUser?.uid || 'anon';
-    const nuevoCalculoVPD = {
-        tipo: 'vpd',
-        temp: temp,
-        humedad: humedad,
-        etapa: etapa,
-        fecha: new Date().toLocaleString(),
-        usuario: usuarioActivo
-    };
-
-    try {
-        const { addDoc, collection } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        await addDoc(collection(window.db, "seguimientos"), nuevoCalculoVPD);
-        alert("✅ ¡Cálculo de VPD guardado en tu bitácora!");
-    } catch (e) {
-        console.error("Error guardando VPD:", e);
-        alert("❌ Error al guardar el cálculo de VPD.");
-    }
-};
 
 window.mostrarFormularioDiario = () => {
     window.diarioGrupoActivo = null;
@@ -1671,7 +1633,7 @@ window.mostrarFormularioDiario = () => {
     if (fechaInput && !fechaInput.value) {
         fechaInput.value = new Date().toISOString().slice(0, 10);
     }
-    form.style.display = 'block';
+    form.style.display = 'flex';
 };
 
 window.ocultarFormularioDiario = () => {
@@ -1685,6 +1647,15 @@ window.ocultarFormularioDiario = () => {
     if (preview) preview.innerHTML = '';
 };
 
+window.verImagenAmpliada = (url) => {
+    const modal = document.getElementById('modal-visor-imagen');
+    const img = document.getElementById('imagen-ampliada');
+    if (modal && img) {
+        img.src = url;
+        modal.style.display = 'flex';
+    }
+};
+
 window.cargarRegistroEnFormulario = (registro) => {
     try {
         if (typeof registro === 'string') {
@@ -1693,7 +1664,7 @@ window.cargarRegistroEnFormulario = (registro) => {
         window.diarioGrupoActivo = registro.grupoId || registro.id || window.generarIdDiario();
         if (!registro.grupoId) {
             registro.grupoId = window.diarioGrupoActivo;
-            if (registro.id) window.actualizarGrupoIdLocalDiario(registro.id, registro.grupoId);
+            // Se elimina la actualización de grupo local
         }
         window.mostrarFormularioDiario();
         const nombreInput = document.getElementById('diario-nombre');
@@ -1769,6 +1740,16 @@ window.guardarRegistroDiario = async function() {
     const imagenesInput = document.getElementById('diario-imagenes');
     const imagenes = imagenesInput?.files ? Array.from(imagenesInput.files).map(file => file.name) : [];
 
+    // Procesar la primera imagen para guardarla como URL de datos (Base64)
+    let imageUrl = '';
+    if (imagenesInput?.files && imagenesInput.files[0]) {
+        imageUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(imagenesInput.files[0]);
+        });
+    }
+
     if (!nombre || !fechaValor || !semana || !etapa || !ph || !ec) {
         alert('Completa al menos nombre, fecha, semana, etapa, pH y EC antes de guardar.');
         return;
@@ -1784,6 +1765,7 @@ window.guardarRegistroDiario = async function() {
         ec: ec,
         temp: temp,
         humedad: hum,
+        imageUrl: imageUrl,
         notas: notas,
         imagenes: imagenes,
         usuario: usuario?.uid || 'anon',
@@ -1793,69 +1775,21 @@ window.guardarRegistroDiario = async function() {
     registro.grupoId = window.diarioGrupoActivo || registro.id;
 
     if (!usuario) {
-        window.guardarDiarioLocal(registro);
-        alert('Registro guardado localmente en el diario de cultivo. Inicia sesión para sincronizarlo en la nube.');
-        window.ocultarFormularioDiario();
-        const diarioContainer = document.getElementById('diario-registros');
-        const sinDatos = document.getElementById('sin-datos-diario');
-        if (sinDatos) sinDatos.style.display = 'none';
-        if (diarioContainer) window.renderDiarioCard(diarioContainer, registro);
-        window.diarioGrupoActivo = null;
+        alert('⚠️ Debes iniciar sesión para guardar registros en la nube.');
         return;
     }
 
     try {
-        window.guardarDiarioLocal(registro);
-        const { addDoc, collection } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        const { addDoc, collection, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        registro.timestamp = serverTimestamp();
         await addDoc(collection(window.db, 'seguimientos'), registro);
         alert('✅ Registro guardado en tu diario de cultivo.');
         window.ocultarFormularioDiario();
-        const diarioContainer = document.getElementById('diario-registros');
-        const sinDatos = document.getElementById('sin-datos-diario');
-        if (sinDatos) sinDatos.style.display = 'none';
-        if (diarioContainer) window.renderDiarioCard(diarioContainer, registro);
         window.diarioGrupoActivo = null;
         window.cargarDiarioCultivo();
     } catch (e) {
         console.error('Error guardando registro de diario:', e);
-        window.guardarDiarioLocal(registro);
-        alert('❌ No se pudo guardar en la nube. Registro guardado localmente.');
-        window.ocultarFormularioDiario();
-        const diarioContainer = document.getElementById('diario-registros');
-        const sinDatos = document.getElementById('sin-datos-diario');
-        if (sinDatos) sinDatos.style.display = 'none';
-        if (diarioContainer) window.renderDiarioCard(diarioContainer, registro);
-        window.diarioGrupoActivo = null;
-    }
-};
-
-window.guardarDiarioLocal = (registro) => {
-    try {
-        if (!registro.id) registro.id = window.generarIdDiario();
-        if (!registro.grupoId) registro.grupoId = registro.id;
-        const almacenado = JSON.parse(localStorage.getItem('superm_diario') || '[]');
-        almacenado.unshift(registro);
-        localStorage.setItem('superm_diario', JSON.stringify(almacenado));
-    } catch (e) {
-        console.error('Error guardando localmente el diario:', e);
-    }
-};
-
-window.actualizarGrupoIdLocalDiario = (id, grupoId) => {
-    if (!id || !grupoId) return;
-    try {
-        const almacenado = JSON.parse(localStorage.getItem('superm_diario') || '[]');
-        let cambiado = false;
-        const actualizado = almacenado.map(item => {
-            if (item.id === id && !item.grupoId) {
-                item.grupoId = grupoId;
-                cambiado = true;
-            }
-            return item;
-        });
-        if (cambiado) localStorage.setItem('superm_diario', JSON.stringify(actualizado));
-    } catch (e) {
-        console.error('Error actualizando grupoId localmente:', e);
+        alert('❌ Error de conexión: No se pudo guardar en la nube.');
     }
 };
 
@@ -1868,181 +1802,98 @@ window.generarIdDiario = () => {
 
 window.renderDiarioCard = (container, data) => {
     if (!container || !data) return;
-    if (!data.id) data.id = window.generarIdDiario();
-    if (!data.grupoId) data.grupoId = data.id;
+    const nombrePlanta = data.nombre || 'Sin Nombre';
+    // Generar un ID seguro para el DOM (solo letras, números y guiones)
+    const safeId = 'dossier-' + nombrePlanta.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    
+    // Usar getElementById es más robusto que querySelector con IDs que puedan contener caracteres especiales
+    let plantCard = document.getElementById(safeId);
 
-    const groupId = data.grupoId;
-    const sanitizedGroupId = 'diario-grupo-' + String(groupId).replace(/[^\w-]/g, '_');
-    const existingGroup = container.querySelector(`#${sanitizedGroupId}`);
-    const existingCards = Array.from(container.querySelectorAll(`[data-grupo-id="${groupId}"]`));
+    // Limpiar datos pesados (imágenes Base64) para el botón de añadir semana para evitar errores en atributos HTML
+    const dataLink = { ...data };
+    if (dataLink.imageUrl) delete dataLink.imageUrl;
+    const dataJson = encodeURIComponent(JSON.stringify(dataLink));
 
-    const card = document.createElement('div');
-    card.dataset.diarioId = data.id;
-    card.dataset.grupoId = groupId;
-    card.style.cssText = 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.14); border-radius: 18px; padding: 18px; color: #fff; display: grid; gap: 14px;';
-
-    const nombre = data.nombre || 'Registro';
-    const fechaTexto = typeof data.fecha === 'string'
-        ? data.fecha.split(',')[0]
-        : (data.fecha?.toDate ? data.fecha.toDate().toLocaleDateString() : 'Fecha no disponible');
-
-    const header = document.createElement('div');
-    header.style.cssText = 'display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;';
-
-    const titleBlock = document.createElement('div');
-    const dateLabel = document.createElement('div');
-    dateLabel.style.cssText = 'font-size:0.85rem; color:#888; margin-bottom:4px;';
-    dateLabel.textContent = fechaTexto;
-    const nameLabel = document.createElement('div');
-    nameLabel.style.cssText = 'font-size:1.2rem; font-weight:700; color:var(--p);';
-    nameLabel.textContent = nombre;
-    const subtitle = document.createElement('div');
-    subtitle.style.cssText = 'font-size:0.9rem; color:#ccc;';
-    subtitle.textContent = `Semana ${data.semana || '-'} · ${data.etapa || '-'}`;
-
-    titleBlock.appendChild(dateLabel);
-    titleBlock.appendChild(nameLabel);
-    titleBlock.appendChild(subtitle);
-
-    const actions = document.createElement('div');
-    actions.style.cssText = 'display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;';
-
-    const loadButton = document.createElement('button');
-    loadButton.className = 'btn btn-m';
-    loadButton.style.cssText = 'border-color: var(--s);';
-    loadButton.textContent = 'Cargar';
-    loadButton.addEventListener('click', () => window.cargarRegistroEnFormulario(data));
-
-    const deleteButton = document.createElement('button');
-    deleteButton.className = 'btn btn-m';
-    deleteButton.style.cssText = 'border-color: rgba(255,80,80,0.35); background: rgba(255,80,80,0.08); color: #ff9a9a;';
-    deleteButton.textContent = 'Eliminar';
-    deleteButton.addEventListener('click', () => window.eliminarRegistroDiario(data.id, card));
-
-    actions.appendChild(loadButton);
-    actions.appendChild(deleteButton);
-
-    header.appendChild(titleBlock);
-    header.appendChild(actions);
-    card.appendChild(header);
-
-    const grid = document.createElement('div');
-    grid.style.cssText = 'display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap:10px; font-size:0.9rem; color:#fff;';
-    const metrics = [
-        ['pH', data.ph],
-        ['EC', data.ec],
-        ['Temp', data.temp],
-        ['Humedad', data.humedad]
-    ];
-    metrics.forEach(([label, value]) => {
-        const block = document.createElement('div');
-        block.innerHTML = `<span style="color:#888;">${label}</span><div>${value || '-'}</div>`;
-        grid.appendChild(block);
-    });
-    card.appendChild(grid);
-
-    const notes = document.createElement('div');
-    notes.style.cssText = 'color:#ccc; font-size:0.9rem; white-space:pre-wrap;';
-    notes.textContent = data.notas || 'Sin observaciones';
-    card.appendChild(notes);
-
-    if (Array.isArray(data.imagenes) && data.imagenes.length) {
-        const imagesRow = document.createElement('div');
-        imagesRow.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px;';
-        const label = document.createElement('strong');
-        label.style.cssText = 'color:#fff; min-width:80px;';
-        label.textContent = 'Fotos';
-        imagesRow.appendChild(label);
-
-        data.imagenes.forEach((name) => {
-            const chip = document.createElement('span');
-            chip.style.cssText = 'padding:5px 10px; border-radius:10px; background: rgba(255,255,255,0.08); color:#ddd; font-size:0.8rem;';
-            chip.textContent = name;
-            imagesRow.appendChild(chip);
-        });
-        card.appendChild(imagesRow);
-    }
-
-    if (existingGroup) {
-        const cardsWrapper = existingGroup.querySelector('.diario-group-cards');
-        if (cardsWrapper) {
-            cardsWrapper.appendChild(card);
-            return;
+    if (!plantCard) {
+        plantCard = document.createElement('div');
+        plantCard.id = safeId;
+        plantCard.className = 'tarjeta-expediente';
+        plantCard.style.cssText = 'background: #0a0a0a; border: 2px solid var(--s); border-radius: 18px; padding: 20px; color: #fff; margin-bottom:20px; box-shadow: 0 0 15px rgba(188, 19, 254, 0.1);';
+        plantCard.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--p); padding-bottom:10px; margin-bottom:15px;">
+                <h3 style="margin:0; color: var(--p); letter-spacing:1px; font-size:1.1rem;">🧪 EXPEDIENTE: ${nombrePlanta.toUpperCase()}</h3>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn btn-m btn-add-week" style="font-size:0.6rem; border-color:var(--p); color:var(--p);" onclick="window.cargarRegistroEnFormulario('${dataJson}')">AÑADIR SEMANA</button>
+                    <button class="btn btn-m" style="font-size:0.6rem; border-color:#ff4444; color:#ff4444;" onclick="window.eliminarExpediente('${nombrePlanta.replace(/'/g, "\\'")}')">ELIMINAR REGISTRO</button>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="tabla-historial-diario">
+                    <thead>
+                        <tr>
+                            <th>FECHA</th>
+                            <th>SEM</th>
+                            <th>ETAPA</th>
+                            <th>PH</th>
+                            <th>EC</th>
+                            <th>TEMP</th>
+                            <th>HUM</th>
+                            <th>FOTO</th>
+                            <th>NOTAS</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody class="plant-history-body"></tbody>
+                </table>
+            </div>
+        `;
+        container.prepend(plantCard);
+    } else {
+        // Actualizar el botón de la cabecera para que use siempre los datos de la semana más reciente procesada
+        const btnAddWeek = plantCard.querySelector('.btn-add-week');
+        if (btnAddWeek) {
+            btnAddWeek.setAttribute('onclick', `window.cargarRegistroEnFormulario('${dataJson}')`);
         }
+        // Mover el expediente al principio para que el último modificado esté arriba
+        container.prepend(plantCard);
     }
 
-    if (existingCards.length > 0) {
-        const groupWrapper = document.createElement('div');
-        groupWrapper.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.12); border-radius: 18px; padding: 16px; display: grid; gap: 12px;';
+    const tbody = plantCard.querySelector('.plant-history-body');
+    const row = document.createElement('tr');
+    const fechaCorta = typeof data.fecha === 'string' ? data.fecha.split(',')[0] : '---';
+    
+    // Procesamiento de imagen: si existe imageUrl, se crea una miniatura con borde neón púrpura
+    const imgHtml = data.imageUrl 
+        ? `<img src="${data.imageUrl}" style="width:45px; height:45px; object-fit:cover; border:2px solid var(--s); border-radius:8px; cursor:pointer; box-shadow: 0 0 10px rgba(188, 19, 254, 0.3);" onclick="window.verImagenAmpliada('${data.imageUrl}')" title="Ver evidencia completa">`
+        : '<span style="color:#444; font-size:0.6rem;">N/A</span>';
 
-        const groupHeader = document.createElement('div');
-        groupHeader.style.cssText = 'display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;';
-
-        const groupTitle = document.createElement('h3');
-        groupTitle.textContent = nombre;
-        groupTitle.style.cssText = 'margin:0; color: var(--p);';
-
-        const groupMeta = document.createElement('span');
-        groupMeta.textContent = 'Registro agrupado';
-        groupMeta.style.cssText = 'color:#888; font-size:0.85rem;';
-
-        groupHeader.appendChild(groupTitle);
-        groupHeader.appendChild(groupMeta);
-
-        const cardsWrapper = document.createElement('div');
-        cardsWrapper.id = sanitizedGroupId;
-        cardsWrapper.className = 'diario-group-cards';
-        cardsWrapper.style.cssText = 'display:grid; gap:14px;';
-
-        const insertBeforeNode = existingCards[0];
-        existingCards.forEach(existingCard => {
-            container.removeChild(existingCard);
-            cardsWrapper.appendChild(existingCard);
-        });
-
-        groupWrapper.appendChild(groupHeader);
-        groupWrapper.appendChild(cardsWrapper);
-        container.insertBefore(groupWrapper, insertBeforeNode);
-        cardsWrapper.appendChild(card);
-        return;
-    }
-
-    container.appendChild(card);
+    row.innerHTML = `
+        <td style="color:#888;">${fechaCorta}</td>
+        <td style="color:var(--txt); font-weight:bold;">S${data.semana || '1'}</td>
+        <td><span class="badge-etapa">${data.etapa || 'VEGE'}</span></td>
+        <td style="color:var(--p); font-weight:bold;">${data.ph || '--'}</td>
+        <td style="color:var(--p); font-weight:bold;">${data.ec || '--'}</td>
+        <td style="color:var(--txt);">${data.temp ? data.temp + '°' : '--'}</td>
+        <td style="color:var(--txt);">${data.humedad ? data.humedad + '%' : '--'}</td>
+        <td>${imgHtml}</td>
+        <td style="font-size:0.7rem; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${data.notas || ''}</td>
+        <td>
+            <button onclick="window.eliminarRegistroDiario('${data.id}', this.closest('tr'))" style="background:transparent; border:none; color:#ff4444; cursor:pointer;">✕</button>
+        </td>
+    `;
+    tbody.appendChild(row);
 };
 
-window.eliminarRegistroDiarioLocal = (id) => {
-    if (!id) return;
-    try {
-        const almacenado = JSON.parse(localStorage.getItem('superm_diario') || '[]');
-        const filtrado = almacenado.filter(item => item.id !== id);
-        localStorage.setItem('superm_diario', JSON.stringify(filtrado));
-    } catch (error) {
-        console.error('Error eliminando registro localmente:', error);
-    }
-};
-
-window.eliminarRegistroDiario = async (id, card) => {
+window.eliminarRegistroDiario = async (id, rowElement) => {
     if (!id) return;
     if (!confirm('¿Eliminar este registro de diario?')) return;
 
-    if (card && card.parentElement) {
-        const parent = card.parentElement;
-        parent.removeChild(card);
-        if (parent.classList.contains('diario-group-cards') && parent.childElementCount === 0) {
-            const groupWrapper = parent.parentElement;
-            if (groupWrapper) {
-                groupWrapper.remove();
-            }
-        }
-    }
-
-    window.eliminarRegistroDiarioLocal(id);
-
-    const container = document.getElementById('diario-registros');
-    const sinDatos = document.getElementById('sin-datos-diario');
-    if (container && sinDatos && container.children.length === 0) {
-        sinDatos.style.display = 'block';
-    }
+    const tbody = rowElement.parentElement;
+    const plantCard = tbody.closest('.tarjeta-expediente');
+    rowElement.remove();
+    
+    // Si no quedan más registros, borramos la tarjeta completa
+    if (tbody.children.length === 0) plantCard.remove();
 
     const usuarioActivo = window.auth?.currentUser?.uid;
     if (!usuarioActivo) return;
@@ -2063,29 +1914,30 @@ window.eliminarRegistroDiario = async (id, card) => {
     }
 };
 
-window.cargarDiarioLocal = () => {
-    const container = document.getElementById('diario-registros');
-    const sinDatos = document.getElementById('sin-datos-diario');
-    if (!container || !sinDatos) return;
-    const almacenado = JSON.parse(localStorage.getItem('superm_diario') || '[]');
-    let actualizado = false;
-    almacenado.forEach(data => {
-        if (!data.id) {
-            data.id = window.generarIdDiario();
-            actualizado = true;
+window.eliminarExpediente = async (nombre) => {
+    if (!nombre) return;
+    if (!confirm(`¿Estás seguro de que deseas eliminar todo el historial de "${nombre}"? Esta acción no se puede deshacer.`)) return;
+
+    // Si hay usuario, eliminar de Firestore
+    const usuarioActivo = window.auth?.currentUser?.uid;
+    if (usuarioActivo) {
+        try {
+            const { collection, query, where, getDocs, deleteDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+            const q = query(
+                collection(window.db, 'seguimientos'),
+                where('usuario', '==', usuarioActivo),
+                where('nombre', '==', nombre)
+            );
+            const snapshot = await getDocs(q);
+            const deletePromises = snapshot.docs.map(docSnap => deleteDoc(doc(window.db, 'seguimientos', docSnap.id)));
+            await Promise.all(deletePromises);
+        } catch (error) {
+            console.error('Error eliminando expediente en la nube:', error);
         }
-    });
-    if (actualizado) localStorage.setItem('superm_diario', JSON.stringify(almacenado));
-
-    container.innerHTML = '';
-
-    if (!almacenado.length) {
-        sinDatos.style.display = 'block';
-        return;
     }
 
-    sinDatos.style.display = 'none';
-    almacenado.forEach(data => window.renderDiarioCard(container, data));
+    // Refrescar la vista
+    window.cargarDiarioCultivo();
 };
 
 window.cargarDiarioCultivo = async function() {
@@ -2093,32 +1945,36 @@ window.cargarDiarioCultivo = async function() {
     const sinDatos = document.getElementById('sin-datos-diario');
     if (!container || !sinDatos) return;
     container.innerHTML = '';
-    sinDatos.style.display = 'none';
 
     const usuarioActivo = window.auth?.currentUser?.uid;
     if (!usuarioActivo) {
-        window.cargarDiarioLocal();
+        // Mostrar mensaje invitando a iniciar sesión
+        sinDatos.innerHTML = `🔒 <span onclick="ver('view-login')" style="color:var(--s); cursor:pointer; text-decoration:underline; font-weight:bold;">Inicia sesión</span> para acceder a tu diario de cultivo y sincronizar tus datos en la nube.`;
+        sinDatos.style.display = 'block';
         return;
     }
 
+    sinDatos.style.display = 'none';
+
     try {
-        const { collection, query, getDocs, orderBy, where } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        const { collection, query, getDocs, orderBy, where, limit } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
         const q = query(
             collection(window.db, "seguimientos"),
-            where("usuario", "==", usuarioActivo),
-            orderBy("fecha", "desc")
+            where("usuario", "==", usuarioActivo)
         );
         const querySnapshot = await getDocs(q);
         const registros = querySnapshot.docs
             .map(doc => doc.data() || {})
             .filter(data => data.tipo !== 'vpd');
 
+        // Ordenamiento por fecha de creación (Timestamp) para que el historial sea coherente
+        // y el 'prepend' coloque el expediente con la actividad más reciente arriba.
+        registros.sort((a, b) => 
+            (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0) || (a.semana - b.semana)
+        );
+
         if (!registros.length) {
-            const localStorageSaved = JSON.parse(localStorage.getItem('superm_diario') || '[]');
-            if (localStorageSaved.length) {
-                localStorageSaved.forEach(data => window.renderDiarioCard(container, data));
-                return;
-            }
+            sinDatos.innerText = "No hay entradas de diario de cultivo para tu usuario.";
             sinDatos.style.display = 'block';
             return;
         }
@@ -2126,112 +1982,9 @@ window.cargarDiarioCultivo = async function() {
         registros.forEach(data => window.renderDiarioCard(container, data));
     } catch (error) {
         console.error('Error al cargar diario de cultivo:', error);
-        window.cargarDiarioLocal();
+        console.error('Error al cargar diario de cultivo desde Firestore:', error);
     }
 };
-
-// --- CIRUGÍA DE PRECISIÓN: SISTEMA DE CARPETAS (Líneas 2025 - 2104) ---
-
-window.prepararGuardado = async function() {
-    // 1. Verificamos que el usuario esté logueado para que la carpeta sea SUYA
-    if (!auth.currentUser) {
-        alert("¡Alto ahí, Alquimista! Debes iniciar sesión para que tus datos se guarden en tu laboratorio personal.");
-        return;
-    }
-
-    const phVal = document.getElementById('diag-ph').value;
-    const ecVal = document.getElementById('diag-ec-val').value;
-    const semVal = document.getElementById('diag-semana').value;
-
-    if (!phVal || !ecVal || !semVal) {
-        alert("Faltan datos. El laboratorio requiere PH, EC y Semana para un registro válido.");
-        return;
-    }
-
-    try {
-        const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        
-        // 2. ESTRUCTURA DE CARPETAS (Sub-colecciones)
-        // Ruta: seguimientos -> [UID del usuario] -> semanas -> semana_[X] -> mediciones -> [Documento Auto-generado]
-        const rutaCarpeta = `seguimientos/${auth.currentUser.uid}/semanas/semana_${semVal}/mediciones`;
-
-        const nuevaMedicion = {
-            ph: phVal,
-            ec: ecVal,
-            semana: parseInt(semVal),
-            fecha: new Date().toLocaleString(),
-            timestamp: serverTimestamp(), // Esto nos permite ordenar por tiempo real
-            uid: auth.currentUser.uid
-        };
-
-        // Guardamos un "papel" nuevo dentro de la carpeta "mediciones"
-        await addDoc(collection(window.db, rutaCarpeta), nuevaMedicion);
-        
-        alert(`✅ Registrado en la carpeta de la Semana ${semVal}. ¡Excelente seguimiento!`);
-        
-        // Limpiamos solo PH y EC para facilitar la carga múltiple
-        document.getElementById('diag-ph').value = "";
-        document.getElementById('diag-ec-val').value = "";
-        
-        window.cargarSeguimiento(); // Actualizamos la vista
-    } catch (e) {
-        console.error("Error al archivar:", e);
-        alert("❌ Error en los archivos del laboratorio. Revisa la consola.");
-    }
-}
-
-window.cargarSeguimiento = async function() {
-    const tbody = document.getElementById('cuerpo-tabla'); 
-    if (!tbody || !auth.currentUser) return;
-
-    try {
-        const { collectionGroup, query, where, getDocs, orderBy } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        
-        // 3. BUSCADOR DE ARCHIVOS: collectionGroup busca en todas las carpetas "mediciones"
-        // Pero filtramos solo las que pertenecen a este UID de usuario por seguridad
-        const q = query(
-            collectionGroup(window.db, "mediciones"),
-            where("uid", "==", auth.currentUser.uid),
-            orderBy("timestamp", "desc")
-        );
-
-        const querySnapshot = await getDocs(q);
-        tbody.innerHTML = ""; 
-
-        querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            // Sacamos el nombre de la semana de la ruta del documento
-            const pathParts = docSnap.ref.path.split('/');
-            const nombreSemana = pathParts[3].replace('_', ' ').toUpperCase();
-
-            const fila = `
-                <tr style="border-bottom: 1px solid #333; text-align: center;">
-                    <td style="padding:10px; color:#888; font-size:0.8rem;">${data.fecha.split(',')[0]}</td>
-                    <td style="color:var(--p); font-weight:bold;">${data.ph}</td>
-                    <td style="color:#00ffff">${data.ec}</td>
-                    <td style="color:var(--s); font-weight:bold;">${nombreSemana}</td>
-                    <td><button onclick="borrarDato('${docSnap.ref.path}')" style="background:transparent; border:none; color:#ff4444; cursor:pointer;">✕</button></td>
-                </tr>
-            `;
-            tbody.innerHTML += fila;
-        });
-    } catch (error) {
-        console.error("Error al leer archivos:", error);
-    }
-};
-
-// Reemplazo de la función de borrado para manejar rutas completas
-window.borrarDato = async function(rutaCompleta) {
-    if(confirm("¿Seguro que querés eliminar este registro del archivo?")) {
-        try {
-            const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-            await deleteDoc(doc(window.db, rutaCompleta));
-            window.cargarSeguimiento();
-        } catch (e) {
-            console.error("Error al borrar:", e);
-        }
-    }
-}
 
 // Función para alternar la visibilidad de la contraseña
 window.togglePasswordVisibility = () => {
