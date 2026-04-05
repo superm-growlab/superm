@@ -105,6 +105,7 @@ input[type=number] {
         nav {
             display: none; background: rgba(0,0,0,0.95); padding: 15px 5%; justify-content: space-between;
             align-items: center; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid #222; backdrop-filter: blur(10px);
+            flex-wrap: wrap; gap: 10px;
         }
         .nav-links { display: flex; align-items: center; }
         .nav-links span { cursor: pointer; margin-left: 20px; transition: 0.3s; font-weight: bold; }
@@ -118,10 +119,10 @@ input[type=number] {
         .logo-txt { font-size: clamp(2.5rem, 8vw, 4rem); font-weight: 900; color: var(--p); margin: 0; letter-spacing: 12px; }
 
         .buscador {
-            width: 300px; padding: 15px 25px; border-radius: 30px; border: 1px solid #444;
+            width: 100%; max-width: 300px; padding: 15px 25px; border-radius: 30px; border: 1px solid #444;
             background: #111; color: #fff; outline: none; transition: 0.3s; margin-bottom: 40px;
         }
-        .buscador:focus { border-color: var(--p); width: 350px; }
+        .buscador:focus { border-color: var(--p); max-width: 350px; }
 
         .btn { padding: 12px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.3s; display: inline-block; text-align: center; text-decoration: none; }
         .btn-v { background: var(--p); color: #000; }
@@ -194,13 +195,13 @@ input[type=number] {
             overflow-x: auto; background: #000; padding: 20px; border-radius: 12px; 
             border: 1px solid var(--s); box-shadow: 0 0 15px rgba(188, 19, 254, 0.1); 
         }
-        table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 900px; font-family: 'Courier New', monospace; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 950px; font-family: 'Courier New', monospace; }
         th { 
-            color: var(--p); padding: 15px; border-bottom: 2px solid var(--p); 
-            font-size: 0.85rem; text-transform: uppercase; letter-spacing: 2px;
+            color: var(--p); padding: 12px 8px; border-bottom: 2px solid var(--p); 
+            font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap;
             text-shadow: 0 0 8px var(--p); background: rgba(57, 255, 20, 0.05);
         }
-        td { padding: 10px; border-bottom: 1px solid #1a1a1a; color: var(--txt); }
+        td { padding: 8px 6px; border-bottom: 1px solid #1a1a1a; color: var(--txt); }
         .input-tabla { 
             background: rgba(188, 19, 254, 0.05); border: 1px solid #333; color: var(--p); 
             padding: 8px; border-radius: 4px; width: 90%; text-align: center; outline: none;
@@ -293,6 +294,31 @@ input[type=number] {
             background: var(--p); /* Verde Neón al pasar el mouse */
             box-shadow: 0 0 15px var(--p);
         }
+
+        /* --- REVISIÓN DE DISEÑO MÓVIL --- */
+        @media (max-width: 600px) {
+            .nav-links span { margin-left: 10px; font-size: 0.75rem; }
+            #btn-login-header { font-size: 0.7rem !important; padding: 2px 5px !important; margin-right: 8px !important; }
+            .logo-frame { padding: 15px 20px; }
+            .logo-txt { letter-spacing: 6px; font-size: 2.2rem; }
+            .form-box { padding: 20px; width: 92%; }
+            .producto-detalle { padding: 20px; gap: 20px; }
+            .det-info h2 { font-size: 1.6rem; }
+            .det-precio { font-size: 1.4rem; }
+            
+            /* El formulario de diario pasa a una columna en móviles */
+            .diario-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .diario-grid > div {
+                grid-column: span 1 !important;
+            }
+
+            .seccion { padding: 40px 3% 20px 3%; }
+            .tarjeta { padding: 15px; }
+            .det-ficha { font-size: 0.85rem; padding: 15px; }
+            .buscador:focus { max-width: 100%; }
+        }
     </style>
 </head>
 <body>
@@ -345,7 +371,7 @@ input[type=number] {
     <div id="formulario-diario" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; justify-content: center; align-items: center; backdrop-filter: blur(8px); padding: 20px; box-sizing: border-box;">
         <div style="background: var(--card); border: 2px solid var(--s); border-radius: 18px; padding: 25px; width: 100%; max-width: 500px; max-height: 95vh; overflow-y: auto; box-shadow: 0 0 30px rgba(188, 19, 254, 0.2); position: relative;">
             <h4 style="color: var(--p); margin-top: 0;">Registrar seguimiento semanal</h4>
-            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 15px;">
+            <div class="diario-grid" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 15px;">
                 <div style="grid-column: span 2;">
                     <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Nombre del registro</label>
                     <input type="text" id="diario-nombre" class="input-lab" placeholder="Ej. Blue Dream, Armario 1" style="width:100%; border-color: var(--s); color:#fff;" />
@@ -466,6 +492,9 @@ input[type=number] {
             <div style="margin-bottom: 20px; position: relative;">
                 <input type="password" id="login-pass" placeholder="Tu Contraseña" class="input-lab" style="border-color: var(--s); color: #fff; width: 100%; box-sizing: border-box; padding-right: 40px;">
                 <button type="button" id="toggle-pass" onclick="window.togglePasswordVisibility()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--p); cursor: pointer; font-size: 1.2rem; z-index: 1;">👁️‍🗨️</button>
+            </div>
+            <div style="text-align: right; margin-top: -15px; margin-bottom: 20px;">
+                <span onclick="window.resetPassword()" style="color: var(--s); font-size: 0.75rem; cursor: pointer; text-decoration: underline;">¿Olvidaste tu contraseña?</span>
             </div>
             
             <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -1319,12 +1348,12 @@ function verProducto(id) {
             const h = parseFloat(document.getElementById('v-hum').value) || 0;
             const svp = 0.61078 * Math.exp((17.27 * t) / (t + 237.3));
             const vpd = svp * (1 - (h / 100));
-            drawVPDGraph(t, h, vpd);
-            analizarVPD(vpd, t, h);
+            drawVPDGraph(t, h, vpd, 'vpd-canvas');
+            analizarVPD(vpd, t, h, 'res-vpd', 'consejo-alquimista');
         }
 
-        function drawVPDGraph(temp, hum, currentVPD) {
-            const canvas = document.getElementById('vpd-canvas');
+        function drawVPDGraph(temp, hum, currentVPD, canvasId = 'vpd-canvas') {
+            const canvas = document.getElementById(canvasId);
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             const w = canvas.width = canvas.offsetWidth;
@@ -1368,9 +1397,8 @@ function verProducto(id) {
             }
         }
 
-        function analizarVPD(vpd, t, h) {
-            const res = document.getElementById('res-vpd'), consejo = document.getElementById('consejo-alquimista');
-            res.style.display = 'block'; consejo.style.display = 'block';
+        function analizarVPD(vpd, t, h, resId = 'res-vpd', consejoId = 'consejo-alquimista') {
+            const res = document.getElementById(resId), consejo = document.getElementById(consejoId);
             let idealMin, idealMax, msg;
             if(etapaVPDActual === 'esqueje') { idealMin = 0.4; idealMax = 0.8; }
             else if(etapaVPDActual === 'vege') { idealMin = 0.8; idealMax = 1.0; }
@@ -1378,6 +1406,7 @@ function verProducto(id) {
             else { idealMin = 1.2; idealMax = 1.5; }
             let status = (vpd < idealMin) ? "BAJO" : (vpd > idealMax) ? "ALTO" : "IDEAL ✨";
             let colorStatus = (status === "IDEAL ✨") ? "var(--p)" : "var(--s)";
+            res.style.display = 'block'; consejo.style.display = 'block';
             res.innerHTML = `<span>VPD ACTUAL: <b style="color:${colorStatus}; font-size:1.2rem;">${vpd.toFixed(2)} kPa</b></span><br><small>Estado: <b style="color:${colorStatus}">${status}</b></small>`;
             if(vpd < idealMin) msg = `🧪 <b>Nota:</b> Aire muy saturado. <b>Sube la temperatura</b> o <b>baja la humedad</b>.`;
             else if(vpd > idealMax) msg = `🧪 <b>Nota:</b> Aire muy seco. <b>Baja la temperatura</b> o <b>sube la humedad</b>.`;
@@ -1494,6 +1523,7 @@ import {
     onAuthStateChanged, 
     signOut,
     updateProfile,
+    sendPasswordResetEmail,
     GoogleAuthProvider,
     signInWithPopup 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -1524,21 +1554,11 @@ googleProvider.setCustomParameters({
 window.auth = authInstance;
 window.db = db;
 
-window.handleRegister = async () => {
-    const email = document.getElementById('login-email').value;
-    const pass = document.getElementById('login-pass').value;
-    try {
-        await createUserWithEmailAndPassword(authInstance, email, pass);
-        alert("¡Bienvenido Alquimista! Cuenta creada.");
-        ver('tablas'); // Lo mandamos directo a las tablas
-    } catch (e) { alert("Error: " + e.message); }
-};
-
 // Función para registrar desde la vista de registro
 window.registerUser = async () => {
     const name = document.getElementById('register-name').value.trim();
-    const email = document.getElementById('register-email').value;
-    const pass = document.getElementById('register-pass').value;
+    const email = document.getElementById('register-email').value.trim().toLowerCase();
+    const pass = document.getElementById('register-pass').value.trim();
     const passConfirm = document.getElementById('register-pass-confirm').value;
     
     if (!name || !email || !pass || !passConfirm) {
@@ -1558,8 +1578,12 @@ window.registerUser = async () => {
     
     try {
         await createUserWithEmailAndPassword(authInstance, email, pass);
-        // Actualizar el perfil con el nombre
-        await updateProfile(authInstance.currentUser, { displayName: name });
+        try {
+            // Intentar actualizar el perfil con el nombre pero no bloquear si falla
+            await updateProfile(authInstance.currentUser, { displayName: name });
+        } catch (profileError) {
+            console.error("Error actualizando perfil:", profileError);
+        }
         alert("¡Bienvenido " + name + "! Cuenta creada exitosamente.");
         ver('tablas'); // Lo mandamos directo a las tablas
     } catch (e) {
@@ -1594,36 +1618,33 @@ window.signInWithGoogle = async () => {
 };
 
 window.handleLogin = async () => {
-    const email = document.getElementById('login-email').value;
-    const pass = document.getElementById('login-pass').value;
+    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    const pass = document.getElementById('login-pass').value.trim();
+
     if (!email || !pass) return alert("Por favor, completa todos los campos.");
     try {
         await signInWithEmailAndPassword(authInstance, email, pass);
         ver('tablas');
-    } catch (e) { alert("Error: " + e.message); }
+    } catch (e) { 
+        console.error("Login Error:", e.code, e.message);
+        if (e.code === 'auth/invalid-credential' || e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password' || e.code === 'auth/invalid-email') {
+            alert("❌ Datos incorrectos.\n\nSi iniciaste con Google anteriormente, no tienes una contraseña creada para este formulario. Usa el botón de Google o haz clic en '¿Olvidaste tu contraseña?' para generar una clave para este acceso.");
+        } else {
+            alert("Error: " + e.message);
+        }
+    }
 };
 
-onAuthStateChanged(authInstance, (user) => {
-    const btnAcceso = document.getElementById('btn-login-header');
-    if (user) {
-        const displayName = user.displayName || user.email.split('@')[0].toUpperCase();
-        btnAcceso.innerText = "👤 " + displayName;
-        btnAcceso.onclick = () => { if(confirm("¿Cerrar sesión?")) signOut(authInstance); };
-        
-        console.log("Sesión activa detectada.");
-        if (document.getElementById('vista-diario-cultivo').style.display === 'block') {
-            window.cargarDiarioCultivo();
-        }
-    } else {
-        btnAcceso.innerText = "👤 ACCESO";
-        btnAcceso.onclick = () => ver('view-login');
-        const tbody = document.getElementById('cuerpo-tabla');
-        if (tbody) tbody.innerHTML = "";
-        const diarioContainer = document.getElementById('diario-registros');
-        if (diarioContainer) diarioContainer.innerHTML = "";
-        window.cargarDiarioCultivo();
+window.resetPassword = async () => {
+    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    if (!email) return alert("Escribe tu correo en el campo de arriba para enviarte el enlace de recuperación.");
+    try {
+        await sendPasswordResetEmail(authInstance, email);
+        alert("📧 ¡Enviado! Revisa tu casilla de correo (y la carpeta de spam) para restablecer tu contraseña.");
+    } catch (e) {
+        alert("Error: " + e.message);
     }
-});
+};
 
 window.mostrarFormularioDiario = () => {
     window.diarioGrupoActivo = null;
@@ -1839,6 +1860,7 @@ window.renderDiarioCard = (container, data) => {
                             <th>TEMP</th>
                             <th>HUM</th>
                             <th>FOTO</th>
+                            <th>ORÁCULO</th>
                             <th>NOTAS</th>
                             <th></th>
                         </tr>
@@ -1876,12 +1898,80 @@ window.renderDiarioCard = (container, data) => {
         <td style="color:var(--txt);">${data.temp ? data.temp + '°' : '--'}</td>
         <td style="color:var(--txt);">${data.humedad ? data.humedad + '%' : '--'}</td>
         <td>${imgHtml}</td>
+        <td style="text-align:center;">
+            <button class="btn btn-m" style="font-size:0.7rem; padding:6px 10px; border-color:var(--p); color:var(--p); background:rgba(57, 255, 20, 0.1); box-shadow: 0 0 10px rgba(57, 255, 20, 0.2); border-radius:6px; cursor:pointer;" onclick="window.abrirReporteAlquimia('${dataJson}')">🔮 REPORTE</button>
+        </td>
         <td style="font-size:0.7rem; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${data.notas || ''}</td>
         <td>
             <button onclick="window.eliminarRegistroDiario('${data.id}', this.closest('tr'))" style="background:transparent; border:none; color:#ff4444; cursor:pointer;">✕</button>
         </td>
     `;
     tbody.appendChild(row);
+};
+
+// Definimos la función global de reporte fuera de renderDiarioCard para evitar duplicidad
+window.abrirReporteAlquimia = (dataJson) => {
+    const data = JSON.parse(decodeURIComponent(dataJson));
+    const modal = document.getElementById('modal-diagnostico');
+    if (!modal) return;
+    
+    modal.style.display = 'flex';
+    
+    // 1. Diagnóstico de Nutrición y pH
+    const semana = parseInt(data.semana) || 1;
+    const ec = parseFloat(data.ec) || 0;
+    const ph = parseFloat(data.ph) || 0;
+    
+    let veredictoNutricion = "";
+    let recomendacionNutricion = "";
+    let phMensaje = "";
+    let phEstado = "CORRECTO";
+    let colorFinal = "var(--p)";
+
+    if (semana <= 4) { 
+        if (ph > 6.2) { colorFinal = "#ff4444"; phEstado = "ALTO (Vege)"; phMensaje = `⚠️ pH ${ph}: Alto para Vegetativo. Riesgo de bloqueo. Baja a 5.8.`; }
+        else if (ph < 5.5) { colorFinal = "#ff4444"; phEstado = "BAJO"; phMensaje = `❌ pH ${ph}: Muy bajo. Riesgo de toxicidad. Sube a 5.8.`; }
+        else { phMensaje = `✅ pH ${ph}: Óptimo para Crecimiento.`; }
+    } else { 
+        if (ph > 6.8) { colorFinal = "#ff4444"; phEstado = "ALTO (Flora)"; phMensaje = `⚠️ pH ${ph}: Muy alto para Flora. Baja a 6.4.`; }
+        else if (ph < 6.0) { colorFinal = "#ffaa00"; phEstado = "UN POCO BAJO"; phMensaje = `⚠️ pH ${ph}: Un poco bajo para Floración. Sube a 6.3.`; }
+        else { phMensaje = `✅ pH ${ph}: Óptimo para Floración.`; }
+    }
+
+    if (semana === 1) { 
+        if (ec > 0.6) { veredictoNutricion = "🔥 EXCESO"; recomendacionNutricion = "EC superior a 0.6. Diluye con agua pura."; }
+        else { veredictoNutricion = "✨ ÓPTIMA"; recomendacionNutricion = "Nivel perfecto para el inicio."; }
+    } else if (semana >= 5 && semana <= 10) { 
+        if (ec > 2.2) { veredictoNutricion = "🔥 EXCESO"; recomendacionNutricion = "Superaste el límite maestro de 2.2 mS."; }
+        else if (ec < 1.8) { veredictoNutricion = "🍽️ BAJA"; recomendacionNutricion = "Falta comida para el engorde."; }
+        else { veredictoNutricion = "✨ ÓPTIMA"; recomendacionNutricion = "Balance nutricional maestro."; }
+    } else {
+        veredictoNutricion = ec > 1.6 ? "🔥 ALTA" : "✨ ÓPTIMA";
+        recomendacionNutricion = "Mantén el monitoreo constante.";
+    }
+
+    const infoNutricion = colorFinal === "#ff4444" 
+        ? `<div style="background:rgba(255,68,68,0.1); padding:10px; border-radius:5px; margin-top:10px; border-left: 3px solid #ff4444;"><span style="color:#ff4444; font-weight:bold;">¡BLOQUEO ACTIVO!</span><br><small style="color:#eee;">pH ${phEstado}. La planta no absorbe nutrientes.</small></div>`
+        : `<p style="margin-top:10px; font-weight:bold;">Nutrición: <span style="color:var(--p)">${veredictoNutricion}</span></p>`;
+
+    document.getElementById('diag-output-modal').innerHTML = `
+        <h4 style="color:var(--p); margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:5px;">DIAGNÓSTICO</h4>
+        <p style="font-size:0.95rem; color:#fff;">${phMensaje}</p>${infoNutricion}
+        <p style="font-size:0.85rem; color:#ccc; margin-top:10px; font-style:italic;">"${recomendacionNutricion}"</p>`;
+
+    // 2. Análisis de VPD
+    const t = parseFloat(data.temp) || 0;
+    const h = parseFloat(data.humedad) || 0;
+    const svp = 0.61078 * Math.exp((17.27 * t) / (t + 237.3));
+    const vpd = svp * (1 - (h / 100));
+    
+    const originalEtapa = window.etapaVPDActual;
+    window.etapaVPDActual = data.etapa || 'vege';
+    setTimeout(() => {
+        drawVPDGraph(t, h, vpd, 'vpd-canvas-modal');
+        analizarVPD(vpd, t, h, 'res-vpd-modal', 'consejo-alquimista-modal');
+        window.etapaVPDActual = originalEtapa;
+    }, 100);
 };
 
 window.eliminarRegistroDiario = async (id, rowElement) => {
@@ -1986,6 +2076,28 @@ window.cargarDiarioCultivo = async function() {
     }
 };
 
+onAuthStateChanged(authInstance, (user) => {
+    const btnAcceso = document.getElementById('btn-login-header');
+    if (user) {
+        const displayName = user.displayName || user.email.split('@')[0].toUpperCase();
+        btnAcceso.innerText = "👤 " + displayName;
+        btnAcceso.onclick = () => { if(confirm("¿Cerrar sesión?")) signOut(authInstance); };
+        
+        console.log("Sesión activa detectada.");
+        if (document.getElementById('vista-diario-cultivo').style.display === 'block') {
+            window.cargarDiarioCultivo();
+        }
+    } else {
+        btnAcceso.innerText = "👤 ACCESO";
+        btnAcceso.onclick = () => ver('view-login');
+        const tbody = document.getElementById('cuerpo-tabla');
+        if (tbody) tbody.innerHTML = "";
+        const diarioContainer = document.getElementById('diario-registros');
+        if (diarioContainer) diarioContainer.innerHTML = "";
+        window.cargarDiarioCultivo();
+    }
+});
+
 // Función para alternar la visibilidad de la contraseña
 window.togglePasswordVisibility = () => {
     const input = document.getElementById('login-pass');
@@ -1997,6 +2109,14 @@ window.togglePasswordVisibility = () => {
         input.type = 'password';
         button.textContent = '👁️‍🗨️';
     }
+};
+
+window.togglePasswordVisibilityRegister = () => {
+    const input = document.getElementById('register-pass');
+    const inputConfirm = document.getElementById('register-pass-confirm');
+    const type = input.type === 'password' ? 'text' : 'password';
+    input.type = type;
+    if (inputConfirm) inputConfirm.type = type;
 };
 </script>
 </body>
