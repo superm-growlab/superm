@@ -1636,7 +1636,7 @@ window.handleLogin = async () => {
 };
 
 window.resetPassword = async () => {
-    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    const email = document.getElementById('login-email').value.trim();
     if (!email) return alert("Escribe tu correo en el campo de arriba para enviarte el enlace de recuperación.");
     try {
         await sendPasswordResetEmail(authInstance, email);
