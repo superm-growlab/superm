@@ -9,17 +9,20 @@ exports.obtenerProductoML = onCall({
     cors: true,
     maxInstances: 10 
 }, async (request) => {
-    const url = request.data.url;
+    const url = (request.data.url || "").trim();
     
     if (!url) {
         throw new HttpsError("invalid-argument", "Falta la URL del producto.");
     }
 
-    const mlaMatch = url.match(/MLA[-_]?(\d+)/i);
+    // Buscador de ID más flexible: detecta MLA123, MLA-123, MLA_123 o /p/MLA123
+    const mlaMatch = url.match(/(?:MLA|mla)[-_]?(\d+)/i) || url.match(/\/p\/(?:MLA|mla)?(\d+)/i);
+    
     const itemId = mlaMatch ? `MLA${mlaMatch[1]}` : null;
 
     if (!itemId) {
-        throw new HttpsError("invalid-argument", "No se pudo identificar un ID de Mercado Libre válido (MLA) en el enlace.");
+        console.error("URL no reconocida:", url);
+        throw new HttpsError("invalid-argument", "El link no parece ser un producto válido de Mercado Libre (Falta MLA).");
     }
 
     try {
@@ -37,6 +40,7 @@ exports.obtenerProductoML = onCall({
         const textoFicha = caracteristicas.map(c => "• " + c).join("\n");
 
         return {
+            id: itemId,
             n: item.title,
             p: item.price || 0,
             i: item.pictures && item.pictures.length > 0 ? [item.pictures[0].secure_url] : [item.thumbnail],
