@@ -15,21 +15,26 @@ exports.obtenerProductoML = onCall({
         throw new HttpsError("invalid-argument", "Falta la URL del producto.");
     }
 
-    // Extractor de ID ultra-flexible
-    // Busca: MLA123..., /p/MLA123..., o bloques de 9-12 dígitos que ML usa como ID
-    const patterns = [
-        /(?:MLA|mla)[-_]?(\d{8,15})/i,        // Caso estándar: MLA-12345...
-        /\/p\/(?:MLA|mla)?(\d{8,15})/i,      // Caso catálogo: /p/MLA12345...
-        //-(?:[/?#-]|$|(?=_))/   // Caso numérico puro: .../123456789...
-    ];
-
-    let itemId = null;
-    for (const p of patterns) {
-        const match = url.match(p);
-        if (match && match[1]) {
-            itemId = `MLA${match[1]}`;
-            break;
+    const extractId = (text) => {
+        const patterns = [
+            /(?:MLA|mla)[-_]?(\d{8,15})/i,        // MLA-123...
+            /\/p\/(?:MLA|mla)?(\d{8,15})/i       // /p/MLA123...
+        ];
+        for (const p of patterns) {
+            const match = text.match(p);
+            if (match && match[1]) return `MLA${match[1]}`;
         }
+        return null;
+    };
+
+    let itemId = extractId(url);
+
+    // Soporte para links cortos (meli.la o /s/): Resolvemos la redirección para hallar el ID
+    if (!itemId && (url.includes("meli.la") || url.includes("/s/"))) {
+        try {
+            const res = await axios.get(url, { maxRedirects: 5 });
+            itemId = extractId(res.request.res.responseUrl || res.config.url);
+        } catch (e) { console.error("Error siguiendo link corto:", e.message); }
     }
 
     if (!itemId) {
@@ -59,7 +64,7 @@ exports.obtenerProductoML = onCall({
             desc: descRes.data.plain_text || "Producto verificado por Super M Lab.",
             specs: caracteristicas,
             texto: textoFicha, 
-            link: url
+            link: item.permalink || url
         };
     } catch (error) {
         console.error("ML API Error:", error.message);
