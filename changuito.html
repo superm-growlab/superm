@@ -57,9 +57,10 @@
         <p style="text-align:center; font-size:0.7rem;">LOG: 2024 | SYNC DIRECTA A FIREBASE</p>
 
         <div class="grid-form">
-            <input type="text" id="link-referido" class="full" placeholder="PEGAR LINK DE MERCADO LIBRE O REFERIDO">
+            <input type="text" id="link-referido" style="grid-column: span 1;" placeholder="PEGAR LINK DE PRODUCTO">
+            <input type="text" id="id-manual" style="grid-column: span 1;" placeholder="O ID (EJ: NG8W...)">
             
-            <button class="btn-bot full" onclick="botTransmutar()">⚡ BUSCAR (TRANSMUTAR)</button>
+            <button class="btn-bot full" onclick="botTransmutar()">⚡ TRANSMUTAR DATA</button>
             <div id="status-bot" class="full">SISTEMA LISTO.</div>
         </div>
 
@@ -217,22 +218,25 @@
         }
 
     async function botTransmutar() {
-        const linkReferido = document.getElementById('link-referido').value.trim();
+        const urlInput = document.getElementById('link-referido').value.trim();
+        const idInput = document.getElementById('id-manual').value.trim();
+        const entradaFinal = idInput || urlInput;
+
         const status = document.getElementById('status-bot');
         const editor = document.getElementById('editor-producto');
 
-        if (!linkReferido) {
-            status.innerText = "⚠️ INGRESA UN LINK PARA COMENZAR.";
+        if (!entradaFinal) {
+            status.innerText = "⚠️ INGRESA UN LINK O ID PARA COMENZAR.";
             return;
         }
 
-        console.log("Intentando transmutar URL:", linkReferido);
+        console.log("Intentando transmutar entrada:", entradaFinal);
         status.innerText = "📡 CONECTANDO CON CLOUD FUNCTIONS...";
 
         try {
             // Llamada a la función Cloud para obtener datos de ML
             const obtenerProductoML = firebase.app().functions('us-central1').httpsCallable('obtenerProductoML');
-            const response = await obtenerProductoML({ url: linkReferido });
+            const response = await obtenerProductoML({ url: entradaFinal });
             const data = response.data;
 
             if (data.error) throw new Error(data.error);
@@ -277,7 +281,6 @@
         async function cargarAFirebase() {
             if (!productoTemporal) return;
             const status = document.getElementById('status-bot');
-            const linkFinal = document.getElementById('link-referido').value;
 
             // Tomamos los valores actualizados del editor
             const dataFinal = {
@@ -288,7 +291,7 @@
                 i: productoTemporal.i,
                 desc: document.getElementById('edit-desc').value.trim(),
                 specs: document.getElementById('edit-specs').value.split('|').map(s => s.trim()).filter(s => s),
-                linkPago: linkFinal,
+                linkPago: productoTemporal.linkOriginal,
                 texto: document.getElementById('edit-texto').value.trim()
             };
 
@@ -301,6 +304,7 @@
                 status.innerText = "✨ PRODUCTO CARGADO EXITOSAMENTE.";
                 document.getElementById('editor-producto').style.display = 'none';
                 document.getElementById('link-referido').value = "";
+                document.getElementById('id-manual').value = "";
                 productoTemporal = null;
                 
             } catch (e) {
