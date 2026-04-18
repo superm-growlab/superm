@@ -29,21 +29,20 @@ async function getApiHeaders() {
         
         const accessToken = configDoc.data()?.access_token || '';
         
-        // DEBUG: Log del token (solo primeros 10 caracteres)
+        const apiHeaders = {
+            'User-Agent': ML_HEADERS['User-Agent'],
+            'Accept': 'application/json',
+            'Accept-Language': 'es-AR,es;q=0.9'
+        };
+        
         if (accessToken) {
-            console.log("✅ Token ML cargado:", accessToken.substring(0, 10) + "...");
+            console.log("✅ Token ML cargado");
+            apiHeaders['Authorization'] = `Bearer ${accessToken.trim()}`;
         } else {
-            console.warn("⚠️ No se encontró access_token en settings/mercadolibre_auth");
+            console.warn("⚠️ Sin access_token en Firestore");
         }
         
-        const headers = { ...ML_HEADERS };
-        headers['Accept'] = 'application/json';
-        
-        if (accessToken) {
-            headers['Authorization'] = `Bearer ${accessToken.trim()}`;
-        }
-        
-        return headers;
+        return apiHeaders;
     } catch (error) {
         console.error("❌ Error obteniendo access token:", error.message);
         return {
@@ -57,7 +56,8 @@ async function getApiHeaders() {
 exports.obtenerProductoML = onCall({
     region: 'us-central1',
     cors: true,
-    maxInstances: 10
+    maxInstances: 10,
+    timeoutSeconds: 60
 }, async (request) => {
     const urlInput = (request.data.url || "").trim();
 
@@ -83,15 +83,19 @@ exports.obtenerProductoML = onCall({
             const res = await axios.get(urlInput, {
                 headers: { ...ML_HEADERS, 'Referer': 'https://www.mercadolibre.com.ar/' },
                 maxRedirects: 10,
-                timeout: 10000,
+                timeout: 15000,
                 validateStatus: (status) => status < 500
             });
 
             const finalUrl = res.request?.res?.responseUrl || res.request?.responseURL || urlInput;
-            const content = typeof res.data === 'string' ? res.data : "";
-            const comboMatch = (finalUrl + content).match(/MLA-?\d{8,15}/i);
+            
+            // Buscamos el ID en la URL final o en el cuerpo de la página (a veces está en un script)
+            const content = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
+            const comboMatch = (finalUrl + content).match(/MLA-?\d{8,15}/i) || content.match(/item_id":"(MLA\d+)"/i);
+            
             if (comboMatch) {
-                itemId = comboMatch[0].replace(/-/g, "").toUpperCase();
+                const rawId = Array.isArray(comboMatch) ? comboMatch[1] || comboMatch[0] : comboMatch;
+                itemId = rawId.replace(/-/g, "").toUpperCase();
             }
         } catch (e) {
             console.error("Fallo al resolver referido:", e.message);
@@ -104,67 +108,73 @@ exports.obtenerProductoML = onCall({
         }
     }
 
-    if (!itemId) {
+    if (!itemId || !itemId.startsWith("MLA")) {
         throw new HttpsError("invalid-argument", "Error de transmutación: El link de referido no reveló un ID (MLA). Prueba pegando el link largo.");
     }
 
+    console.log(`🔎 Procesando ID: ${itemId}`);
+
+    const apiHeaders = await getApiHeaders();
+    let itemData, descData;
+
     try {
-        // 2. Obtener headers con Authorization (Access Token desde Firestore)
-        const apiHeaders = await getApiHeaders();
-        
-        // 3. Llamada a API en paralelo con autenticación
+        // 2. Llamada a API con autenticación
         const [itemRes, descRes] = await Promise.all([
             axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: apiHeaders }),
             axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: apiHeaders }).catch(() => ({ data: { plain_text: "" } }))
         ]);
-
-        const item = itemRes.data;
-        const rawDescription = descRes.data.plain_text || "Sin descripción disponible.";
-
-        // 4. Ficha Técnica (Atributos) - Extracción completa
-        const specs = (item.attributes || [])
-            .filter(attr => attr.value_name) // Solo atributos con valor
-            .map(attr => `${attr.name}: ${attr.value_name}`);
-        
-        const textoFicha = specs.length > 0 
-            ? specs.map(s => `• ${s}`).join("\n") 
-            : "• Calidad: Super M Lab";
-
-        // 5. Retorno de Datos con estructura exacta para changuito.html
-        return {
-            id: itemId,
-            n: item.title,
-            p: item.price || (item.buy_box_winner ? item.buy_box_winner.price : 0),
-            i: (item.pictures && item.pictures.length > 0) ? [item.pictures[0].secure_url] : [(item.thumbnail || "").replace("-I.jpg", "-O.jpg")],
-            desc: rawDescription,
-            specs: specs,
-            texto: textoFicha,
-            link: item.permalink || urlInput
-        };
-
+        itemData = itemRes.data;
+        descData = descRes.data;
     } catch (error) {
-        console.error("Error en obtenerProductoML:", error.message);
-        
-        // Si hay error 401 (no autorizado), el token puede estar vencido
-        if (error.response && error.response.status === 401) {
-            console.error("❌ Token de Mercado Libre inválido o vencido. Revisa Firestore.");
-            throw new HttpsError("permission-denied", "Error de Autenticación: El token de ML no es válido. Contacta al administrador.");
-        }
-        
-        // Si todo falla, lanzamos el error
-        if (error.response) {
-            const status = error.response.status;
+        const status = error.response?.status;
+        console.warn(`⚠️ API ML error ${status}. Reintentando acceso público...`);
+
+        // Fallback público si el token falla
+        try {
+            const publicHeaders = { 
+                'User-Agent': ML_HEADERS['User-Agent'], 
+                'Accept': 'application/json' 
+            };
+            const [itemRes, descRes] = await Promise.all([
+                axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: publicHeaders }),
+                axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: publicHeaders }).catch(() => ({ data: { plain_text: "" } }))
+            ]);
+            itemData = itemRes.data;
+            descData = descRes.data;
+        } catch (fallbackError) {
+            console.error("❌ Fallo total en API ML:", fallbackError.message);
             if (status === 404) {
-                throw new HttpsError("not-found", "Error de Laboratorio: El producto no existe en Mercado Libre. Verifica el ID.");
-            } else if (status === 429) {
-                throw new HttpsError("resource-exhausted", "Error de Laboratorio: Demasiadas peticiones. Espera un momento.");
+                throw new HttpsError("not-found", "Producto no encontrado en ML.");
             } else {
-                throw new HttpsError("internal", `Error de Laboratorio: ML respondió con código ${status}. Verifica el ID o link.`);
+                throw new HttpsError("internal", "ML bloqueó el acceso. Intenta más tarde.");
             }
-        } else if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
-            throw new HttpsError("unavailable", "Error de Laboratorio: No se pudo conectar con ML. Verifica tu conexión.");
-        } else {
-            throw new HttpsError("internal", "Error de Laboratorio: ML bloqueó el acceso o el ID es inválido. Intenta con otro link.");
         }
     }
+
+    // 3. Extracción Avanzada de Ficha Técnica
+    // Filtramos atributos irrelevantes como 'Condición del ítem' o 'Marca' si ya están en el título
+    const excluidos = ["ITEM_CONDITION", "MARKET_PRICE"];
+    
+    const specs = (itemData.attributes || [])
+        .filter(attr => attr.value_name && attr.name && !excluidos.includes(attr.id))
+        .map(attr => `${attr.name}: ${attr.value_name}`);
+
+    // Generamos el campo 'texto' que el Changuito usa para la previsualización
+    const textoFicha = specs.length > 0 
+        ? specs.map(s => `• ${s}`).join("\n") 
+        : `• Origen: ${itemData.listing_type_id}\n• Calidad: Super M Lab`;
+
+    return {
+        id: itemId,
+        n: itemData.title,
+        p: itemData.price || 0,
+        // Traemos hasta 3 fotos para tener variedad
+        i: (itemData.pictures && itemData.pictures.length > 0) 
+            ? itemData.pictures.slice(0, 3).map(pic => pic.secure_url) 
+            : [(itemData.thumbnail || "").replace("-I.jpg", "-O.jpg")],
+        desc: descData.plain_text || "Sin descripción disponible.",
+        specs: specs,
+        texto: textoFicha,
+        link: itemData.permalink || urlInput
+    };
 });
