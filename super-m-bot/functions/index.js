@@ -6,9 +6,10 @@ admin.initializeApp();
 
 // Configuración de Headers globales para engañar a los filtros de ML
 const ML_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
     'Accept': 'application/json',
-    'Accept-Language': 'es-AR,es;q=0.9'
+    'Accept-Language': 'es-AR,es;q=0.9',
+    'Connection': 'keep-alive'
 };
 
 exports.obtenerProductoML = onCall({
@@ -22,12 +23,29 @@ exports.obtenerProductoML = onCall({
         throw new HttpsError("invalid-argument", "No se proporcionó un link o ID.");
     }
 
-    // 1. Identificación robusta del ID (Regex)
-    const match = urlInput.match(/(MLA-?\d{8,15})/i);
-    const itemId = match ? match[1].replace(/-/g, "").toUpperCase() : null;
+    let itemId = null;
+
+    // 1. Radar Maestro de IDs (Fase 1: Extracción directa)
+    const directMatch = urlInput.match(/(MLA|mla)-?\d{8,15}/i);
+    if (directMatch) {
+        itemId = directMatch[0].replace(/-/g, "").toUpperCase();
+    } 
+    // 1b. Soporte para IDs escritos a mano (solo números)
+    else if (/^\d{8,15}$/.test(urlInput)) {
+        itemId = "MLA" + urlInput;
+    }
+    // 1c. Fase 2: Resolución de links cortos/referidos (meli.la)
+    else if (urlInput.startsWith("http")) {
+        try {
+            const res = await axios.get(urlInput, { headers: ML_HEADERS, maxRedirects: 5, timeout: 5000 });
+            const finalUrl = res.request?.res?.responseUrl || res.config?.url || "";
+            const redirectMatch = finalUrl.match(/(MLA|mla)-?\d{8,15}/i);
+            if (redirectMatch) itemId = redirectMatch[0].replace(/-/g, "").toUpperCase();
+        } catch (e) { console.error("Error siguiendo link de referido:", e.message); }
+    }
 
     if (!itemId) {
-        throw new HttpsError("invalid-argument", "Link no válido. No se detectó un ID de Mercado Libre (MLA).");
+        throw new HttpsError("invalid-argument", "Error de transmutación: No se detectó un ID de Mercado Libre válido (MLA). Verifica el link de referido.");
     }
 
     try {
@@ -44,15 +62,16 @@ exports.obtenerProductoML = onCall({
         const specs = (item.attributes || []).map(attr => `${attr.name}: ${attr.value_name}`);
         
         // Formato con bullets solicitado: • Atributo: Valor\n
-        const textoFicha = specs.map(s => `• ${s}`).join("\n");
+        const textoFicha = specs.length > 0 ? specs.map(s => `• ${s}`).join("\n") : "• Calidad: Super M Lab";
 
         // 4. Retorno de Datos con estructura exacta
         return {
+            id: itemId, // Para que el editor use el MLA real como ID del documento
             n: item.title,
             p: item.price || (item.buy_box_winner ? item.buy_box_winner.price : 0),
-            i: (item.pictures && item.pictures.length > 0) ? [item.pictures[0].secure_url] : [item.thumbnail],
+            i: (item.pictures && item.pictures.length > 0) ? [item.pictures[0].secure_url] : [item.thumbnail.replace("-I.jpg", "-O.jpg")],
             desc: rawDescription,
-            specs: specs,
+            specs: specs, // Para el campo de chips en el editor
             texto: textoFicha, // CAMPO VITAL
             link: item.permalink || urlInput
         };
@@ -60,6 +79,6 @@ exports.obtenerProductoML = onCall({
     } catch (error) {
         console.error("Error en obtenerProductoML:", error.message);
         const status = error.response ? error.response.status : 500;
-        throw new HttpsError("internal", `Mercado Libre respondió con error (${status}). Revisa el ID.`);
+        throw new HttpsError("internal", `Error de transmutación: Verifica el ID o Link (ML Error ${status})`);
     }
 });
