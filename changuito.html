@@ -285,16 +285,9 @@
                 : '';
             document.getElementById('edit-preview-img').src = imgUrl || "https://i.postimg.cc/rF9GqwGS/favicon.png";
 
-            // Feedback visual según calidad de datos
-            const esCargaManual = data.p === 0 || data.n === "Producto Super M (Editar manualmente)" || data.n === "Producto Super M";
-            
-            if (esCargaManual) {
-                status.innerText = "⚠️ DATOS PARCIALES - COMPLETAR MANUALMENTE.";
-                status.style.color = "orange";
-            } else {
-                status.innerText = "✨ TRANSMUTACIÓN EXITOSA.";
-                status.style.color = "var(--p)";
-            }
+            // Feedback visual - con token válido siempre debería haber datos completos
+            status.innerText = "✨ TRANSMUTACIÓN EXITOSA - DATOS EXTRAÍDOS.";
+            status.style.color = "var(--p)";
 
             // Mostrar el editor solo cuando la respuesta es exitosa
             editor.style.display = 'block';

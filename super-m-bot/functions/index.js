@@ -19,11 +19,36 @@ const ML_HEADERS = {
     'Cache-Control': 'max-age=0'
 };
 
-const API_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-    'Accept': 'application/json, text/plain, */*',
-    'Accept-Language': 'es-AR,es;q=0.9'
-};
+// Función para obtener headers API con Authorization
+async function getApiHeaders() {
+    try {
+        const configDoc = await admin.firestore()
+            .collection('configuracion')
+            .doc('mercado_libre')
+            .get();
+        
+        const accessToken = configDoc.data()?.access_token || '';
+        
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'es-AR,es;q=0.9'
+        };
+        
+        if (accessToken) {
+            headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+        
+        return headers;
+    } catch (error) {
+        console.error("Error obteniendo access token:", error.message);
+        return {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'es-AR,es;q=0.9'
+        };
+    }
+}
 
 exports.obtenerProductoML = onCall({
     region: 'us-central1',
@@ -105,20 +130,28 @@ exports.obtenerProductoML = onCall({
     }
 
     try {
-        // 2. Llamada a API en paralelo (Usamos headers más limpios para la API)
+        // 2. Obtener headers con Authorization (Access Token desde Firestore)
+        const apiHeaders = await getApiHeaders();
+        
+        // 3. Llamada a API en paralelo con autenticación
         const [itemRes, descRes] = await Promise.all([
-            axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: API_HEADERS }),
-            axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: API_HEADERS }).catch(() => ({ data: { plain_text: "" } }))
+            axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: apiHeaders }),
+            axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: apiHeaders }).catch(() => ({ data: { plain_text: "" } }))
         ]);
 
         const item = itemRes.data;
         const rawDescription = descRes.data.plain_text || "Sin descripción disponible.";
 
-        // 3. Ficha Técnica (Atributos)
-        const specs = (item.attributes || []).map(attr => `${attr.name}: ${attr.value_name}`);
-        const textoFicha = specs.length > 0 ? specs.map(s => `• ${s}`).join("\n") : "• Calidad: Super M Lab";
+        // 4. Ficha Técnica (Atributos) - Extracción completa
+        const specs = (item.attributes || [])
+            .filter(attr => attr.value_name) // Solo atributos con valor
+            .map(attr => `${attr.name}: ${attr.value_name}`);
+        
+        const textoFicha = specs.length > 0 
+            ? specs.map(s => `• ${s}`).join("\n") 
+            : "• Calidad: Super M Lab";
 
-        // 4. Retorno de Datos con estructura exacta
+        // 5. Retorno de Datos con estructura exacta para changuito.html
         return {
             id: itemId,
             n: item.title,
@@ -133,52 +166,13 @@ exports.obtenerProductoML = onCall({
     } catch (error) {
         console.error("Error en obtenerProductoML:", error.message);
         
-        // TÉCNICA DE RESPALDO DE ID: Si la API oficial da 403, intentamos ruta alternativa
-        if (error.response && error.response.status === 403) {
-            console.log("🔄 Intentando ruta de respaldo para itemId:", itemId);
-            
-            try {
-                // API pública sin headers complejos - solo User-Agent básico
-                const simpleRes = await axios.get(`https://api.mercadolibre.com/items/${itemId}`, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0 Safari/537.36'
-                    },
-                    timeout: 5000
-                });
-                
-                const item = simpleRes.data;
-                return {
-                    id: itemId,
-                    n: item.title || "Producto Mercado Libre",
-                    p: item.price || 0,
-                    i: (item.pictures && item.pictures.length > 0) ? [item.pictures[0].secure_url] : ["🌿"],
-                    desc: "Descripción no disponible (API bloqueada)",
-                    specs: [],
-                    texto: "• Ficha técnica no disponible (ML bloqueó acceso parcial)",
-                    link: item.permalink || urlInput
-                };
-            } catch (respaldoError) {
-                console.error("Ruta de respaldo también falló:", respaldoError.message);
-            }
+        // Si hay error 401 (no autorizado), el token puede estar vencido
+        if (error.response && error.response.status === 401) {
+            console.error("❌ Token de Mercado Libre inválido o vencido. Revisa Firestore.");
+            throw new HttpsError("permission-denied", "Error de Autenticación: El token de ML no es válido. Contacta al administrador.");
         }
         
-        // Si todo falla, devolvemos objeto con campos vacíos pero con el ID extraído
-        // Esto permite que el changuito.html abra el editor para carga manual
-        if (itemId) {
-            console.log("⚠️ Devolviendo objeto vacío con ID:", itemId);
-            return {
-                id: itemId,
-                n: "Producto Super M (Editar manualmente)",
-                p: 0,
-                i: ["🌿"],
-                desc: "Los datos no pudieron ser extraídos. Completar manualmente.",
-                specs: [],
-                texto: "• Producto sin ficha técnica. Completar manualmente.",
-                link: urlInput
-            };
-        }
-        
-        // Error fatal - no hay ID extraído
+        // Si todo falla, lanzamos el error
         if (error.response) {
             const status = error.response.status;
             if (status === 404) {
