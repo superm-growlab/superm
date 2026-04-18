@@ -10,11 +10,11 @@ const ML_HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
     'Accept-Language': 'es-AR,es;q=0.9,en;q=0.8',
     'Accept-Encoding': 'gzip, deflate, br',
-    'Connection': 'keep-alive',
+    'Sec-Ch-Ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+    'Sec-Ch-Ua-Mobile': '?0',
+    'Sec-Ch-Ua-Platform': '"Windows"',
     'Upgrade-Insecure-Requests': '1',
-    'Sec-Fetch-Dest': 'document',
-    'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-Site': 'same-origin',
     'Sec-Fetch-User': '?1',
     'Cache-Control': 'max-age=0'
 };
@@ -36,14 +36,11 @@ async function getApiHeaders() {
             console.warn("⚠️ No se encontró access_token en settings/mercadolibre_auth");
         }
         
-        const headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'es-AR,es;q=0.9'
-        };
+        const headers = { ...ML_HEADERS };
+        headers['Accept'] = 'application/json';
         
         if (accessToken) {
-            headers['Authorization'] = `Bearer ${accessToken}`;
+            headers['Authorization'] = `Bearer ${accessToken.trim()}`;
         }
         
         return headers;
@@ -82,44 +79,19 @@ exports.obtenerProductoML = onCall({
     // 1c. Fase 2: Resolución de links cortos/referidos (meli.la)
     else if (urlInput.startsWith("http")) {
         try {
-            // Primero usamos HEAD para obtener la URL expandida sin descargar todo el contenido
-            const headRes = await axios.head(urlInput, {
-                headers: ML_HEADERS,
+            // meli.la bloquea peticiones HEAD. Usamos GET con un Referer de confianza.
+            const res = await axios.get(urlInput, {
+                headers: { ...ML_HEADERS, 'Referer': 'https://www.mercadolibre.com.ar/' },
                 maxRedirects: 10,
-                timeout: 8000,
+                timeout: 10000,
                 validateStatus: (status) => status < 500
             });
-            
-            // Obtenemos la URL final después de redirecciones
-            let finalUrl = headRes.request?.res?.responseUrl || 
-                          headRes.request?.responseURL || 
-                          headRes.config?.url || 
-                          "";
-            
-            // Si el HEAD no resolvió, intentamos con GET
-            if (!finalUrl.includes("MLA")) {
-                const getRes = await axios.get(urlInput, {
-                    headers: ML_HEADERS,
-                    maxRedirects: 10,
-                    timeout: 8000,
-                    validateStatus: (status) => status < 500
-                });
-                
-                finalUrl = getRes.request?.res?.responseUrl || 
-                          getRes.request?.responseURL || 
-                          finalUrl;
-                
-                const content = typeof getRes.data === 'string' ? getRes.data : "";
-                const comboMatch = (finalUrl + content).match(/MLA-?\d{8,15}/i);
-                if (comboMatch) {
-                    itemId = comboMatch[0].replace(/-/g, "").toUpperCase();
-                }
-            } else {
-                // El HEAD ya nos dio la URL con el ID
-                const match = finalUrl.match(/MLA-?\d{8,15}/i);
-                if (match) {
-                    itemId = match[0].replace(/-/g, "").toUpperCase();
-                }
+
+            const finalUrl = res.request?.res?.responseUrl || res.request?.responseURL || urlInput;
+            const content = typeof res.data === 'string' ? res.data : "";
+            const comboMatch = (finalUrl + content).match(/MLA-?\d{8,15}/i);
+            if (comboMatch) {
+                itemId = comboMatch[0].replace(/-/g, "").toUpperCase();
             }
         } catch (e) {
             console.error("Fallo al resolver referido:", e.message);
