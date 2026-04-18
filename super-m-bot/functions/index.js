@@ -6,17 +6,17 @@ admin.initializeApp();
 
 // Headers optimizados para Mercado Libre - User-Agent real de navegador
 const ML_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-    'Accept-Language': 'es-AR,es;q=0.9,en;q=0.8',
+    'Accept-Language': 'es-AR,es;q=0.9',
     'Accept-Encoding': 'gzip, deflate, br',
     'Connection': 'keep-alive',
-    'Sec-Ch-Ua': '"Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
+    'Sec-Ch-Ua': '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
     'Sec-Ch-Ua-Mobile': '?0',
     'Sec-Ch-Ua-Platform': '"Windows"',
     'Sec-Fetch-Dest': 'document',
     'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-Site': 'cross-site',
     'Sec-Fetch-User': '?1',
     'Upgrade-Insecure-Requests': '1'
 };
@@ -32,12 +32,13 @@ async function getApiHeaders() {
         const accessToken = (configDoc.data()?.access_token || '').trim();
         
         const apiHeaders = {
+            'Accept': 'application/json',
             'User-Agent': ML_HEADERS['User-Agent'],
-            'Accept': 'application/json'
+            'Connection': 'keep-alive'
         };
         
         if (accessToken) {
-            apiHeaders['Authorization'] = `Bearer ${accessToken.trim()}`;
+            apiHeaders['Authorization'] = `Bearer ${accessToken}`;
         } else {
             console.warn("⚠️ Sin access_token en Firestore");
         }
@@ -77,7 +78,7 @@ exports.obtenerProductoML = onCall({
         try {
             // meli.la bloquea peticiones HEAD. Usamos GET con headers de navegación limpia.
             const res = await axios.get(urlInput, {
-                headers: { ...ML_HEADERS, 'Referer': 'https://www.mercadolibre.com.ar/' },
+                headers: { ...ML_HEADERS, 'Referer': 'https://www.google.com/' },
                 maxRedirects: 10,
                 timeout: 15000,
                 validateStatus: (status) => status < 500
@@ -87,7 +88,7 @@ exports.obtenerProductoML = onCall({
             
             // Buscamos el ID en la URL final o en el cuerpo de la página (a veces está en un script)
             const content = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
-            const comboMatch = (finalUrl + content).match(/MLA-?\d{8,15}/i) || content.match(/item_id":"(MLA\d+)"/i);
+            const comboMatch = (finalUrl + content).match(/MLA-?\d{8,15}/i) || content.match(/item_id":"(MLA\d+)"/i) || content.match(/id="itemId"\s+value="(MLA\d+)"/i);
             
             if (comboMatch) {
                 const rawId = Array.isArray(comboMatch) ? comboMatch[1] || comboMatch[0] : comboMatch;
@@ -109,7 +110,7 @@ exports.obtenerProductoML = onCall({
         throw new HttpsError("invalid-argument", "Error de transmutación: El link de referido no reveló un ID (MLA). Prueba pegando el link largo.");
     }
 
-    console.log(`🔎 ID detectado: ${itemId}. Solicitando datos...`);
+    console.log(`🔎 [SUPER-M-BOT] ID: ${itemId}. Solicitando a la API...`);
 
     const apiHeaders = await getApiHeaders();
     let itemData, descData;
@@ -124,7 +125,7 @@ exports.obtenerProductoML = onCall({
         descData = descRes.data;
     } catch (error) {
         const status = error.response?.status;
-        console.warn(`⚠️ Error ${status} con token. Reintentando acceso público...`);
+        console.error(`❌ Error API ML (${status}):`, error.message);
 
         // 2do Intento: Acceso Público (Sin Token) con User-Agent simplificado
         try {
