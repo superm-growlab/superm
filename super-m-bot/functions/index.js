@@ -6,10 +6,11 @@ admin.initializeApp();
 
 // Headers optimizados para Mercado Libre - User-Agent real de navegador
 const ML_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
     'Accept-Language': 'es-AR,es;q=0.9,en;q=0.8',
     'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
     'Sec-Ch-Ua': '"Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
     'Sec-Ch-Ua-Mobile': '?0',
     'Sec-Ch-Ua-Platform': '"Windows"',
@@ -28,11 +29,11 @@ async function getApiHeaders() {
             .doc('mercadolibre_auth')
             .get();
         
-        const accessToken = configDoc.data()?.access_token || '';
+        const accessToken = (configDoc.data()?.access_token || '').trim();
         
         const apiHeaders = {
-            'Accept': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+            'User-Agent': ML_HEADERS['User-Agent'],
+            'Accept': 'application/json'
         };
         
         if (accessToken) {
@@ -43,12 +44,8 @@ async function getApiHeaders() {
         
         return apiHeaders;
     } catch (error) {
-        console.error("❌ Error obteniendo access token:", error.message);
-        return {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'es-AR,es;q=0.9'
-        };
+        console.error("❌ Fallo al leer Firestore:", error.message);
+        return { 'User-Agent': ML_HEADERS['User-Agent'], 'Accept': 'application/json' };
     }
 }
 
@@ -144,8 +141,12 @@ exports.obtenerProductoML = onCall({
             
             if (finalStatus === 404 || status === 404) {
                 throw new HttpsError("not-found", "Producto no encontrado en ML.");
+            } else if (finalStatus === 403) {
+                throw new HttpsError("permission-denied", "ML bloqueó el acceso (Error 403). Intenta más tarde o pega el link largo.");
+            } else if (finalStatus === 401) {
+                throw new HttpsError("unauthenticated", "Token de ML vencido o inválido.");
             } else {
-                throw new HttpsError("internal", `ML bloqueó el acceso (Error ${finalStatus}). Intenta más tarde o pega el link largo.`);
+                throw new HttpsError("internal", `Error de Laboratorio (Status ${finalStatus}).`);
             }
         }
     }
