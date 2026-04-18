@@ -15,14 +15,26 @@ exports.obtenerProductoML = onCall({
         throw new HttpsError("invalid-argument", "Falta la URL del producto.");
     }
 
-    // Buscador de ID más flexible: detecta MLA123, MLA-123, MLA_123 o /p/MLA123
-    const mlaMatch = url.match(/(?:MLA|mla)[-_]?(\d+)/i) || url.match(/\/p\/(?:MLA|mla)?(\d+)/i);
-    
-    const itemId = mlaMatch ? `MLA${mlaMatch[1]}` : null;
+    // Extractor de ID ultra-flexible
+    // Busca: MLA123..., /p/MLA123..., o bloques de 9-12 dígitos que ML usa como ID
+    const patterns = [
+        /(?:MLA|mla)[-_]?(\d{8,15})/i,        // Caso estándar: MLA-12345...
+        /\/p\/(?:MLA|mla)?(\d{8,15})/i,      // Caso catálogo: /p/MLA12345...
+        //-(?:[/?#-]|$|(?=_))/   // Caso numérico puro: .../123456789...
+    ];
+
+    let itemId = null;
+    for (const p of patterns) {
+        const match = url.match(p);
+        if (match && match[1]) {
+            itemId = `MLA${match[1]}`;
+            break;
+        }
+    }
 
     if (!itemId) {
-        console.error("URL no reconocida:", url);
-        throw new HttpsError("invalid-argument", "El link no parece ser un producto válido de Mercado Libre (Falta MLA).");
+        console.error("DEBUG - URL que falló:", url);
+        throw new HttpsError("invalid-argument", `No detectamos un ID válido en: ${url.substring(0, 30)}...`);
     }
 
     try {
