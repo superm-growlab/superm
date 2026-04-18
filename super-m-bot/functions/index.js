@@ -4,6 +4,13 @@ const axios = require("axios");
 
 admin.initializeApp();
 
+// Configuración de Headers globales para engañar a los filtros de ML
+const ML_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'application/json',
+    'Accept-Language': 'es-AR,es;q=0.9'
+};
+
 exports.obtenerProductoML = onCall({ 
     region: 'us-central1',
     cors: true,
@@ -42,7 +49,7 @@ exports.obtenerProductoML = onCall({
     // Soporte para links cortos (meli.la o /s/): Resolvemos la redirección para hallar el ID
     if (!itemId && (input.includes("meli.la") || input.includes("/s/"))) {
         try {
-            const res = await axios.get(input, { maxRedirects: 5 });
+            const res = await axios.get(input, { maxRedirects: 5, headers: ML_HEADERS });
             itemId = extractId(res.request.res.responseUrl || res.config.url);
         } catch (e) { console.error("Error siguiendo link corto:", e.message); }
     }
@@ -61,26 +68,26 @@ exports.obtenerProductoML = onCall({
         try {
             // 1. Intentar como ITEM (MLA...)
             const [itemRes, descRes] = await Promise.all([
-                axios.get(`https://api.mercadolibre.com/items/${itemId}`, { timeout: 8000 }),
-                axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { timeout: 8000 }).catch(() => ({ data: { plain_text: "" } }))
+                axios.get(`https://api.mercadolibre.com/items/${itemId}`, { timeout: 8000, headers: ML_HEADERS }),
+                axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { timeout: 8000, headers: ML_HEADERS }).catch(() => ({ data: { plain_text: "" } }))
             ]);
             itemData = itemRes.data;
             descText = descRes.data.plain_text;
         } catch (e) {
             try {
                 // 2. Intentar como PRODUCTO (Catálogo)
-                const prodRes = await axios.get(`https://api.mercadolibre.com/products/${itemId}`, { timeout: 8000 });
+                const prodRes = await axios.get(`https://api.mercadolibre.com/products/${itemId}`, { timeout: 8000, headers: ML_HEADERS });
                 itemData = prodRes.data;
                 descText = "Producto de catálogo verificado por Super M.";
             } catch (e2) {
                 // 3. Fallback: Búsqueda por código (Resuelve IDs alfanuméricos como NG8WAT...)
-                const searchRes = await axios.get(`https://api.mercadolibre.com/sites/MLA/search?q=${itemId}`, { timeout: 8000 });
+                const searchRes = await axios.get(`https://api.mercadolibre.com/sites/MLA/search?q=${itemId}`, { timeout: 8000, headers: ML_HEADERS });
                 if (searchRes.data.results && searchRes.data.results.length > 0) {
                     const firstMatch = searchRes.data.results[0];
                     // Re-intentamos fetch completo con el ID real encontrado en la búsqueda
                     const [itemResF, descResF] = await Promise.all([
-                        axios.get(`https://api.mercadolibre.com/items/${firstMatch.id}`, { timeout: 8000 }),
-                        axios.get(`https://api.mercadolibre.com/items/${firstMatch.id}/description`, { timeout: 8000 }).catch(() => ({ data: { plain_text: "" } }))
+                        axios.get(`https://api.mercadolibre.com/items/${firstMatch.id}`, { timeout: 8000, headers: ML_HEADERS }),
+                        axios.get(`https://api.mercadolibre.com/items/${firstMatch.id}/description`, { timeout: 8000, headers: ML_HEADERS }).catch(() => ({ data: { plain_text: "" } }))
                     ]);
                     itemData = itemResF.data;
                     descText = descResF.data.plain_text;
