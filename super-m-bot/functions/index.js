@@ -25,18 +25,25 @@ async function getApiHeaders() {
             .doc('mercadolibre_auth')
             .get();
         
-        const accessToken = (configDoc.data()?.access_token || '').trim();
-        
+        const data = configDoc.data();
+        const accessToken = (data?.access_token || '').trim();
+
+        if (accessToken) {
+            console.log(`🔑 [ML-AUTH] Token detectado en Firestore (Inicia con: ${accessToken.substring(0, 10)}...)`);
+        } else {
+            console.warn("⚠️ [ML-AUTH] No se encontró access_token en Firestore.");
+        }
+
         const apiHeaders = {
+            ...ML_HEADERS,
             'Accept': 'application/json',
-            'User-Agent': 'MELI-SDK-JS/1.0.0'
         };
         
         if (accessToken) apiHeaders['Authorization'] = `Bearer ${accessToken}`;
         return apiHeaders;
     } catch (error) {
         console.error("❌ Fallo al leer Firestore:", error.message);
-        return { 'Accept': 'application/json', 'User-Agent': 'MELI-SDK-JS/1.0.0' };
+        return { ...ML_HEADERS, 'Accept': 'application/json' };
     }
 }
 
@@ -114,20 +121,28 @@ exports.obtenerProductoML = onCall({
         descData = descRes.data;
     } catch (error) {
         const status = error.response?.status;
-        console.warn(`⚠️ Error ${status} con token. Reintentando acceso público...`);
+        const mlError = error.response?.data?.message || error.message;
+        console.warn(`⚠️ Intento con Token falló (Status: ${status}). Motivo: ${mlError}. Probando Plan B (Público)...`);
 
         try {
             // 2do Intento: Público
-            const pubHeaders = { 'Accept': 'application/json', 'User-Agent': 'MELI-SDK-JS/1.0.0' };
+            const pubHeaders = { ...ML_HEADERS, 'Accept': 'application/json' };
+            
             const [itemRes, descRes] = await Promise.all([
                 axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: pubHeaders }),
-                axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: pubHeaders }).catch(() => ({ data: { plain_text: "" } }))
+                axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: pubHeaders }).catch(() => ({ data: { plain_text: "Sin descripción." } }))
             ]);
             itemData = itemRes.data;
             descData = descRes.data;
         } catch (e) {
             const finalStatus = e.response?.status || 500;
-            if (finalStatus === 403) throw new HttpsError("permission-denied", "ML bloqueó el acceso (403).");
+            const mlDetailedError = e.response?.data?.message || "";
+            
+            if (finalStatus === 403 || mlDetailedError.includes("blocked")) {
+                console.error("🚫 BLOQUEO DATA CENTER:", mlDetailedError);
+                throw new HttpsError("permission-denied", "ML bloqueó el acceso. Tu token en Firestore expiró y el acceso público desde la nube está restringido.");
+            }
+            
             if (finalStatus === 404) throw new HttpsError("not-found", "Producto no encontrado.");
             throw new HttpsError("internal", `Error API (Status ${finalStatus})`);
         }

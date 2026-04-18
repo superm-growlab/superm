@@ -302,7 +302,7 @@
             if (e.code) {
                 switch (e.code) {
                     case 'permission-denied':
-                        errorMessage = "🚫 ML bloqueó el acceso. Intenta de nuevo en unos minutos.";
+                        errorMessage = "🚫 TOKEN VENCIDO O BLOQUEADO. Actualiza el access_token en la colección 'settings/mercadolibre_auth' de Firestore.";
                         break;
                     case 'not-found':
                         errorMessage = "🔍 Producto no encontrado. Verifica el ID.";
