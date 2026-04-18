@@ -15,6 +15,35 @@ exports.obtenerProductoML = onCall({
         throw new HttpsError("invalid-argument", "Falta la URL del producto.");
     }
 
+    // Intentar extraer el ID de Mercado Libre (MLA...)
+    const mlaMatch = url.match(/MLA[-_]?(\d+)/i);
+    const itemId = mlaMatch ? `MLA${mlaMatch[1]}` : null;
+
+    if (itemId) {
+        try {
+            // Consultar la API oficial de Mercado Libre para obtener datos precisos
+            const [itemRes, descRes] = await Promise.all([
+                axios.get(`https://api.mercadolibre.com/items/${itemId}`),
+                axios.get(`https://api.mercadolibre.com/items/${itemId}/description`).catch(() => ({ data: { plain_text: "" } }))
+            ]);
+
+            const item = itemRes.data;
+            const specs = item.attributes ? item.attributes.map(attr => `${attr.name}: ${attr.value_name}`) : [];
+            
+            return {
+                n: item.title,
+                p: item.price || 0,
+                i: item.pictures && item.pictures.length > 0 ? item.pictures.map(p => p.secure_url) : [""],
+                desc: descRes.data.plain_text || "Producto seleccionado por Super M.",
+                specs: specs.length > 0 ? specs : ["Calidad Super M Growlab"],
+                texto: specs.map(s => "• " + s).join("\n") || descRes.data.plain_text,
+                link: url
+            };
+        } catch (apiError) {
+            console.error("ML API Error, intentando scraping manual...", apiError.message);
+        }
+    }
+
     try {
         const response = await axios.get(url, {
             headers: { 
