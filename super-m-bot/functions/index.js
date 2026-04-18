@@ -15,181 +15,38 @@ exports.obtenerProductoML = onCall({
         throw new HttpsError("invalid-argument", "Falta la URL del producto.");
     }
 
-    // Intentar extraer el ID de Mercado Libre (MLA...)
     const mlaMatch = url.match(/MLA[-_]?(\d+)/i);
     const itemId = mlaMatch ? `MLA${mlaMatch[1]}` : null;
 
-    if (itemId) {
-        try {
-            // Consultar la API oficial de Mercado Libre para obtener datos precisos
-            const [itemRes, descRes] = await Promise.all([
-                axios.get(`https://api.mercadolibre.com/items/${itemId}`),
-                axios.get(`https://api.mercadolibre.com/items/${itemId}/description`).catch(() => ({ data: { plain_text: "" } }))
-            ]);
-
-            const item = itemRes.data;
-            const specs = item.attributes ? item.attributes.map(attr => `${attr.name}: ${attr.value_name}`) : [];
-            
-            // Limpiamos la descripción de textos de marketing de ML
-            let cleanDesc = descRes.data.plain_text || "";
-            cleanDesc = cleanDesc.replace(/[\n\r]+/g, '\n').split("¡Conocé")[0].trim();
-
-            const textoFicha = specs.length > 0 ? specs.map(s => "• " + s).join("\n") : cleanDesc;
-
-            return {
-                n: item.title,
-                p: item.price || 0,
-                i: item.pictures && item.pictures.length > 0 ? item.pictures.map(p => p.secure_url) : [""],
-                desc: cleanDesc || "Calidad profesional verificada por Super M.",
-                specs: specs.length > 0 ? specs : ["Calidad Super M Growlab"],
-                texto: textoFicha,
-                link: url
-            };
-        } catch (apiError) {
-            console.error("ML API Error, intentando scraping manual...", apiError.message);
-        }
+    if (!itemId) {
+        throw new HttpsError("invalid-argument", "No se pudo identificar un ID de Mercado Libre válido (MLA) en el enlace.");
     }
 
     try {
-        const response = await axios.get(url, {
-            headers: { 
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                'Accept-Language': 'es-AR,es;q=0.9,en;q=0.8'
-            }
-        });
+        const [itemRes, descRes] = await Promise.all([
+            axios.get(`https://api.mercadolibre.com/items/${itemId}`),
+            axios.get(`https://api.mercadolibre.com/items/${itemId}/description`).catch(() => ({ data: { plain_text: "" } }))
+        ]);
 
-        const html = response.data;
-        
-        // 1. Título: og:title o H1
-        const tituloMatch = html.match(/property="og:title"\s+content="([^"]+)"/i) || 
-                           html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-        let titulo = tituloMatch ? tituloMatch[1].replace(/&quot;/g, '"').split('|')[0].trim() : "Producto Super M";
+        const item = itemRes.data;
 
-        // 2. Precio: Parser robusto para formatos regionales
-        let precio = 0;
-        const parsePrecio = (val) => {
-            if (!val) return 0;
-            let s = val.toString().trim().replace(/[^0-9,.]/g, '');
-            // Formato AR: 1.500,50 -> Si tiene punto y coma, el punto es miles y la coma es decimal
-            if (s.includes('.') && s.includes(',')) {
-                s = s.replace(/\./g, '').replace(',', '.');
-            } 
-            // Si solo tiene coma (ej: 1500,50)
-            else if (s.includes(',')) {
-                s = s.replace(',', '.');
-            }
-            // Si solo tiene punto y parece miles (ej: 15.000)
-            else if (s.includes('.') && /\.\d{3}$/.test(s)) {
-                s = s.replace(/\./g, '');
-            }
-            return Math.round(parseFloat(s)) || 0;
-        };
-
-        const schemaMatch = html.match(/<script type="application\/ld\+json">([\s\S]+?)<\/script>/i);
-        if (schemaMatch) {
-            try {
-                const schema = JSON.parse(schemaMatch[1]);
-                const item = Array.isArray(schema) ? schema.find(s => s.offers) : schema;
-                const offers = item?.offers;
-                if (offers && offers.price) precio = parsePrecio(offers.price);
-            } catch (e) {}
-        }
-
-        if (!precio) {
-            const precioMatch = html.match(/property="product:price:amount"[^>]*?content="([\d.,]+)"/i) || 
-                               html.match(/itemprop="price"[^>]*?content="([\d.,]+)"/i) ||
-                               html.match(/class="andes-money-amount__fraction"[^>]*?>([\d.]+)</i);
-            
-            if (precioMatch) precio = parsePrecio(precioMatch[1]);
-        }
-
-        // 3. Imagen
-        const imagenMatch = html.match(/property="og:image"\s+content="([^"]+)"/i) || 
-                           html.match(/https:\/\/http2\.mlstatic\.com\/D_NQ_NP_[^"']+\.webp/i);
-        let imagen = imagenMatch ? (imagenMatch[1] || imagenMatch[0]) : "";
-
-        // 4. Ficha Técnica (Especificaciones)
-        const caracteristicas = [];
-
-        // Intento 1: Selector universal de tablas de atributos (Ficha Técnica)
-        const specsMatches = html.matchAll(/<tr[^>]*class="[^"]*(?:andes-table__row|ui-pdp-specs__table__row)[^"]*"[^>]*>[\s\S]*?<th[^>]*>([\s\S]*?)<\/th>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>/gi);
-        for (const match of specsMatches) {
-            const key = match[1].replace(/<[^>]+>/g, '').trim();
-            const val = match[2].replace(/<[^>]+>/g, '').trim();
-            if (key && val && key !== "" && val !== "") {
-                caracteristicas.push(`${key}: ${val}`);
-            }
-        }
-
-        // Intento 2: Atributos en formato lista (Specs de la cabecera)
-        if (caracteristicas.length === 0) {
-            const listMatches = html.matchAll(/<span[^>]*class="ui-pdp-color--BLACK ui-pdp-size--SMALL ui-pdp-family--SEMIBOLD"[^>]*>([\s\S]*?)<\/span>/gi);
-            for (const match of listMatches) {
-                const text = match[1].replace(/<[^>]+>/g, '').trim();
-                if (text && text.length > 2) caracteristicas.push(text);
-            }
-        }
-
-        // Intento 3: Bullet points de resumen (ui-pdp-features__item)
-        const caracMatches = html.matchAll(/<li[^>]+class="ui-pdp-features__item"[^>]*>([\s\S]*?)<\/li>/gi);
-        for (const match of caracMatches) {
-            const texto = match[1].replace(/<[^>]+>/g, '').trim();
-            if (texto && !caracteristicas.includes(texto)) caracteristicas.push(texto);
-        }
-
-        // 5. Descripción (Filtro de seguridad)
-        let descripcion = "";
-        if (schemaMatch) {
-            try {
-                const schema = JSON.parse(schemaMatch[1]);
-                const item = Array.isArray(schema) ? schema[0] : schema;
-                if (item.description && !item.description.includes("Visita la página")) {
-                    descripcion = item.description;
-                }
-            } catch (e) {}
-        }
-
-        if (!descripcion) {
-            const descMatch = html.match(/property="og:description"\s+content="([^"]+)"/i) ||
-                             html.match(/name="description"\s+content="([^"]+)"/i);
-            
-            if (descMatch) {
-                let d = descMatch[1].replace(/&quot;/g, '"');
-                if (d.includes("Visita la página") || d.includes("en un solo lugar") || d.includes("NICOLASMARVEGGIO")) {
-                    descripcion = ""; 
-                } else {
-                    descripcion = d.split('✓')[0].trim();
-                }
-            }
-        }
-
-        // 6. Limpieza profunda de marketing y frases genéricas
-        const frasesLimpieza = [
-            /Envíos gratis en el día/gi, /Comprá online de forma segura/gi, /Cuotas sin interés/gi,
-            /Conocé los tiempos y las formas de envío/gi, /Mercado Puntos/gi, /Devolución gratis/gi,
-            /Vendido por/gi, /Garantía de fábrica/gi, /Visita la página/gi
-        ];
-        
-        descripcion = descripcion;
-        frasesLimpieza.forEach(regex => { descripcion = descripcion.replace(regex, ''); });
-        descripcion = descripcion.trim();
+        const caracteristicas = item.attributes 
+            ? item.attributes.map(attr => `${attr.name}: ${attr.value_name}`).slice(0, 10) 
+            : ["Calidad Super M Growlab"];
 
         const textoFicha = caracteristicas.map(c => "• " + c).join("\n");
-        const descFinal = descripcion || "Producto seleccionado y verificado por el laboratorio Super M.";
 
         return {
-            n: titulo,
-            p: precio || 0,
-            i: imagen ? [imagen] : [""],
-            desc: descFinal,
-            specs: caracteristicas.length > 0 ? caracteristicas : ["Calidad Super M Growlab"],
-            texto: textoFicha || descFinal,
+            n: item.title,
+            p: item.price || 0,
+            i: item.pictures && item.pictures.length > 0 ? [item.pictures[0].secure_url] : [item.thumbnail],
+            desc: descRes.data.plain_text || "Producto verificado por Super M Lab.",
+            specs: caracteristicas,
+            texto: textoFicha, 
             link: url
         };
     } catch (error) {
-        console.error("Scraping error detalle:", error.response?.status, error.message);
-        const detail = error.response ? `(ML Status: ${error.response.status})` : error.message;
-        throw new HttpsError("internal", "Error de conexión con el laboratorio: " + detail);
+        console.error("ML API Error:", error.message);
+        throw new HttpsError("internal", "Error de comunicación con la API de Mercado Libre. Verifica el link.");
     }
 });
