@@ -30,13 +30,17 @@ exports.obtenerProductoML = onCall({
             const item = itemRes.data;
             const specs = item.attributes ? item.attributes.map(attr => `${attr.name}: ${attr.value_name}`) : [];
             
+            // Limpiamos la descripción de textos de marketing de ML
+            let cleanDesc = descRes.data.plain_text || "";
+            cleanDesc = cleanDesc.replace(/[\n\r]+/g, ' ').split("¡Conocé")[0].trim();
+
             return {
                 n: item.title,
                 p: item.price || 0,
                 i: item.pictures && item.pictures.length > 0 ? item.pictures.map(p => p.secure_url) : [""],
-                desc: descRes.data.plain_text || "Producto seleccionado por Super M.",
+                desc: cleanDesc || "Calidad profesional verificada por Super M.",
                 specs: specs.length > 0 ? specs : ["Calidad Super M Growlab"],
-                texto: specs.map(s => "• " + s).join("\n") || descRes.data.plain_text,
+                texto: specs.length > 0 ? specs.map(s => "• " + s).join("\n") : cleanDesc,
                 link: url
             };
         } catch (apiError) {

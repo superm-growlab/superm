@@ -9,6 +9,11 @@
         body { background: var(--bg); color: var(--p); font-family: 'Courier New', monospace; padding: 20px; }
         .panel { border: 2px solid var(--p); padding: 30px; box-shadow: 0 0 20px rgba(57,255,20,0.2); max-width: 800px; margin: auto; border-radius: 15px; background: #000; }
         h1 { text-align: center; letter-spacing: 5px; text-shadow: 0 0 10px var(--p); border-bottom: 1px solid var(--s); padding-bottom: 10px; }
+        
+        .filtros-container { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; justify-content: center; }
+        .chip-f { padding: 5px 15px; border: 1px solid var(--s); border-radius: 20px; font-size: 0.7rem; cursor: pointer; transition: 0.3s; color: var(--s); }
+        .chip-f.active { background: var(--s); color: #fff; box-shadow: 0 0 10px var(--s); }
+
         .grid-form { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
         input { background: #000; border: 1px solid var(--s); color: var(--p); padding: 12px; border-radius: 5px; font-family: monospace; width:100%; box-sizing:border-box; }
         textarea { background: #000; border: 1px solid var(--s); color: #fff; padding: 12px; border-radius: 5px; font-family: monospace; width:100%; box-sizing:border-box; resize: vertical; }
@@ -39,8 +44,8 @@
         .preview-mini { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--p); }
         .btn-confirm { background: var(--s); color: white; border: none; padding: 15px; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; margin-top: 20px; border-radius: 5px; font-size: 1rem; }
         .html-snippet { background: #0a0a0a; color: #eee; font-size: 0.6rem; padding: 8px; border: 1px solid var(--p); margin-top: 5px; word-break: break-all; cursor: pointer; white-space: pre-wrap; text-align: left; max-height: 100px; overflow-y: auto; }
-        .csv-row { background: #111; color: #888; font-size: 0.6rem; padding: 8px; border: 1px solid #222; margin-top: 5px; word-break: break-all; cursor: pointer; }
-        .csv-row:hover { color: var(--p); border-color: var(--p); }
+        .csv-zone { display: none; } /* Ocultamos lo de Google Sheets */
+        .badge-id { font-size: 0.5rem; color: #555; display: block; margin-bottom: 5px; }
     </style>
     <!-- Firebase SDKs (v8 compat) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -84,7 +89,15 @@
             <button class="btn-bot full" style="background:transparent; color:#888; border:1px solid #333; font-size:0.7rem;" onclick="cancelarEdicion()">CANCELAR</button>
         </div>
 
-        <h2 style="margin-top:40px; font-size:1rem; border-bottom:1px solid #333;">HISTORIAL DE CARGAS</h2>
+        <h2 style="margin-top:40px; font-size:1.2rem; border-bottom:1px solid var(--s); padding-bottom:10px; display: flex; justify-content: space-between; align-items: center;">
+            📦 INVENTARIO EN NUBE
+            <small id="contador-bot" style="color:var(--s); font-size:0.6rem;"></small>
+        </h2>
+
+        <div class="filtros-container" id="filtros-historial">
+            <div class="chip-f active" data-cat="todas" onclick="filtrarHistorial('todas', this)">TODAS</div>
+            <!-- Las categorías se cargarán dinámicamente aquí -->
+        </div>
 
         <div id="historial-bot"></div>
     </div>
@@ -105,6 +118,91 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        let todosLosProductos = []; // Almacén global para el filtrado en tiempo real
+
+        // AL CARGAR: Sincronizar con Firestore
+        window.onload = () => {
+            const categoriasList = [
+                { id: "cat-nutricion", n: "NUTRICIÓN" },
+                { id: "cat-iluminacion", n: "ILUMINACIÓN" },
+                { id: "cat-sustratos", n: "SUSTRATOS" },
+                { id: "cat-control", n: "CONTROL" },
+                { id: "cat-carpas", n: "INDOOR" }
+            ];
+            
+            const fCont = document.getElementById('filtros-historial');
+            categoriasList.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'chip-f';
+                div.innerText = c.n;
+                div.setAttribute('data-cat', c.id);
+                div.onclick = (e) => filtrarHistorial(c.id, e.target);
+                fCont.appendChild(div);
+            });
+
+            // Escuchador en tiempo real de Firebase
+            db.collection("productos_tienda").orderBy("id", "desc").onSnapshot(snap => {
+                todosLosProductos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                document.getElementById('contador-bot').innerText = `${todosLosProductos.length} ÍTEMS EN NUBE`;
+                
+                // Mantenemos el filtro seleccionado actualmente
+                const activeChip = document.querySelector('.chip-f.active');
+                const currentCat = activeChip ? activeChip.getAttribute('data-cat') : 'todas';
+                filtrarHistorial(currentCat);
+            });
+        };
+
+        function filtrarHistorial(cat, el) {
+            if (el) {
+                document.querySelectorAll('.chip-f').forEach(c => c.classList.remove('active'));
+                el.classList.add('active');
+            }
+            
+            const hist = document.getElementById('historial-bot');
+            hist.innerHTML = "";
+            
+            const filtrados = cat === 'todas' ? todosLosProductos : todosLosProductos.filter(p => p.cat === cat);
+            
+            filtrados.forEach(p => {
+                const wrapper = document.createElement('div');
+                // Si no hay texto de ficha técnica, mostramos la descripción
+                const previewFicha = p.texto || p.desc || 'Sin información extraída.';
+
+                wrapper.innerHTML = `
+                    <div class="tarjeta">
+                        <span class="badge-id">ID: ${p.id}</span>
+                        <div class="contenedor-img" style="height:140px;">${obtenerImagenHTML_changuito(p.i)}</div>
+                        <h3 style="margin: 5px 0; font-size:0.75rem; text-align: center; color:#fff;">${p.n}</h3>
+                        <div style="text-align: center; color: var(--p); font-size:0.9rem; font-weight: bold;">$${p.p.toLocaleString()}</div>
+                        
+                        <div style="margin-top:10px; border-top:1px solid #222; padding-top:8px;">
+                            <span class="label-edit">FICHA TÉCNICA DETECTADA:</span>
+                            <div style="font-size:0.55rem; color:#888; height:50px; overflow-y:auto; background:#000; padding:5px; border-radius:4px; white-space:pre-wrap;">${previewFicha}</div>
+                        </div>
+
+                        <button class="btn-bot" style="padding:8px; font-size:0.6rem; width:100%; margin-top:10px; background:#ff3131; color:white; border-radius:4px;" 
+                                onclick="eliminarProducto('${p.id}')">ELIMINAR PRODUCTO</button>
+                    </div>
+                `;
+                hist.appendChild(wrapper);
+            });
+        }
+
+        async function eliminarProducto(id) {
+            if (confirm("🚨 ¿Estás seguro de que deseas eliminar este producto de la nube?")) {
+                try {
+                    await db.collection("productos_tienda").doc(id).delete();
+                    notify("🗑️ PRODUCTO ELIMINADO CON ÉXITO.");
+                } catch (e) {
+                    alert("Error al eliminar: " + e.message);
+                }
+            }
+        }
+
+        function notify(m) {
+            document.getElementById('status-bot').innerText = m;
+            setTimeout(() => document.getElementById('status-bot').innerText = "SISTEMA LISTO.", 3000);
+        }
 
         // Helper function to generate image HTML, copied from index.html
         // Esto asegura que el HTML generado por el bot sea compatible con la función obtenerImagenHTML de index.html
@@ -140,27 +238,27 @@
 
             if (data.error) throw new Error(data.error);
 
+            // Extraemos el ID limpio (ej: MLA123456) para usar como ID de documento en Firestore
+            const mlaMatch = data.link.match(/MLA[-_]?(\d+)/i);
+            const itemId = mlaMatch ? `MLA${mlaMatch[1]}` : "PROD-" + Date.now();
+
             // Preparamos los datos temporales
-                productoTemporal = {
-                    id: data.link.match(/MLA[-_]?(\d+)/i)?.[0] || Date.now().toString(),
-                    i: (data.i && data.i.length > 0) ? data.i : ["🌿"],
-                    linkOriginal: data.link
-                };
+            productoTemporal = {
+                id: itemId,
+                i: (data.i && data.i.length > 0) ? data.i : ["🌿"],
+                linkOriginal: data.link
+            };
 
             // LLENADO DE FORMULARIO
             document.getElementById('edit-n').value = data.n || "";
             document.getElementById('edit-p').value = data.p || 0;
             document.getElementById('edit-desc').value = data.desc || "Producto de alta calidad seleccionado por Super M.";
-            document.getElementById('edit-texto').value = data.texto || data.desc || "";
+            document.getElementById('edit-texto').value = data.texto || data.desc || ""; // Aquí se carga la Ficha Técnica
             document.getElementById('edit-specs').value = data.specs ? data.specs.join(' | ') : "Calidad Super M";
             
-            // Evitamos cargar el emoji como URL para prevenir el error 404
+            // Vista previa de imagen: usamos el favicon como fallback si no hay imagen real en la respuesta
             const imgUrl = (data.i && data.i[0] && data.i[0].includes('http')) ? data.i[0] : '';
-            if (imgUrl) {
-                document.getElementById('edit-preview-img').src = imgUrl;
-            } else {
-                document.getElementById('edit-preview-img').src = "https://i.postimg.cc/rF9GqwGS/favicon.png";
-            }
+            document.getElementById('edit-preview-img').src = imgUrl || "https://i.postimg.cc/rF9GqwGS/favicon.png";
 
             if (data.p === 0 || data.n === "Producto Super M") {
                 status.innerText = "⚠️ DATOS PARCIALES. REVISA LOS CAMPOS MANUALMENTE.";
@@ -204,8 +302,6 @@
                 // IMPORTANTE: Sincronizado con la colección que usa index.html
                 await db.collection("productos_tienda").doc(dataFinal.id).set(dataFinal);
                 
-                renderizar(dataFinal);
-                
                 // Reset
                 status.innerText = "✨ PRODUCTO CARGADO EXITOSAMENTE.";
                 document.getElementById('editor-producto').style.display = 'none';
@@ -221,46 +317,6 @@
             document.getElementById('editor-producto').style.display = 'none';
             document.getElementById('status-bot').innerText = "OPERACIÓN CANCELADA.";
             productoTemporal = null;
-        }
-
-        function renderizar(p) {
-            const hist = document.getElementById('historial-bot');
-
-            // Función de limpieza para asegurar que el CSV no se rompa con comas o comillas del texto
-            const clean = (val) => val ? val.toString().replace(/"/g, '""') : "";
-
-            // ORDEN SHEETS: ID (0), Cat (1), Nombre (2), Precio (3), Imagen (4), Desc (5), Specs (6), Link (7), Texto/Ficha (8)
-            const columnas = [p.id, p.cat, `"${clean(p.n)}"`, p.p, `"${p.i.join('|')}"`, `"${clean(p.desc)}"`, `"${p.specs.join('|')}"`, `"${clean(p.linkPago)}"`, `"${clean(p.texto)}"`];
-            const csvRow = columnas.join(';') + ';';
-
-            // HTML Snippet idéntico al que genera el renderGrid de index.html
-            const htmlSnippet = `<div class="tarjeta" onclick="verProducto('${p.id}')" style="display:flex; flex-direction:column;">
-        <div class="contenedor-img">${obtenerImagenHTML_changuito(p.i)}</div>
-        <h3 style="margin: 10px 0; text-align: center;">${p.n}</h3>
-        <div id="stars-grid-${p.id}" style="text-align:center; font-size:0.8rem; margin-bottom:5px;"></div>
-        <div style="text-align: center; color: var(--p); font-weight: bold;">$${p.p.toLocaleString()}</div>
-        ${p.texto ? `<button class="btn btn-m" style="font-size: 0.65rem; padding: 6px; margin-top: 15px; border-color:var(--s); color:var(--s);" onclick="event.stopPropagation(); window.verNotasCompletas(decodeURIComponent('${encodeURIComponent(p.texto)}'), '📖 FICHA TÉCNICA')">📄 FICHA TÉCNICA</button>` : ''}
-    </div>`;
-
-            const wrapper = document.createElement('div');
-            wrapper.style.marginBottom = "40px";
-            wrapper.style.gridColumn = "span 1";
-            
-            wrapper.innerHTML = `
-                <div class="tarjeta">
-                    <div class="contenedor-img">${obtenerImagenHTML_changuito(p.i)}</div>
-                    <h3 style="margin: 10px 0; text-align: center; font-size:1rem;">${p.n}</h3>
-                    <div style="text-align: center; color: var(--p); font-weight: bold; margin-bottom:10px;">$${p.p.toLocaleString()}</div>
-                </div>
-                <div style="margin-top:15px;">
-                    <span class="label-edit">CSV PARA GOOGLE SHEETS</span>
-                    <div class="csv-row" onclick="navigator.clipboard.writeText(this.innerText); alert('Fila CSV copiada!')">${csvRow}</div>
-                    <span class="label-edit" style="margin-top:10px;">SNIPPET HTML PARA INDEX.HTML</span>
-                    <div class="html-snippet" onclick="navigator.clipboard.writeText(this.innerText); alert('Snippet HTML copiado!')">${htmlSnippet.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-                </div>
-            `;
-            
-            hist.prepend(wrapper);
         }
     </script>
 </body>
