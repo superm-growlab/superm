@@ -10,13 +10,14 @@ const ML_HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
     'Accept-Language': 'es-AR,es;q=0.9,en;q=0.8',
     'Accept-Encoding': 'gzip, deflate, br',
-    'Sec-Ch-Ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+    'Sec-Ch-Ua': '"Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
     'Sec-Ch-Ua-Mobile': '?0',
     'Sec-Ch-Ua-Platform': '"Windows"',
-    'Upgrade-Insecure-Requests': '1',
-    'Sec-Fetch-Site': 'same-origin',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
     'Sec-Fetch-User': '?1',
-    'Cache-Control': 'max-age=0'
+    'Upgrade-Insecure-Requests': '1'
 };
 
 // Función para obtener headers API con Authorization
@@ -30,13 +31,11 @@ async function getApiHeaders() {
         const accessToken = configDoc.data()?.access_token || '';
         
         const apiHeaders = {
-            'User-Agent': ML_HEADERS['User-Agent'],
             'Accept': 'application/json',
-            'Accept-Language': 'es-AR,es;q=0.9'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
         };
         
         if (accessToken) {
-            console.log("✅ Token ML cargado");
             apiHeaders['Authorization'] = `Bearer ${accessToken.trim()}`;
         } else {
             console.warn("⚠️ Sin access_token en Firestore");
@@ -79,7 +78,7 @@ exports.obtenerProductoML = onCall({
     // 1c. Fase 2: Resolución de links cortos/referidos (meli.la)
     else if (urlInput.startsWith("http")) {
         try {
-            // meli.la bloquea peticiones HEAD. Usamos GET con un Referer de confianza.
+            // meli.la bloquea peticiones HEAD. Usamos GET con headers de navegación limpia.
             const res = await axios.get(urlInput, {
                 headers: { ...ML_HEADERS, 'Referer': 'https://www.mercadolibre.com.ar/' },
                 maxRedirects: 10,
@@ -99,8 +98,9 @@ exports.obtenerProductoML = onCall({
             }
         } catch (e) {
             console.error("Fallo al resolver referido:", e.message);
-            // Intento de rescate: buscar ID en la URL del error (redirección parcial)
+            // Intento de rescate: buscar ID en la URL del error (redirección bloqueada pero URL visible)
             const errUrl = e.response?.request?.res?.responseUrl || 
+                          e.request?.res?.responseUrl ||
                           e.config?.url || 
                           "";
             const match = errUrl.match(/MLA-?\d{8,15}/i);
@@ -112,13 +112,13 @@ exports.obtenerProductoML = onCall({
         throw new HttpsError("invalid-argument", "Error de transmutación: El link de referido no reveló un ID (MLA). Prueba pegando el link largo.");
     }
 
-    console.log(`🔎 Procesando ID: ${itemId}`);
+    console.log(`🔎 ID detectado: ${itemId}. Solicitando datos...`);
 
     const apiHeaders = await getApiHeaders();
     let itemData, descData;
 
     try {
-        // 2. Llamada a API con autenticación
+        // 1er Intento: Con Token de Firestore
         const [itemRes, descRes] = await Promise.all([
             axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: apiHeaders }),
             axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: apiHeaders }).catch(() => ({ data: { plain_text: "" } }))
@@ -127,14 +127,11 @@ exports.obtenerProductoML = onCall({
         descData = descRes.data;
     } catch (error) {
         const status = error.response?.status;
-        console.warn(`⚠️ API ML error ${status}. Reintentando acceso público...`);
+        console.warn(`⚠️ Error ${status} con token. Reintentando acceso público...`);
 
-        // Fallback público si el token falla
+        // 2do Intento: Acceso Público (Sin Token) con User-Agent simplificado
         try {
-            const publicHeaders = { 
-                'User-Agent': ML_HEADERS['User-Agent'], 
-                'Accept': 'application/json' 
-            };
+            const publicHeaders = { 'User-Agent': apiHeaders['User-Agent'], 'Accept': 'application/json' };
             const [itemRes, descRes] = await Promise.all([
                 axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: publicHeaders }),
                 axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: publicHeaders }).catch(() => ({ data: { plain_text: "" } }))
@@ -142,11 +139,13 @@ exports.obtenerProductoML = onCall({
             itemData = itemRes.data;
             descData = descRes.data;
         } catch (fallbackError) {
-            console.error("❌ Fallo total en API ML:", fallbackError.message);
-            if (status === 404) {
+            const finalStatus = fallbackError.response?.status || 500;
+            console.error(`❌ Fallo total API ML (${finalStatus}):`, fallbackError.message);
+            
+            if (finalStatus === 404 || status === 404) {
                 throw new HttpsError("not-found", "Producto no encontrado en ML.");
             } else {
-                throw new HttpsError("internal", "ML bloqueó el acceso. Intenta más tarde.");
+                throw new HttpsError("internal", `ML bloqueó el acceso (Error ${finalStatus}). Intenta más tarde o pega el link largo.`);
             }
         }
     }
