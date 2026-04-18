@@ -75,6 +75,7 @@
             <div class="grid-form" style="margin-top:0;">
                 <div><span class="label-edit">PRECIO ($)</span><input type="number" id="edit-p"></div>
                 <div><span class="label-edit">CATEGORÍA</span><select id="edit-cat" style="background:#000; border:1px solid var(--s); color:var(--p); padding:10px; width:100%; border-radius:5px;"><option value="cat-nutricion">🧪 NUTRICIÓN</option><option value="cat-iluminacion">☀️ ILUMINACIÓN</option><option value="cat-sustratos">📦 SUSTRATOS</option><option value="cat-control">🔬 CONTROL</option><option value="cat-carpas">⛺ INDOOR</option></select></div>
+                <div class="full"><span class="label-edit">DESCRIPCIÓN CORTA (Resumen)</span><input type="text" id="edit-desc"></div>
                 <div class="full"><span class="label-edit">ESPECIFICACIONES (Separadas por |)</span><input type="text" id="edit-specs"></div>
                 <div class="full"><span class="label-edit">FICHA TÉCNICA (TEXTO)</span><textarea id="edit-texto" rows="4"></textarea></div>
             </div>
@@ -142,14 +143,14 @@
             // Preparamos los datos temporales
                 productoTemporal = {
                     id: data.link.match(/MLA[-_]?(\d+)/i)?.[0] || Date.now().toString(),
-                    i: data.i || ["🌿"],
-                    desc: data.desc || data.n || "", 
+                    i: data.i || ["🌿"], 
                     linkOriginal: data.link
                 };
 
             // LLENADO DE FORMULARIO
             document.getElementById('edit-n').value = data.n || "";
             document.getElementById('edit-p').value = data.p || 0;
+            document.getElementById('edit-desc').value = data.desc || "";
             document.getElementById('edit-texto').value = data.texto || data.d || "";
             document.getElementById('edit-specs').value = data.specs ? data.specs.join(' | ') : "Calidad Super M";
             
@@ -192,7 +193,7 @@
                 n: document.getElementById('edit-n').value,
                 p: parseFloat(document.getElementById('edit-p').value),
                 i: productoTemporal.i,
-                desc: productoTemporal.desc,
+                desc: document.getElementById('edit-desc').value,
                 specs: document.getElementById('edit-specs').value.split('|').map(s => s.trim()).filter(s => s),
                 linkPago: linkFinal,
                 texto: document.getElementById('edit-texto').value
@@ -224,7 +225,10 @@
 
         function renderizar(p) {
             const hist = document.getElementById('historial-bot');
-            const csvRow = `${p.id};${p.cat};${p.n};${p.p};${p.i.join('|')};${p.desc};${p.specs.join('|')};${p.linkPago};${p.texto};`;
+            
+            // Generamos la fila CSV con comillas para proteger los campos de texto
+            const clean = (val) => val ? val.toString().replace(/"/g, '""') : "";
+            const csvRow = `${p.id};${p.cat};"${clean(p.n)}";${p.p};"${p.i.join('|')}";"${clean(p.desc)}";"${p.specs.join('|')}";"${p.linkPago}";"${clean(p.texto)}";`;
 
             // HTML Snippet idéntico al que genera el renderGrid de index.html
             const htmlSnippet = `<div class="tarjeta" onclick="verProducto('${p.id}')" style="display:flex; flex-direction:column;">
