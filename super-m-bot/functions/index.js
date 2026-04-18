@@ -14,10 +14,6 @@ const ML_HEADERS = {
     'Sec-Ch-Ua': '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
     'Sec-Ch-Ua-Mobile': '?0',
     'Sec-Ch-Ua-Platform': '"Windows"',
-    'Sec-Fetch-Dest': 'document',
-    'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'cross-site',
-    'Sec-Fetch-User': '?1',
     'Upgrade-Insecure-Requests': '1'
 };
 
@@ -33,20 +29,14 @@ async function getApiHeaders() {
         
         const apiHeaders = {
             'Accept': 'application/json',
-            'User-Agent': ML_HEADERS['User-Agent'],
-            'Connection': 'keep-alive'
+            'User-Agent': 'MELI-SDK-JS/1.0.0'
         };
         
-        if (accessToken) {
-            apiHeaders['Authorization'] = `Bearer ${accessToken}`;
-        } else {
-            console.warn("⚠️ Sin access_token en Firestore");
-        }
-        
+        if (accessToken) apiHeaders['Authorization'] = `Bearer ${accessToken}`;
         return apiHeaders;
     } catch (error) {
         console.error("❌ Fallo al leer Firestore:", error.message);
-        return { 'User-Agent': ML_HEADERS['User-Agent'], 'Accept': 'application/json' };
+        return { 'Accept': 'application/json', 'User-Agent': 'MELI-SDK-JS/1.0.0' };
     }
 }
 
@@ -76,47 +66,46 @@ exports.obtenerProductoML = onCall({
     // 1c. Fase 2: Resolución de links cortos/referidos (meli.la)
     else if (urlInput.startsWith("http")) {
         try {
-            // meli.la bloquea peticiones HEAD. Usamos GET con headers de navegación limpia.
             const res = await axios.get(urlInput, {
-                headers: { ...ML_HEADERS, 'Referer': 'https://www.google.com/' },
+                headers: { ...ML_HEADERS, 'Referer': 'https://www.google.com/', 'Sec-Fetch-Site': 'cross-site' },
                 maxRedirects: 10,
                 timeout: 15000,
                 validateStatus: (status) => status < 500
             });
 
             const finalUrl = res.request?.res?.responseUrl || res.request?.responseURL || urlInput;
+            const content = typeof res.data === 'string' ? res.data : "";
+            const comboMatch = (finalUrl + content).match(/MLA-?\d{8,15}/i) || 
+                               content.match(/item_id":"(MLA\d+)"/i) || 
+                               content.match(/id="itemId"\s+value="(MLA\d+)"/i);
             
-            // Buscamos el ID en la URL final o en el cuerpo de la página (a veces está en un script)
-            const content = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
-            const comboMatch = (finalUrl + content).match(/MLA-?\d{8,15}/i) || content.match(/item_id":"(MLA\d+)"/i) || content.match(/id="itemId"\s+value="(MLA\d+)"/i);
-            
+
             if (comboMatch) {
                 const rawId = Array.isArray(comboMatch) ? comboMatch[1] || comboMatch[0] : comboMatch;
-                itemId = rawId.replace(/-/g, "").toUpperCase();
+                itemId = rawId.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
             }
         } catch (e) {
             console.error("Fallo al resolver referido:", e.message);
-            // Intento de rescate: buscar ID en la URL del error (redirección bloqueada pero URL visible)
             const errUrl = e.response?.request?.res?.responseUrl || 
                           e.request?.res?.responseUrl ||
                           e.config?.url || 
                           "";
             const match = errUrl.match(/MLA-?\d{8,15}/i);
-            if (match) itemId = match[0].replace(/-/g, "").toUpperCase();
+            if (match) itemId = match[0].replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
         }
     }
 
     if (!itemId || !itemId.startsWith("MLA")) {
-        throw new HttpsError("invalid-argument", "Error de transmutación: El link de referido no reveló un ID (MLA). Prueba pegando el link largo.");
+        throw new HttpsError("invalid-argument", "No se detectó un ID (MLA). Intenta con el link largo.");
     }
 
-    console.log(`🔎 [SUPER-M-BOT] ID: ${itemId}. Solicitando a la API...`);
+    console.log(`🔎 [SUPER-M-BOT] ID: ${itemId}`);
 
     const apiHeaders = await getApiHeaders();
     let itemData, descData;
 
     try {
-        // 1er Intento: Con Token de Firestore
+        // 1er Intento: Con Token
         const [itemRes, descRes] = await Promise.all([
             axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: apiHeaders }),
             axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: apiHeaders }).catch(() => ({ data: { plain_text: "" } }))
@@ -125,30 +114,22 @@ exports.obtenerProductoML = onCall({
         descData = descRes.data;
     } catch (error) {
         const status = error.response?.status;
-        console.error(`❌ Error API ML (${status}):`, error.message);
+        console.warn(`⚠️ Error ${status} con token. Reintentando acceso público...`);
 
-        // 2do Intento: Acceso Público (Sin Token) con User-Agent simplificado
         try {
-            const publicHeaders = { 'User-Agent': apiHeaders['User-Agent'], 'Accept': 'application/json' };
+            // 2do Intento: Público
+            const pubHeaders = { 'Accept': 'application/json', 'User-Agent': 'MELI-SDK-JS/1.0.0' };
             const [itemRes, descRes] = await Promise.all([
-                axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: publicHeaders }),
-                axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: publicHeaders }).catch(() => ({ data: { plain_text: "" } }))
+                axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: pubHeaders }),
+                axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: pubHeaders }).catch(() => ({ data: { plain_text: "" } }))
             ]);
             itemData = itemRes.data;
             descData = descRes.data;
-        } catch (fallbackError) {
-            const finalStatus = fallbackError.response?.status || 500;
-            console.error(`❌ Fallo total API ML (${finalStatus}):`, fallbackError.message);
-            
-            if (finalStatus === 404 || status === 404) {
-                throw new HttpsError("not-found", "Producto no encontrado en ML.");
-            } else if (finalStatus === 403) {
-                throw new HttpsError("permission-denied", "ML bloqueó el acceso (Error 403). Intenta más tarde o pega el link largo.");
-            } else if (finalStatus === 401) {
-                throw new HttpsError("unauthenticated", "Token de ML vencido o inválido.");
-            } else {
-                throw new HttpsError("internal", `Error de Laboratorio (Status ${finalStatus}).`);
-            }
+        } catch (e) {
+            const finalStatus = e.response?.status || 500;
+            if (finalStatus === 403) throw new HttpsError("permission-denied", "ML bloqueó el acceso (403).");
+            if (finalStatus === 404) throw new HttpsError("not-found", "Producto no encontrado.");
+            throw new HttpsError("internal", `Error API (Status ${finalStatus})`);
         }
     }
 
