@@ -29,6 +29,13 @@ async function getApiHeaders() {
         
         const accessToken = configDoc.data()?.access_token || '';
         
+        // DEBUG: Log del token (solo primeros 10 caracteres)
+        if (accessToken) {
+            console.log("✅ Token ML cargado:", accessToken.substring(0, 10) + "...");
+        } else {
+            console.warn("⚠️ No se encontró access_token en settings/mercadolibre_auth");
+        }
+        
         const headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
@@ -41,7 +48,7 @@ async function getApiHeaders() {
         
         return headers;
     } catch (error) {
-        console.error("Error obteniendo access token:", error.message);
+        console.error("❌ Error obteniendo access token:", error.message);
         return {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
