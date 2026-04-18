@@ -37,15 +37,25 @@ exports.obtenerProductoML = onCall({
     // 1c. Fase 2: Resolución de links cortos/referidos (meli.la)
     else if (urlInput.startsWith("http")) {
         try {
-            const res = await axios.get(urlInput, { headers: ML_HEADERS, maxRedirects: 5, timeout: 5000 });
-            const finalUrl = res.request?.res?.responseUrl || res.config?.url || "";
-            const redirectMatch = finalUrl.match(/(MLA|mla)-?\d{8,15}/i);
-            if (redirectMatch) itemId = redirectMatch[0].replace(/-/g, "").toUpperCase();
-        } catch (e) { console.error("Error siguiendo link de referido:", e.message); }
+            // Usamos headers de navegador (HTML) para resolver el link corto
+            const res = await axios.get(urlInput, { 
+                headers: { ...ML_HEADERS, 'Accept': 'text/html' }, 
+                maxRedirects: 10, 
+                timeout: 8000 
+            });
+            
+            const finalUrl = res.request?.res?.responseUrl || res.request?.responseURL || res.config?.url || "";
+            
+            // Buscamos el ID en la URL final o en el cuerpo del HTML (canonical/meta tags)
+            const comboMatch = (finalUrl + res.data).match(/(MLA|mla)-?\d{8,15}/i);
+            if (comboMatch) {
+                itemId = comboMatch[0].replace(/-/g, "").toUpperCase();
+            }
+        } catch (e) { console.error("Fallo al resolver referido:", e.message); }
     }
 
     if (!itemId) {
-        throw new HttpsError("invalid-argument", "Error de transmutación: No se detectó un ID de Mercado Libre válido (MLA). Verifica el link de referido.");
+        throw new HttpsError("invalid-argument", "Error de transmutación: El link de referido no reveló un ID (MLA). Prueba pegando el link largo.");
     }
 
     try {
