@@ -23,8 +23,8 @@ const ML_HEADERS = {
 async function getApiHeaders() {
     try {
         const configDoc = await admin.firestore()
-            .collection('configuracion')
-            .doc('mercado_libre')
+            .collection('settings')
+            .doc('mercadolibre_auth')
             .get();
         
         const accessToken = configDoc.data()?.access_token || '';
