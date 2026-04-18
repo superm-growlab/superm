@@ -143,7 +143,7 @@
             // Preparamos los datos temporales
                 productoTemporal = {
                     id: data.link.match(/MLA[-_]?(\d+)/i)?.[0] || Date.now().toString(),
-                    i: data.i || ["🌿"], 
+                    i: (data.i && data.i.length > 0) ? data.i : ["🌿"], 
                     linkOriginal: data.link
                 };
 
@@ -193,8 +193,8 @@
                 n: document.getElementById('edit-n').value,
                 p: parseFloat(document.getElementById('edit-p').value),
                 i: productoTemporal.i,
-                desc: document.getElementById('edit-desc').value,
-                specs: document.getElementById('edit-specs').value.split('|').map(s => s.trim()).filter(s => s),
+                desc: document.getElementById('edit-desc').value.trim(),
+                specs: document.getElementById('edit-specs').value.split('|').map(s => s.trim()).filter(s => s), 
                 linkPago: linkFinal,
                 texto: document.getElementById('edit-texto').value
             };
@@ -225,10 +225,13 @@
 
         function renderizar(p) {
             const hist = document.getElementById('historial-bot');
-            
-            // Generamos la fila CSV con comillas para proteger los campos de texto
+
+            // Función de limpieza para asegurar que el CSV no se rompa con comas o comillas del texto
             const clean = (val) => val ? val.toString().replace(/"/g, '""') : "";
-            const csvRow = `${p.id};${p.cat};"${clean(p.n)}";${p.p};"${p.i.join('|')}";"${clean(p.desc)}";"${p.specs.join('|')}";"${p.linkPago}";"${clean(p.texto)}";`;
+
+            // ORDEN SHEETS: ID (0), Cat (1), Nombre (2), Precio (3), Imagen (4), Desc (5), Specs (6), Link (7), Texto/Ficha (8)
+            const columnas = [p.id, p.cat, `"${clean(p.n)}"`, p.p, `"${p.i.join('|')}"`, `"${clean(p.desc)}"`, `"${p.specs.join('|')}"`, `"${p.linkPago}"`, `"${clean(p.texto)}"`];
+            const csvRow = columnas.join(';') + ';';
 
             // HTML Snippet idéntico al que genera el renderGrid de index.html
             const htmlSnippet = `<div class="tarjeta" onclick="verProducto('${p.id}')" style="display:flex; flex-direction:column;">
