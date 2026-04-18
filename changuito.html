@@ -143,15 +143,15 @@
             // Preparamos los datos temporales
                 productoTemporal = {
                     id: data.link.match(/MLA[-_]?(\d+)/i)?.[0] || Date.now().toString(),
-                    i: (data.i && data.i.length > 0) ? data.i : ["🌿"], 
+                    i: (data.i && data.i.length > 0) ? data.i : ["🌿"],
                     linkOriginal: data.link
                 };
 
             // LLENADO DE FORMULARIO
             document.getElementById('edit-n').value = data.n || "";
             document.getElementById('edit-p').value = data.p || 0;
-            document.getElementById('edit-desc').value = data.desc || "";
-            document.getElementById('edit-texto').value = data.texto || data.d || "";
+            document.getElementById('edit-desc').value = data.desc || "Producto de alta calidad seleccionado por Super M.";
+            document.getElementById('edit-texto').value = data.texto || data.desc || "";
             document.getElementById('edit-specs').value = data.specs ? data.specs.join(' | ') : "Calidad Super M";
             
             // Evitamos cargar el emoji como URL para prevenir el error 404
@@ -194,9 +194,9 @@
                 p: parseFloat(document.getElementById('edit-p').value),
                 i: productoTemporal.i,
                 desc: document.getElementById('edit-desc').value.trim(),
-                specs: document.getElementById('edit-specs').value.split('|').map(s => s.trim()).filter(s => s), 
+                specs: document.getElementById('edit-specs').value.split('|').map(s => s.trim()).filter(s => s),
                 linkPago: linkFinal,
-                texto: document.getElementById('edit-texto').value
+                texto: document.getElementById('edit-texto').value.trim()
             };
 
             try {
@@ -230,7 +230,7 @@
             const clean = (val) => val ? val.toString().replace(/"/g, '""') : "";
 
             // ORDEN SHEETS: ID (0), Cat (1), Nombre (2), Precio (3), Imagen (4), Desc (5), Specs (6), Link (7), Texto/Ficha (8)
-            const columnas = [p.id, p.cat, `"${clean(p.n)}"`, p.p, `"${p.i.join('|')}"`, `"${clean(p.desc)}"`, `"${p.specs.join('|')}"`, `"${p.linkPago}"`, `"${clean(p.texto)}"`];
+            const columnas = [p.id, p.cat, `"${clean(p.n)}"`, p.p, `"${p.i.join('|')}"`, `"${clean(p.desc)}"`, `"${p.specs.join('|')}"`, `"${clean(p.linkPago)}"`, `"${clean(p.texto)}"`];
             const csvRow = columnas.join(';') + ';';
 
             // HTML Snippet idéntico al que genera el renderGrid de index.html
