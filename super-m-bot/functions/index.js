@@ -32,7 +32,9 @@ exports.obtenerProductoML = onCall({
             
             // Limpiamos la descripción de textos de marketing de ML
             let cleanDesc = descRes.data.plain_text || "";
-            cleanDesc = cleanDesc.replace(/[\n\r]+/g, ' ').split("¡Conocé")[0].trim();
+            cleanDesc = cleanDesc.replace(/[\n\r]+/g, '\n').split("¡Conocé")[0].trim();
+
+            const textoFicha = specs.length > 0 ? specs.map(s => "• " + s).join("\n") : cleanDesc;
 
             return {
                 n: item.title,
@@ -40,7 +42,7 @@ exports.obtenerProductoML = onCall({
                 i: item.pictures && item.pictures.length > 0 ? item.pictures.map(p => p.secure_url) : [""],
                 desc: cleanDesc || "Calidad profesional verificada por Super M.",
                 specs: specs.length > 0 ? specs : ["Calidad Super M Growlab"],
-                texto: specs.length > 0 ? specs.map(s => "• " + s).join("\n") : cleanDesc,
+                texto: textoFicha,
                 link: url
             };
         } catch (apiError) {
@@ -110,23 +112,22 @@ exports.obtenerProductoML = onCall({
         // 4. Ficha Técnica (Especificaciones)
         const caracteristicas = [];
 
-        // Intento 1: Nuevo selector de ML para especificaciones (ui-pdp-specs__table__column)
-        const specsMatches = html.matchAll(/<th[^>]*class="ui-pdp-specs__table__column"[^>]*>([\s\S]*?)<\/th>\s*<td[^>]*class="ui-pdp-specs__table__column"[^>]*>([\s\S]*?)<\/td>/gi);
+        // Intento 1: Selector universal de tablas de atributos (Ficha Técnica)
+        const specsMatches = html.matchAll(/<tr[^>]*class="[^"]*(?:andes-table__row|ui-pdp-specs__table__row)[^"]*"[^>]*>[\s\S]*?<th[^>]*>([\s\S]*?)<\/th>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>/gi);
         for (const match of specsMatches) {
             const key = match[1].replace(/<[^>]+>/g, '').trim();
             const val = match[2].replace(/<[^>]+>/g, '').trim();
-            if (key && val && !caracteristicas.some(c => c.toLowerCase().includes(key.toLowerCase()))) {
+            if (key && val && key !== "" && val !== "") {
                 caracteristicas.push(`${key}: ${val}`);
             }
         }
 
-        // Intento 2: Tabla de especificaciones (Andes o UI PDP)
-        const tableMatches = html.matchAll(/<tr[^>]*class="[^"]*(?:ui-pdp-table__row|andes-table__row)[^"]*"[^>]*>[\s\S]*?<th[^>]*>([\s\S]*?)<\/th>[\s\S]*?<t[db][^>]*>([\s\S]*?)<\/t[db]>/gi);
-        for (const match of tableMatches) {
-            const key = match[1].replace(/<[^>]+>/g, '').trim();
-            const val = match[2].replace(/<[^>]+>/g, '').replace(/<span[^>]*>|<\/span>/gi, '').trim();
-            if (key && val && !caracteristicas.some(c => c.toLowerCase().includes(key.toLowerCase()))) {
-                caracteristicas.push(`${key}: ${val}`);
+        // Intento 2: Atributos en formato lista (Specs de la cabecera)
+        if (caracteristicas.length === 0) {
+            const listMatches = html.matchAll(/<span[^>]*class="ui-pdp-color--BLACK ui-pdp-size--SMALL ui-pdp-family--SEMIBOLD"[^>]*>([\s\S]*?)<\/span>/gi);
+            for (const match of listMatches) {
+                const text = match[1].replace(/<[^>]+>/g, '').trim();
+                if (text && text.length > 2) caracteristicas.push(text);
             }
         }
 

@@ -44,7 +44,6 @@
         .preview-mini { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--p); }
         .btn-confirm { background: var(--s); color: white; border: none; padding: 15px; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; margin-top: 20px; border-radius: 5px; font-size: 1rem; }
         .html-snippet { background: #0a0a0a; color: #eee; font-size: 0.6rem; padding: 8px; border: 1px solid var(--p); margin-top: 5px; word-break: break-all; cursor: pointer; white-space: pre-wrap; text-align: left; max-height: 100px; overflow-y: auto; }
-        .csv-zone { display: none; } /* Ocultamos lo de Google Sheets */
         .badge-id { font-size: 0.5rem; color: #555; display: block; margin-bottom: 5px; }
     </style>
     <!-- Firebase SDKs (v8 compat) -->
@@ -56,7 +55,7 @@
 
     <div class="panel">
         <h1>🧪 SUPER M - ALCHEMIST BOT</h1>
-        <p style="text-align:center; font-size:0.7rem;">LOG: 15-04-2026 | TRANSMUTACIÓN FINAL</p>
+        <p style="text-align:center; font-size:0.7rem;">LOG: 2024 | SYNC DIRECTA A FIREBASE</p>
 
         <div class="grid-form">
             <input type="text" id="link-referido" class="full" placeholder="PEGAR LINK DE MERCADO LIBRE O REFERIDO">
@@ -80,7 +79,7 @@
             <div class="grid-form" style="margin-top:0;">
                 <div><span class="label-edit">PRECIO ($)</span><input type="number" id="edit-p"></div>
                 <div><span class="label-edit">CATEGORÍA</span><select id="edit-cat" style="background:#000; border:1px solid var(--s); color:var(--p); padding:10px; width:100%; border-radius:5px;"><option value="cat-nutricion">🧪 NUTRICIÓN</option><option value="cat-iluminacion">☀️ ILUMINACIÓN</option><option value="cat-sustratos">📦 SUSTRATOS</option><option value="cat-control">🔬 CONTROL</option><option value="cat-carpas">⛺ INDOOR</option></select></div>
-                <div class="full"><span class="label-edit">DESCRIPCIÓN CORTA (Resumen)</span><input type="text" id="edit-desc"></div>
+                <div class="full"><span class="label-edit">DESCRIPCIÓN COMERCIAL</span><input type="text" id="edit-desc"></div>
                 <div class="full"><span class="label-edit">ESPECIFICACIONES (Separadas por |)</span><input type="text" id="edit-specs"></div>
                 <div class="full"><span class="label-edit">FICHA TÉCNICA (TEXTO)</span><textarea id="edit-texto" rows="4"></textarea></div>
             </div>
