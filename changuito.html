@@ -218,63 +218,121 @@
         }
 
     async function botTransmutar() {
-        const urlInput = document.getElementById('link-referido').value.trim();
-        const idInput = document.getElementById('id-manual').value.trim();
+        // Capturar valores de los inputs correctamente
+        const linkReferidoInput = document.getElementById('link-referido');
+        const idManualInput = document.getElementById('id-manual');
+        
+        if (!linkReferidoInput || !idManualInput) {
+            console.error("No se encontraron los inputs del formulario");
+            return;
+        }
+        
+        const urlInput = linkReferidoInput.value.trim();
+        const idInput = idManualInput.value.trim();
         const entradaFinal = idInput || urlInput;
 
         const status = document.getElementById('status-bot');
         const editor = document.getElementById('editor-producto');
 
+        // Validación de entrada
         if (!entradaFinal) {
             status.innerText = "⚠️ INGRESA UN LINK O ID PARA COMENZAR.";
+            status.style.color = "orange";
             return;
         }
 
-        console.log("Intentando transmutar entrada:", entradaFinal);
+        console.log("🧪 Intentando transmutar entrada:", entradaFinal);
         status.innerText = "📡 CONECTANDO CON CLOUD FUNCTIONS...";
+        status.style.color = "var(--s)";
 
         try {
-            // Llamada a la función Cloud para obtener datos de ML
-            const obtenerProductoML = firebase.app().functions('us-central1').httpsCallable('obtenerProductoML');
+            // Obtener la función Cloud de Firebase
+            const functions = firebase.app().functions('us-central1');
+            const obtenerProductoML = functions.httpsCallable('obtenerProductoML');
+            
+            // Llamar a la función con el formato correcto { url: link }
             const response = await obtenerProductoML({ url: entradaFinal });
             const data = response.data;
 
-            if (data.error) throw new Error(data.error);
+            // Verificar si hay error en la respuesta
+            if (data.error) {
+                throw new Error(data.error);
+            }
 
-            // Preparamos los datos temporales
+            // Preparar los datos temporales para edición
             productoTemporal = {
                 id: data.id || ("PROD-" + Date.now()),
-                i: (data.i && data.i.length > 0) ? data.i : ["🌿"],
-                linkOriginal: data.link
+                i: (data.i && Array.isArray(data.i) && data.i.length > 0) ? data.i : ["🌿"],
+                linkOriginal: data.link || entradaFinal
             };
 
-            // LLENADO DE FORMULARIO
-            document.getElementById('edit-n').value = data.n || "";
+            // LLENADO DE FORMULARIO CON LOS DATOS OBTENIDOS
+            document.getElementById('edit-n').value = data.n || "Producto Super M";
             document.getElementById('edit-p').value = data.p || 0;
             document.getElementById('edit-desc').value = data.desc || "Producto de alta calidad seleccionado por Super M.";
-            document.getElementById('edit-texto').value = data.texto || data.desc || ""; // Aquí se carga la Ficha Técnica
-            document.getElementById('edit-specs').value = data.specs ? data.specs.join(' | ') : "Calidad Super M";
             
-            // Vista previa de imagen: usamos el favicon como fallback si no hay imagen real en la respuesta
-            const imgUrl = (data.i && data.i[0] && data.i[0].includes('http')) ? data.i[0] : '';
+            // IMPORTANTE: La ficha técnica va en edit-texto (con bullets •)
+            document.getElementById('edit-texto').value = data.texto || data.desc || "• Calidad: Super M Lab";
+            
+            // Specs separados por |
+            document.getElementById('edit-specs').value = data.specs && Array.isArray(data.specs) 
+                ? data.specs.join(' | ') 
+                : "Calidad Super M";
+            
+            // Vista previa de imagen
+            const imgUrl = (data.i && Array.isArray(data.i) && data.i[0] && data.i[0].includes('http')) 
+                ? data.i[0] 
+                : '';
             document.getElementById('edit-preview-img').src = imgUrl || "https://i.postimg.cc/rF9GqwGS/favicon.png";
 
-            if (data.p === 0 || data.n === "Producto Super M") {
-                status.innerText = "⚠️ DATOS PARCIALES. REVISA LOS CAMPOS MANUALMENTE.";
+            // Feedback visual según calidad de datos
+            const esCargaManual = data.p === 0 || data.n === "Producto Super M (Editar manualmente)" || data.n === "Producto Super M";
+            
+            if (esCargaManual) {
+                status.innerText = "⚠️ DATOS PARCIALES - COMPLETAR MANUALMENTE.";
                 status.style.color = "orange";
             } else {
                 status.innerText = "✨ TRANSMUTACIÓN EXITOSA.";
                 status.style.color = "var(--p)";
             }
 
+            // Mostrar el editor solo cuando la respuesta es exitosa
             editor.style.display = 'block';
             editor.scrollIntoView({ behavior: 'smooth' });
+            
         } catch (e) {
-            console.error("Error completo en Alchemist Bot:", e);
-            const code = e.code || "unknown";
-            const message = e.message || "Error interno del servidor";
-            alert(`❌ FALLO DE CONEXIÓN [${code}]: ${message}`);
-            status.innerText = `❌ ERROR [${code}]: ${message}`;
+            console.error("❌ Error completo en Alchemist Bot:", e);
+            
+            // Manejo específico de errores de Firebase
+            let errorMessage = "Error de Laboratorio: ML bloqueó el acceso o el ID es inválido.";
+            
+            if (e.code) {
+                switch (e.code) {
+                    case 'permission-denied':
+                        errorMessage = "🚫 ML bloqueó el acceso. Intenta de nuevo en unos minutos.";
+                        break;
+                    case 'not-found':
+                        errorMessage = "🔍 Producto no encontrado. Verifica el ID.";
+                        break;
+                    case 'resource-exhausted':
+                        errorMessage = "⏳ Demasiadas peticiones. Espera un momento.";
+                        break;
+                    case 'unavailable':
+                        errorMessage = "📡 No se pudo conectar con ML. Verifica tu conexión.";
+                        break;
+                    case 'internal':
+                        errorMessage = "⚠️ Error interno. Intenta con otro link.";
+                        break;
+                    default:
+                        errorMessage = `❌ Error [${e.code}]: ${e.message}`;
+                }
+            }
+            
+            status.innerText = errorMessage;
+            status.style.color = "#ff3131";
+            
+            // No mostramos el editor si hubo error
+            editor.style.display = 'none';
         }
     }
 
