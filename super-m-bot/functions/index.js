@@ -17,13 +17,22 @@ exports.obtenerProductoML = onCall({
 
     const extractId = (text) => {
         const patterns = [
-            /(?:MLA|mla)[-_]?(\d{8,15})/i,        // MLA-123...
-            /\/p\/([A-Z0-9-]+)/i,                // /p/NG8WAT-S7G4 o /p/MLA123...
-            /^([A-Z0-9-]{8,20})$/i                // ID puro (NG8WAT-S7G4)
+            /((?:MLA|mla)[-_]?\d{8,15})/i,        // MLA-123... (Captura completa)
+            /\/p\/(MLA\d{8,15})/i,                // /p/MLA123...
+            /\/p\/([A-Z0-9-]+)/i,                 // /p/NG8WAT-S7G4
+            /^([A-Z0-9-]{8,20})$/i,               // ID puro (NG8WAT...)
+            /MLA(\d+)/i                           // Fallback MLA puro
         ];
         for (const p of patterns) {
             const match = text.match(p);
-            if (match && match[1]) return match[1].toUpperCase().startsWith('MLA') ? match[1].toUpperCase().replace('-', '') : match[1].toUpperCase();
+            if (match && match[1]) {
+                let id = match[1].toUpperCase();
+                // Si contiene MLA, nos aseguramos de limpiar el guion y mantener el prefijo
+                if (id.includes('MLA')) return id.replace('-', '');
+                // Si son solo números de 8 a 15 dígitos, le ponemos el prefijo de Argentina
+                if (/^\d{8,15}$/.test(id)) return `MLA${id}`;
+                return id;
+            }
         }
         return null;
     };
@@ -43,20 +52,22 @@ exports.obtenerProductoML = onCall({
         throw new HttpsError("invalid-argument", `No detectamos un ID válido en la entrada.`);
     }
 
+    console.log("DEBUG - Procesando itemId:", itemId);
+
     try {
         let itemData, descText = "";
 
         // Intentamos primero como ITEM (MLA...)
         try {
             const [itemRes, descRes] = await Promise.all([
-                axios.get(`https://api.mercadolibre.com/items/${itemId}`),
-                axios.get(`https://api.mercadolibre.com/items/${itemId}/description`).catch(() => ({ data: { plain_text: "" } }))
+                axios.get(`https://api.mercadolibre.com/items/${itemId}`, { timeout: 10000 }),
+                axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { timeout: 10000 }).catch(() => ({ data: { plain_text: "" } }))
             ]);
             itemData = itemRes.data;
             descText = descRes.data.plain_text;
         } catch (e) {
             // Si falla o es un PID, intentamos como PRODUCTO (Catálogo)
-            const prodRes = await axios.get(`https://api.mercadolibre.com/products/${itemId}`);
+            const prodRes = await axios.get(`https://api.mercadolibre.com/products/${itemId}`, { timeout: 10000 });
             itemData = prodRes.data;
             descText = "Producto de catálogo verificado por Super M.";
         }
@@ -72,7 +83,7 @@ exports.obtenerProductoML = onCall({
             id: itemId,
             n: item.title,
             p: item.price || (item.buy_box_winner ? item.buy_box_winner.price : 0),
-            i: item.pictures && item.pictures.length > 0 ? [item.pictures[0].secure_url] : [item.thumbnail],
+            i: item.pictures && item.pictures.length > 0 ? [item.pictures[0].secure_url || item.pictures[0].url] : [item.thumbnail],
             desc: descText || "Producto verificado por Super M Lab.",
             specs: caracteristicas,
             texto: textoFicha, 
