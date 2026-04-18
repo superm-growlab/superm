@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Changuito|Super M Bot</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <style>
+        :root { --p: #39ff14; --s: #bc13fe; --bg: #050505; --card: #161616; --txt: #f0f0f0; }
+        body { background: var(--bg); color: var(--p); font-family: 'Courier New', monospace; padding: 20px; }
+        .panel { border: 2px solid var(--p); padding: 30px; box-shadow: 0 0 20px rgba(57,255,20,0.2); max-width: 800px; margin: auto; border-radius: 15px; background: #000; }
+        h1 { text-align: center; letter-spacing: 5px; text-shadow: 0 0 10px var(--p); border-bottom: 1px solid var(--s); padding-bottom: 10px; }
+        .grid-form { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        input { background: #000; border: 1px solid var(--s); color: var(--p); padding: 12px; border-radius: 5px; font-family: monospace; width:100%; box-sizing:border-box; }
+        textarea { background: #000; border: 1px solid var(--s); color: #fff; padding: 12px; border-radius: 5px; font-family: monospace; width:100%; box-sizing:border-box; resize: vertical; }
+        .full { grid-column: span 2; }
+        .btn-bot { background: var(--p); color: #000; border: none; padding: 15px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: 0.3s; font-size: 1rem; }
+        .btn-bot:hover { background: #fff; box-shadow: 0 0 20px var(--p); }
+        #status-bot { text-align: center; margin: 15px 0; font-size: 0.8rem; color: var(--s); min-height: 1.2rem; background: rgba(188, 19, 254, 0.1); padding: 5px; border-radius: 5px; }
+        #historial-bot { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; margin-top: 30px; border-top: 1px dashed var(--s); padding-top: 30px; }
+        
+        /* Estilos heredados de index.html para la Tarjeta */
+        .tarjeta { 
+            background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid #222; 
+            transition: 0.3s; display: flex; flex-direction: column; overflow: hidden;
+            height: 100%; cursor: pointer; text-align: left;
+        }
+        .tarjeta:hover { border-color: var(--p); transform: translateY(-3px); }
+        .contenedor-img { 
+            width: 100%; height: 220px; 
+            background: #000; border-radius: 10px; display: flex; justify-content: center; 
+            align-items: center; margin-bottom: 15px; overflow: hidden; border: 1px solid #222;
+        }
+        .img-placeholder { font-size: 3.5rem; }
+        .img-real { width: 100%; height: 100%; object-fit: contain; padding: 10px; transition: 0.4s ease; }
+        .btn-m { background: transparent; border: 1px solid var(--s); color: var(--s); padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.65rem; }
+
+        #editor-producto { display: none; margin-top: 30px; border: 1px solid var(--s); padding: 20px; border-radius: 12px; background: #080808; }
+        .label-edit { display: block; font-size: 0.6rem; color: var(--s); margin-bottom: 5px; font-weight: bold; }
+        .preview-mini { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--p); }
+        .btn-confirm { background: var(--s); color: white; border: none; padding: 15px; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; margin-top: 20px; border-radius: 5px; font-size: 1rem; }
+        .html-snippet { background: #0a0a0a; color: #eee; font-size: 0.6rem; padding: 8px; border: 1px solid var(--p); margin-top: 5px; word-break: break-all; cursor: pointer; white-space: pre-wrap; text-align: left; max-height: 100px; overflow-y: auto; }
+        .csv-row { background: #111; color: #888; font-size: 0.6rem; padding: 8px; border: 1px solid #222; margin-top: 5px; word-break: break-all; cursor: pointer; }
+        .csv-row:hover { color: var(--p); border-color: var(--p); }
+    </style>
+    <!-- Firebase SDKs (v8 compat) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-functions.js"></script>
+</head>
+<body>
+
+    <div class="panel">
+        <h1>🧪 SUPER M - ALCHEMIST BOT</h1>
+        <p style="text-align:center; font-size:0.7rem;">LOG: 15-04-2026 | TRANSMUTACIÓN FINAL</p>
+
+        <div class="grid-form">
+            <input type="text" id="link-referido" class="full" placeholder="PEGAR LINK DE MERCADO LIBRE O REFERIDO">
+            
+            <button class="btn-bot full" onclick="botTransmutar()">⚡ BUSCAR (TRANSMUTAR)</button>
+            <div id="status-bot" class="full">SISTEMA LISTO.</div>
+        </div>
+
+        <!-- ZONA DE REVISIÓN Y EDICIÓN -->
+        <div id="editor-producto" class="editor-zone">
+            <h3 style="text-align:center; color: var(--p); margin-top:0;">🔍 REVISIÓN DE ALQUIMIA</h3>
+            
+            <div style="display:flex; gap:15px; align-items:center; margin-bottom:15px;">
+                <img id="edit-preview-img" class="preview-mini" src="">
+                <div style="flex:1;">
+                    <span class="label-edit">TÍTULO DEL PRODUCTO</span>
+                    <input type="text" id="edit-n">
+                </div>
+            </div>
+
+            <div class="grid-form" style="margin-top:0;">
+                <div><span class="label-edit">PRECIO ($)</span><input type="number" id="edit-p"></div>
+                <div><span class="label-edit">CATEGORÍA</span><select id="edit-cat" style="background:#000; border:1px solid var(--s); color:var(--p); padding:10px; width:100%; border-radius:5px;"><option value="cat-nutricion">🧪 NUTRICIÓN</option><option value="cat-iluminacion">☀️ ILUMINACIÓN</option><option value="cat-sustratos">📦 SUSTRATOS</option><option value="cat-control">🔬 CONTROL</option><option value="cat-carpas">⛺ INDOOR</option></select></div>
+                <div class="full"><span class="label-edit">FICHA TÉCNICA (TEXTO)</span><textarea id="edit-texto" rows="4"></textarea></div>
+            </div>
+
+            <button class="btn-confirm" onclick="cargarAFirebase()">🚀 CARGAR A LA TIENDA</button>
+            <button class="btn-bot full" style="background:transparent; color:#888; border:1px solid #333; font-size:0.7rem;" onclick="cancelarEdicion()">CANCELAR</button>
+        </div>
+
+        <h2 style="margin-top:40px; font-size:1rem; border-bottom:1px solid #333;">HISTORIAL DE CARGAS</h2>
+
+        <div id="historial-bot"></div>
+    </div>
+
+    <script>
+        // Variable global para guardar los datos temporales mientras editas
+        let productoTemporal = null;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyArXS-nRFGb7MRQ30BsPM4vYdqXWfxNdg4",
+            authDomain: "super-m-growshop.firebaseapp.com",
+            projectId: "super-m-growshop",
+            storageBucket: "super-m-growshop.firebasestorage.app",
+            messagingSenderId: "851787326044",
+            appId: "1:851787326044:web:727818a787e52d9a19fc99",
+            measurementId: "G-KEPKJYST55"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Helper function to generate image HTML, copied from index.html
+        // Esto asegura que el HTML generado por el bot sea compatible con la función obtenerImagenHTML de index.html
+        function obtenerImagenHTML_changuito(input) {
+            let dato;
+            if (Array.isArray(input)) {
+                dato = input.length > 0 ? input[0] : "🌿"; // Si es array, toma el primer elemento o el ícono por defecto
+            } else {
+                dato = input || "🌿"; // Si es string, úsalo directamente o el ícono por defecto
+            }
+            
+            if (typeof dato === 'string' && dato.includes("http")) return `<img src="${dato}" class="img-real">`;
+            return `<div class="img-placeholder">${dato}</div>`;
+        }
+
+    async function botTransmutar() {
+        const linkReferido = document.getElementById('link-referido').value.trim();
+        const status = document.getElementById('status-bot');
+        const editor = document.getElementById('editor-producto');
+
+        if (!linkReferido) {
+            status.innerText = "⚠️ INGRESA UN LINK PARA COMENZAR.";
+            return;
+        }
+
+        status.innerText = "📡 CONECTANDO CON CLOUD FUNCTIONS...";
+
+        try {
+            // Llamada a la función Cloud para obtener datos de ML
+            const obtenerProductoML = firebase.app().functions('us-central1').httpsCallable('obtenerProductoML');
+            const response = await obtenerProductoML({ url: linkReferido });
+            const data = response.data;
+
+            if (data.error) throw new Error(data.error);
+
+            // Preparamos los datos temporales
+                productoTemporal = {
+                    id: data.link.match(/MLA[-_]?(\d+)/i)?.[0] || Date.now().toString(),
+                    i: data.i,
+                    desc: data.desc || data.n, 
+                    specs: Array.isArray(data.specs) ? data.specs : ["Calidad Super M"],
+                    linkOriginal: data.link
+                };
+
+            // LLENADO DE FORMULARIO
+            document.getElementById('edit-n').value = data.n || "";
+            document.getElementById('edit-p').value = data.p || 0;
+            document.getElementById('edit-texto').value = data.texto || data.d || "";
+            
+            // Evitamos cargar el emoji como URL para prevenir el error 404
+            const imgUrl = (data.i && data.i[0] && data.i[0].includes('http')) ? data.i[0] : '';
+            if (imgUrl) {
+                document.getElementById('edit-preview-img').src = imgUrl;
+            } else {
+                document.getElementById('edit-preview-img').src = "https://i.postimg.cc/rF9GqwGS/favicon.png";
+            }
+
+            if (data.p === 0 || data.n === "Producto Super M") {
+                status.innerText = "⚠️ DATOS PARCIALES. REVISA LOS CAMPOS MANUALMENTE.";
+                status.style.color = "orange";
+            } else {
+                status.innerText = "✨ TRANSMUTACIÓN EXITOSA.";
+                status.style.color = "var(--p)";
+            }
+
+            editor.style.display = 'block';
+            editor.scrollIntoView({ behavior: 'smooth' });
+        } catch (e) {
+            console.error("Error completo en Alchemist Bot:", e);
+            const code = e.code || "unknown";
+            const message = e.message || "Error interno del servidor";
+            alert(`❌ FALLO DE CONEXIÓN [${code}]: ${message}`);
+            status.innerText = `❌ ERROR [${code}]: ${message}`;
+        }
+    }
+
+        async function cargarAFirebase() {
+            if (!productoTemporal) return;
+            const status = document.getElementById('status-bot');
+            const linkFinal = document.getElementById('link-referido').value;
+
+            // Tomamos los valores actualizados del editor
+            const dataFinal = {
+                id: productoTemporal.id,
+                cat: document.getElementById('edit-cat').value,
+                n: document.getElementById('edit-n').value,
+                p: parseFloat(document.getElementById('edit-p').value),
+                i: productoTemporal.i,
+                desc: productoTemporal.desc || document.getElementById('edit-n').value,
+                specs: Array.isArray(productoTemporal.specs) ? productoTemporal.specs : ["Calidad Super M"],
+                linkPago: linkFinal,
+                texto: document.getElementById('edit-texto').value
+            };
+
+            try {
+                status.innerText = "🚀 SUBIENDO A LA NUBE...";
+                // IMPORTANTE: Sincronizado con la colección que usa index.html
+                await db.collection("productos_tienda").doc(dataFinal.id).set(dataFinal);
+                
+                renderizar(dataFinal);
+                
+                // Reset
+                status.innerText = "✨ PRODUCTO CARGADO EXITOSAMENTE.";
+                document.getElementById('editor-producto').style.display = 'none';
+                document.getElementById('link-referido').value = "";
+                productoTemporal = null;
+                
+            } catch (e) {
+                status.innerText = "❌ ERROR AL SUBIR: " + e.message;
+            }
+        }
+
+        function cancelarEdicion() {
+            document.getElementById('editor-producto').style.display = 'none';
+            document.getElementById('status-bot').innerText = "OPERACIÓN CANCELADA.";
+            productoTemporal = null;
+        }
+
+        function renderizar(p) {
+            const hist = document.getElementById('historial-bot');
+            const csvRow = `${p.id};${p.cat};${p.n};${p.p};${p.i.join('|')};${p.desc};${p.specs};${p.linkPago};${p.texto};`;
+
+            // HTML Snippet idéntico al que genera el renderGrid de index.html
+            const htmlSnippet = `<div class="tarjeta" onclick="verProducto('${p.id}')" style="display:flex; flex-direction:column;">
+        <div class="contenedor-img">${obtenerImagenHTML_changuito(p.i)}</div>
+        <h3 style="margin: 10px 0; text-align: center;">${p.n}</h3>
+        <div id="stars-grid-${p.id}" style="text-align:center; font-size:0.8rem; margin-bottom:5px;"></div>
+        <div style="text-align: center; color: var(--p); font-weight: bold;">$${p.p.toLocaleString()}</div>
+        ${p.texto ? `<button class="btn btn-m" style="font-size: 0.65rem; padding: 6px; margin-top: 15px; border-color:var(--s); color:var(--s);" onclick="event.stopPropagation(); window.verNotasCompletas(decodeURIComponent('${encodeURIComponent(p.texto)}'), '📖 FICHA TÉCNICA')">📄 FICHA TÉCNICA</button>` : ''}
+    </div>`;
+
+            const wrapper = document.createElement('div');
+            wrapper.style.marginBottom = "40px";
+            wrapper.style.gridColumn = "span 1";
+            
+            wrapper.innerHTML = `
+                <div class="tarjeta">
+                    <div class="contenedor-img">${obtenerImagenHTML_changuito(p.i)}</div>
+                    <h3 style="margin: 10px 0; text-align: center; font-size:1rem;">${p.n}</h3>
+                    <div style="text-align: center; color: var(--p); font-weight: bold; margin-bottom:10px;">$${p.p.toLocaleString()}</div>
+                </div>
+                <div style="margin-top:15px;">
+                    <span class="label-edit">CSV PARA GOOGLE SHEETS</span>
+                    <div class="csv-row" onclick="navigator.clipboard.writeText(this.innerText); alert('Fila CSV copiada!')">${csvRow}</div>
+                    <span class="label-edit" style="margin-top:10px;">SNIPPET HTML PARA INDEX.HTML</span>
+                    <div class="html-snippet" onclick="navigator.clipboard.writeText(this.innerText); alert('Snippet HTML copiado!')">${htmlSnippet.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                </div>
+            `;
+            
+            hist.prepend(wrapper);
+        }
+    </script>
+</body>
+</html>

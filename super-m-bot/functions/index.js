@@ -1,4 +1,4 @@
-const { onCall } = require("firebase-functions/v2/https");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const axios = require("axios");
 
@@ -12,29 +12,140 @@ exports.obtenerProductoML = onCall({
     const url = request.data.url;
     
     if (!url) {
-        return { error: "Falta la URL" };
+        throw new HttpsError("invalid-argument", "Falta la URL del producto.");
     }
 
     try {
         const response = await axios.get(url, {
             headers: { 
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' 
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'es-AR,es;q=0.9,en;q=0.8'
             }
         });
 
         const html = response.data;
         
-        const tituloMatch = html.match(/<h1 class="ui-pdp-title">([^<]+)<\/h1>/);
-        const precioMatch = html.match(/"price":\s*(\d+)/);
-        const imagenMatch = html.match(/https:\/\/http2\.mlstatic\.com\/D_NQ_NP_(\d+-[A-Z]+)\d+-\d+-F\.webp/);
+        // 1. Título: og:title o H1
+        const tituloMatch = html.match(/property="og:title"\s+content="([^"]+)"/i) || 
+                           html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+        let titulo = tituloMatch ? tituloMatch[1].replace(/&quot;/g, '"').split('|')[0].trim() : "Producto Super M";
+
+        // 2. Precio: Parser robusto para formatos regionales
+        let precio = 0;
+        const parsePrecio = (val) => {
+            if (!val) return 0;
+            let s = val.toString().trim().replace(/[^0-9,.]/g, '');
+            // Formato AR: 1.500,50 -> Si tiene punto y coma, el punto es miles y la coma es decimal
+            if (s.includes('.') && s.includes(',')) {
+                s = s.replace(/\./g, '').replace(',', '.');
+            } 
+            // Si solo tiene coma (ej: 1500,50)
+            else if (s.includes(',')) {
+                s = s.replace(',', '.');
+            }
+            // Si solo tiene punto y parece miles (ej: 15.000)
+            else if (s.includes('.') && /\.\d{3}$/.test(s)) {
+                s = s.replace(/\./g, '');
+            }
+            return Math.round(parseFloat(s)) || 0;
+        };
+
+        const schemaMatch = html.match(/<script type="application\/ld\+json">([\s\S]+?)<\/script>/i);
+        if (schemaMatch) {
+            try {
+                const schema = JSON.parse(schemaMatch[1]);
+                const item = Array.isArray(schema) ? schema.find(s => s.offers) : schema;
+                const offers = item?.offers;
+                if (offers && offers.price) precio = parsePrecio(offers.price);
+            } catch (e) {}
+        }
+
+        if (!precio) {
+            const precioMatch = html.match(/property="product:price:amount"[^>]*?content="([\d.,]+)"/i) || 
+                               html.match(/itemprop="price"[^>]*?content="([\d.,]+)"/i) ||
+                               html.match(/class="andes-money-amount__fraction"[^>]*?>([\d.]+)</i);
+            
+            if (precioMatch) precio = parsePrecio(precioMatch[1]);
+        }
+
+        // 3. Imagen
+        const imagenMatch = html.match(/property="og:image"\s+content="([^"]+)"/i) || 
+                           html.match(/https:\/\/http2\.mlstatic\.com\/D_NQ_NP_[^"']+\.webp/i);
+        let imagen = imagenMatch ? (imagenMatch[1] || imagenMatch[0]) : "";
+
+        // 4. Ficha Técnica (Especificaciones)
+        const caracteristicas = [];
+
+        // Intento 1: Tabla de especificaciones (Andes o UI PDP)
+        const tableMatches = html.matchAll(/<tr[^>]*class="[^"]*(?:ui-pdp-table__row|andes-table__row)[^"]*"[^>]*>[\s\S]*?<th[^>]*>([\s\S]*?)<\/th>[\s\S]*?<t[db][^>]*>([\s\S]*?)<\/t[db]>/gi);
+        for (const match of tableMatches) {
+            const key = match[1].replace(/<[^>]+>/g, '').trim();
+            const val = match[2].replace(/<[^>]+>/g, '').replace(/<span[^>]*>|<\/span>/gi, '').trim();
+            if (key && val && !caracteristicas.some(c => c.toLowerCase().includes(key.toLowerCase()))) {
+                caracteristicas.push(`${key}: ${val}`);
+            }
+        }
+
+        // Intento 2: Bullet points de resumen (ui-pdp-features__item)
+        const caracMatches = html.matchAll(/<li[^>]+class="ui-pdp-features__item"[^>]*>([\s\S]*?)<\/li>/gi);
+        for (const match of caracMatches) {
+            const texto = match[1].replace(/<[^>]+>/g, '').trim();
+            if (texto && !caracteristicas.includes(texto)) caracteristicas.push(texto);
+        }
+
+        // 5. Descripción (Filtro de seguridad)
+        let descripcion = "";
+        if (schemaMatch) {
+            try {
+                const schema = JSON.parse(schemaMatch[1]);
+                const item = Array.isArray(schema) ? schema[0] : schema;
+                if (item.description && !item.description.includes("Visita la página")) {
+                    descripcion = item.description;
+                }
+            } catch (e) {}
+        }
+
+        if (!descripcion) {
+            const descMatch = html.match(/property="og:description"\s+content="([^"]+)"/i) ||
+                             html.match(/name="description"\s+content="([^"]+)"/i);
+            
+            if (descMatch) {
+                let d = descMatch[1].replace(/&quot;/g, '"');
+                if (d.includes("Visita la página") || d.includes("en un solo lugar") || d.includes("NICOLASMARVEGGIO")) {
+                    descripcion = ""; 
+                } else {
+                    descripcion = d.split('✓')[0].trim();
+                }
+            }
+        }
+
+        // 6. Limpieza profunda de marketing y frases genéricas
+        const frasesLimpieza = [
+            /Envíos gratis en el día/gi, /Comprá online de forma segura/gi, /Cuotas sin interés/gi,
+            /Conocé los tiempos y las formas de envío/gi, /Mercado Puntos/gi, /Devolución gratis/gi,
+            /Vendido por/gi, /Garantía de fábrica/gi, /Visita la página/gi
+        ];
+        
+        descripcion = descripcion;
+        frasesLimpieza.forEach(regex => { descripcion = descripcion.replace(regex, ''); });
+        descripcion = descripcion.trim();
+
+        const textoFicha = caracteristicas.map(c => "• " + c).join("\n");
+        const descFinal = descripcion || "Producto seleccionado y verificado por el laboratorio Super M.";
 
         return {
-            n: tituloMatch ? tituloMatch[1].trim() : "Producto Super M",
-            p: precioMatch ? parseInt(precioMatch[1]) : 0,
-            i: imagenMatch ? [imagenMatch[0]] : [""],
+            n: titulo,
+            p: precio || 0,
+            i: imagen ? [imagen] : [""],
+            desc: descFinal,
+            specs: caracteristicas.length > 0 ? caracteristicas : ["Calidad Super M Growlab"],
+            texto: textoFicha || descFinal,
             link: url
         };
     } catch (error) {
-        return { error: "Error de conexión con el laboratorio" };
+        console.error("Scraping error detalle:", error.response?.status, error.message);
+        const detail = error.response ? `(ML Status: ${error.response.status})` : error.message;
+        throw new HttpsError("internal", "Error de conexión con el laboratorio: " + detail);
     }
 });
