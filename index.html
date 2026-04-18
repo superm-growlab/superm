@@ -1543,7 +1543,6 @@
         const mp = new MercadoPago('APP_USR-b1a36115-fd8e-4b35-ae27-fc6be6a9d178', { locale: 'es-AR' });
         const MI_NUMERO = "5492966637000";
         const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbzk6fUHwGdI4wCgL_ZPBuV_pXFuWiLsSRo3TxPKs_KCWRBzaU4-Aw8B0emmy7OBg9A/exec";
-        const URL_SHEET_INVENTARIO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?output=csv";
         const URL_SHEET_RECETARIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=654571090&single=true&output=csv";
         const URL_SHEET_NOTAS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=188672931&single=true&output=tsv";
 
@@ -1590,51 +1589,12 @@
 
         async function cargarInventario() {
             try {
-                const r = await fetch(URL_SHEET_INVENTARIO);
-                const t = (await r.text()).replace(/^\uFEFF/, '').replace(/\r/g, '');
-                // Dividir filas respetando los saltos de línea dentro de campos entrecomillados
-                const filas = t.split(/\n(?=(?:(?:[^"]*"){2})*[^"]*$)/).slice(1); 
-
-                productos = filas.filter(x => x.trim() !== "").map((linea) => {
-                    const sep = linea.includes(';') ? ';' : ',';
-                    const c = [];
-                    let curr = "";
-                    let quotes = false;
-                    for (let char of linea) {
-                        if (char === '"') quotes = !quotes;
-                        else if (char === sep && !quotes) {
-                            c.push(curr);
-                            curr = "";
-                        } else {
-                            curr += char;
-                        }
-                    }
-                    c.push(curr);
-
-                    const clean = (val) => val ? val.replace(/^"|"$/g, '').trim() : "";
-                    const rawImages = clean(c[4]);
-
-                    return {
-                        id: clean(c[0]), 
-                        cat: clean(c[1]), 
-                        n: clean(c[2]) || "Sin Nombre",
-                        p: parseInt(clean(c[3]).replace(/[^0-9]/g, '')) || 0,
-                        i: rawImages ? rawImages.split('|').map(url => url.trim()).filter(url => url) : ["🌿"],
-                        desc: clean(c[5]) || "",
-                        specs: clean(c[6]) ? clean(c[6]).split('|').map(s => s.trim()).filter(s => s) : [], 
-                        linkPago: clean(c[7]),
-                        texto: clean(c[8]) || ""
-                    };
-                });
-
-                // CONEXIÓN CON FIREBASE: Traer productos del Alchemist Bot
+                productos = []; // Vaciamos para usar solo Firebase
                 if (window.sincronizarProductosFirebase) {
                     await window.sincronizarProductosFirebase();
                 }
-
-                console.log("✅ Inventario cargado:", productos.length, "productos");
             } catch (e) { 
-                console.error("Error al procesar el inventario de Google Sheets:", e); 
+                console.error("Error al sincronizar inventario:", e); 
             }
         }
 
@@ -3199,6 +3159,17 @@ window.sincronizarProductosFirebase = async () => {
             // Evitar duplicados si ya existen por Google Sheets
             if (!productos.find(x => x.id === p.id)) productos.push(p);
         });
+        console.log("✅ Firestore Sync:", productos.length, "ítems.");
+        // Renderizado inmediato si estamos en la sección tienda
+        const ultima = localStorage.getItem('ultimaVista');
+        if (ultima === 'tienda') {
+            const state = history.state;
+            if (state && state.sub === 'category') {
+                filtrarProductos(state.catId, state.nombre, false);
+            } else {
+                mostrarCategorias();
+            }
+        }
     } catch (e) { console.error("Error al sincronizar productos desde Firebase:", e); }
 };
 
