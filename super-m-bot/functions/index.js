@@ -69,7 +69,7 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
         console.log(`🔍 Procesando link: ${urlInput}`);
         
         // Capa 1: Buscar ID directamente en el link (MLA-123 o MLA123)
-        const mlaRegex = /(MLA|MLB|MLM|MLC|MLU)[-_]?(\d{8,15})/i;
+        const mlaRegex = /(MLA|MLB|MLM|MLC|MLU|MLAU)[-_]?(\d{8,12})\b/i;
         let mlaMatch = urlInput.match(mlaRegex);
         let urlToProcess = urlInput;
 
@@ -139,7 +139,7 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
             }
         } catch (err) {
             console.error(`❌ Error final en APIs de ML para ID ${itemId}:`, err.response?.data || err.message);
-            throw new Error(`El producto ${itemId} no es accesible. Puede ser un artículo restringido (como vaporizadores), pausado, o de una categoría protegida.`);
+            throw new Error(`El producto ${itemId} no es accesible. Puede estar pausado, ser de una categoría con restricciones de venta (como ciertos artículos de growshop) o ser un link de catálogo no soportado.`);
         }
 
         const nombre = item.title || item.name || "Producto Super M";
