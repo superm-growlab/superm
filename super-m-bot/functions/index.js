@@ -106,24 +106,24 @@ exports.obtenerProductoML = onCall({ region: 'us-central1', timeoutSeconds: 30 }
 
     if (!itemId) throw new HttpsError("invalid-argument", "No se detectó un ID (MLA).");
 
-    // 1. Obtener Token de Firestore e inicializar SDK de Mercado Pago
+    // 1. Obtener Token de Firestore
     const configDoc = await admin.firestore().collection('settings').doc('mercadolibre_auth').get();
     const configData = configDoc.data();
     let accessToken = configData?.access_token || "";
 
-    let client = new MercadoPagoConfig({ accessToken: accessToken });
-    let itemsClient = new Items(client);
-
     let itemData, descData;
 
     try {
-        // 2. Intento Principal: Usando el SDK Items
-        itemData = await itemsClient.get({ id: itemId });
-        
-        // La descripción requiere axios (el SDK de MP no maneja el endpoint de catálogo /description)
-        const descRes = await axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-        }).catch(() => ({ data: { plain_text: "" } }));
+        // 2. Intento Principal: API de Mercado Libre con Token
+        const [itemRes, descRes] = await Promise.all([
+            axios.get(`https://api.mercadolibre.com/items/${itemId}`, { 
+                headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } 
+            }),
+            axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { 
+                headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } 
+            }).catch(() => ({ data: { plain_text: "" } }))
+        ]);
+        itemData = itemRes.data;
         descData = descRes.data;
     } catch (error) {
         // 3. Manejo de errores de autenticación con Refresco automático
@@ -131,29 +131,24 @@ exports.obtenerProductoML = onCall({ region: 'us-central1', timeoutSeconds: 30 }
         if (status === 401 || status === 403) {
             try {
                 accessToken = await refreshMLToken();
-                client = new MercadoPagoConfig({ accessToken: accessToken });
-                itemsClient = new Items(client);
                 
-                itemData = await itemsClient.get({ id: itemId });
-                const descRes = await axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                }).catch(() => ({ data: { plain_text: "" } }));
-                descData = descRes.data;
-            } catch (retryError) {
-                throw new HttpsError("permission-denied", "Token expirado y no se pudo renovar.");
-            }
-        } else {
-            // Plan B: Intento público via Axios si el SDK falla por otras razones
-            try {
                 const [itemRes, descRes] = await Promise.all([
-                    axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: { ...ML_HEADERS, 'Accept': 'application/json' } }),
-                    axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: { ...ML_HEADERS, 'Accept': 'application/json' } }).catch(() => ({ data: { plain_text: "" } }))
+                    axios.get(`https://api.mercadolibre.com/items/${itemId}`, { 
+                        headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } 
+                    }),
+                    axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { 
+                        headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } 
+                    }).catch(() => ({ data: { plain_text: "" } }))
                 ]);
                 itemData = itemRes.data;
                 descData = descRes.data;
-            } catch (e) {
-                throw new HttpsError("internal", "Error crítico de conexión con Mercado Libre.");
+            } catch (retryError) {
+                console.error("Error en refresh:", retryError.message);
+                throw new HttpsError("permission-denied", "Token expirado y no se pudo renovar.");
             }
+        } else {
+            console.error("Error en fetch principal:", error.message);
+            throw new HttpsError("internal", "Error crítico al obtener datos de ML.");
         }
     }
 

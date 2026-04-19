@@ -335,10 +335,10 @@
                         errorMessage = "⏳ Demasiadas peticiones. Espera un momento.";
                         break;
                     case 'unavailable':
-                        errorMessage = "📡 No se pudo conectar con ML. Verifica tu conexión.";
+                        errorMessage = "📡 Error de red: No se pudo conectar con el Laboratorio.";
                         break;
                     case 'internal':
-                        errorMessage = "⚠️ Error interno. Intenta con otro link.";
+                        errorMessage = "⚠️ Error 500: Revisa los logs en Firebase Console o reinstala dependencias.";
                         break;
                     default:
                         errorMessage = `❌ Error [${e.code}]: ${e.message}`;
