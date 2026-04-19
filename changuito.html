@@ -104,6 +104,19 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // Función auxiliar para renderizar imágenes en el historial
+        function obtenerImagenHTML_changuito(input) {
+            let dato;
+            if (Array.isArray(input)) {
+                dato = input.length > 0 ? input[0] : "🌿";
+            } else {
+                dato = input || "🌿";
+            }
+            
+            if (typeof dato === 'string' && dato.includes("http")) return `<img src="${dato}" class="img-real">`;
+            return `<div class="img-placeholder">${dato}</div>`;
+        }
+
     async function botTransmutar() {
         const linkReferido = document.getElementById('link-referido').value.trim();
         const status = document.getElementById('status-bot');
