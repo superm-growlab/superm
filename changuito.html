@@ -141,33 +141,33 @@
             // Preparamos los datos temporales
                 productoTemporal = {
                     id: data.id || Date.now().toString(),
-                    i: data.i,
-                    desc: data.n, 
-                    specs: (data.specs && data.specs.length > 0) ? data.specs : ["Calidad Super M"],
-                    linkOriginal: data.link
+                    pictures: data.pictures,
+                    title: data.title, 
+                    attributes: (data.attributes && data.attributes.length > 0) ? data.attributes : ["Calidad Super M"],
+                    permalink: data.permalink
                 };
 
             // LLENADO DE FORMULARIO
-            document.getElementById('edit-n').value = data.n || "";
-            document.getElementById('edit-p').value = data.p || 0;
+            document.getElementById('edit-n').value = data.title || "";
+            document.getElementById('edit-p').value = data.price || 0;
             
             // Combinamos specs y texto para la ficha técnica
-            const fichaFormateada = (data.specs && data.specs.length > 0) ? data.specs.join("\n") : (data.texto || "");
+            const fichaFormateada = (data.attributes && data.attributes.length > 0) ? data.attributes.join("\n") : (data.description || "");
             document.getElementById('edit-texto').value = fichaFormateada;
             
             // Evitamos cargar el emoji como URL para prevenir el error 404
-            const imgUrl = (data.i && data.i[0] && data.i[0].includes('http')) ? data.i[0] : '';
+            const imgUrl = (data.pictures && data.pictures[0] && data.pictures[0].includes('http')) ? data.pictures[0] : '';
             if (imgUrl) {
                 document.getElementById('edit-preview-img').src = imgUrl;
             } else {
                 document.getElementById('edit-preview-img').src = "https://i.postimg.cc/rF9GqwGS/favicon.png";
             }
 
-            if (data.p === 0 || data.n === "Producto Super M") {
+            if (data.price === 0 || data.title === "Producto Super M") {
                 status.innerText = "⚠️ DATOS PARCIALES. REVISA LOS CAMPOS MANUALMENTE.";
                 status.style.color = "orange";
             } else {
-                status.innerText = "✨ TRANSMUTACIÓN EXITOSA.";
+                status.innerText = `✨ TRANSMUTADO: [${data.category_name || 'General'}]`;
                 status.style.color = "var(--p)";
             }
 
@@ -190,14 +190,14 @@
             // Tomamos los valores actualizados del editor
             const dataFinal = {
                 id: productoTemporal.id,
-                cat: document.getElementById('edit-cat').value,
-                n: document.getElementById('edit-n').value,
-                p: parseFloat(document.getElementById('edit-p').value),
-                i: productoTemporal.i,
-                desc: productoTemporal.desc || document.getElementById('edit-n').value,
-                specs: Array.isArray(productoTemporal.specs) ? productoTemporal.specs : ["Calidad Super M"],
-                linkPago: linkFinal,
-                texto: document.getElementById('edit-texto').value
+                category_id: document.getElementById('edit-cat').value,
+                title: document.getElementById('edit-n').value,
+                price: parseFloat(document.getElementById('edit-p').value),
+                pictures: productoTemporal.pictures,
+                description_short: productoTemporal.title || document.getElementById('edit-n').value,
+                attributes: Array.isArray(productoTemporal.attributes) ? productoTemporal.attributes : ["Calidad Super M"],
+                permalink: linkFinal,
+                description: document.getElementById('edit-texto').value
             };
 
             try {
@@ -226,15 +226,15 @@
 
         function renderizar(p) {
             const hist = document.getElementById('historial-bot');
-            const csvRow = `${p.id};${p.cat};${p.n};${p.p};${p.i.join('|')};${p.desc};${p.specs};${p.linkPago};${p.texto};`;
+            const csvRow = `${p.id};${p.category_id};${p.title};${p.price};${p.pictures.join('|')};${p.description_short};${p.attributes};${p.permalink};${p.description};`;
 
             // HTML Snippet idéntico al que genera el renderGrid de index.html
             const htmlSnippet = `<div class="tarjeta" onclick="verProducto('${p.id}')" style="display:flex; flex-direction:column;">
-        <div class="contenedor-img">${obtenerImagenHTML_changuito(p.i)}</div>
-        <h3 style="margin: 10px 0; text-align: center;">${p.n}</h3>
+        <div class="contenedor-img">${obtenerImagenHTML_changuito(p.pictures)}</div>
+        <h3 style="margin: 10px 0; text-align: center;">${p.title}</h3>
         <div id="stars-grid-${p.id}" style="text-align:center; font-size:0.8rem; margin-bottom:5px;"></div>
-        <div style="text-align: center; color: var(--p); font-weight: bold;">$${p.p.toLocaleString()}</div>
-        ${p.texto ? `<button class="btn btn-m" style="font-size: 0.65rem; padding: 6px; margin-top: 15px; border-color:var(--s); color:var(--s);" onclick="event.stopPropagation(); window.verNotasCompletas(decodeURIComponent('${encodeURIComponent(p.texto)}'), '📖 FICHA TÉCNICA')">📄 FICHA TÉCNICA</button>` : ''}
+        <div style="text-align: center; color: var(--p); font-weight: bold;">$${p.price.toLocaleString()}</div>
+        ${p.description ? `<button class="btn btn-m" style="font-size: 0.65rem; padding: 6px; margin-top: 15px; border-color:var(--s); color:var(--s);" onclick="event.stopPropagation(); window.verNotasCompletas(decodeURIComponent('${encodeURIComponent(p.description)}'), '📖 FICHA TÉCNICA')">📄 FICHA TÉCNICA</button>` : ''}
     </div>`;
 
             const wrapper = document.createElement('div');
@@ -243,9 +243,9 @@
             
             wrapper.innerHTML = `
                 <div class="tarjeta">
-                    <div class="contenedor-img">${obtenerImagenHTML_changuito(p.i)}</div>
-                    <h3 style="margin: 10px 0; text-align: center; font-size:1rem;">${p.n}</h3>
-                    <div style="text-align: center; color: var(--p); font-weight: bold; margin-bottom:10px;">$${p.p.toLocaleString()}</div>
+                    <div class="contenedor-img">${obtenerImagenHTML_changuito(p.pictures)}</div>
+                    <h3 style="margin: 10px 0; text-align: center; font-size:1rem;">${p.title}</h3>
+                    <div style="text-align: center; color: var(--p); font-weight: bold; margin-bottom:10px;">$${p.price.toLocaleString()}</div>
                 </div>
                 <div style="margin-top:15px;">
                     <span class="label-edit">CSV PARA GOOGLE SHEETS</span>

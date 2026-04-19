@@ -115,31 +115,48 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
         // 2. Llamada a la API de Mercado Libre (Híbrida: Items o Products)
         let item;
         try {
-            const apiRes = await axios.get(`https://api.mercadolibre.com/items/${itemId}`, {
-                headers: { 'Authorization': `Bearer ${accessToken}` }
-            });
-            item = apiRes.data;
-        } catch (err) {
-            // Si el item da 404, probamos si es un ID de Producto de Catálogo
-            if (err.response && err.response.status === 404) {
-                console.log("⚠️ Item no hallado. Intentando como Producto de Catálogo...");
-                const prodRes = await axios.get(`https://api.mercadolibre.com/products/${itemId}`, {
+            try {
+                const apiRes = await axios.get(`https://api.mercadolibre.com/items/${itemId}`, {
                     headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
-                item = prodRes.data;
-                // Normalizamos: en productos el título está en 'name'
-                item.title = item.name;
-                // El precio en catálogo suele estar en el 'buy_box_winner'
-                if (item.buy_box_winner) {
-                    item.price = item.buy_box_winner.price;
+                item = apiRes.data;
+                console.log("✅ Item individual hallado.");
+            } catch (err) {
+                // Si el item da 404, probamos si es un ID de Producto de Catálogo
+                if (err.response && err.response.status === 404) {
+                    console.log("⚠️ Item no hallado (404). Intentando como Producto de Catálogo...");
+                    const prodRes = await axios.get(`https://api.mercadolibre.com/products/${itemId}`, {
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                    item = prodRes.data;
+                    console.log("✅ Producto de catálogo hallado.");
+                    // Normalizamos datos de catálogo
+                    item.title = item.name;
+                    if (item.buy_box_winner) item.price = item.buy_box_winner.price;
+                } else {
+                    throw err;
                 }
-            } else {
-                throw err;
             }
+        } catch (err) {
+            console.error(`❌ Error final en APIs de ML para ID ${itemId}:`, err.response?.data || err.message);
+            throw new Error(`El producto ${itemId} no es accesible. Puede ser un artículo restringido (como vaporizadores), pausado, o de una categoría protegida.`);
         }
 
         const nombre = item.title || item.name || "Producto Super M";
         const precio = item.price || 0;
+        const categoryId = item.category_id;
+        let nombreCategoria = "General";
+
+        // 2.5 Consultar el nombre de la categoría (La "planilla" de categorías de ML)
+        try {
+            if (categoryId) {
+                const catRes = await axios.get(`https://api.mercadolibre.com/categories/${categoryId}`);
+                nombreCategoria = catRes.data.name;
+                console.log(`📂 Categoría detectada: ${nombreCategoria} (${categoryId})`);
+            }
+        } catch (catErr) {
+            console.log("No se pudo obtener el nombre de la categoría.");
+        }
         
         console.log(`💎 [BOT] Título: ${nombre} | Precio: ${precio}`);
 
@@ -173,12 +190,14 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
 
         return {
             id: itemId,
-            n: nombre,
-            p: precio,
-            i: imagenes,
-            link: urlInput,
-            specs: caracteristicas,
-            texto: textoFicha,
+            title: nombre,
+            price: precio,
+            pictures: imagenes,
+            permalink: urlInput,
+            attributes: caracteristicas,
+            description: textoFicha,
+            category_id: categoryId,
+            category_name: nombreCategoria,
             status: "Transmutación Exitosa vía API Oficial"
         };
 
