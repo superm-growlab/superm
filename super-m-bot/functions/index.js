@@ -69,8 +69,8 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
         console.log(`🔍 Procesando link: ${urlInput}`);
         
         // Capa 1: Buscar ID directamente en el link (MLA-123 o MLA123)
-        const mlaRegex = /(MLAU|MLA|MLB|MLM|MLC|MLU)[-_]?(\d{8,12})\b/i;
-        const catalogIdRegex = /\b([A-Z0-9]{5,10}-[A-Z0-9]{4,10})\b/i;
+        const mlaRegex = /(MLAU|MLA|MLB|MLM|MLC|MLU)[-_]?(\d{8,15})\b/i;
+        const catalogIdRegex = /\b([A-Z0-9]{5,12}-[A-Z0-9]{4,12})\b/i;
 
         let mlaMatch = urlInput.match(mlaRegex);
         let catalogMatch = urlInput.match(catalogIdRegex);
@@ -104,17 +104,32 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
             mlaMatch = urlToProcess.match(mlaRegex);
             catalogMatch = urlToProcess.match(catalogIdRegex);
 
-            // Búsqueda de emergencia profunda: Escanear todo el contenido del HTML en busca de un ID
+            // Búsqueda de emergencia profunda: Escanear metadatos específicos del HTML
             if (!mlaMatch && !catalogMatch && res.data && typeof res.data === 'string') {
-                console.log("🕵️ ID no hallado en URL. Escaneando cuerpo de la respuesta...");
-                mlaMatch = res.data.match(mlaRegex);
-                catalogMatch = res.data.match(catalogIdRegex);
+                console.log("🕵️ ID no hallado en URL. Escaneando metadatos del producto...");
+                // Intentamos buscar en los tags de URL canónica u og:url que son mucho más fiables
+                const metaIdMatch = res.data.match(/property="og:url"\s+content="[^"]*?([A-Z0-9]{5,12}-[A-Z0-9]{4,12}|MLA[U]?[-_]?\d{8,15})[^"]*?"/i) ||
+                                   res.data.match(/rel="canonical"\s+href="[^"]*?([A-Z0-9]{5,12}-[A-Z0-9]{4,12}|MLA[U]?[-_]?\d{8,15})[^"]*?"/i);
+                
+                if (metaIdMatch) {
+                    const found = metaIdMatch[1];
+                    console.log(`📌 ID extraído de metadatos: ${found}`);
+                    catalogMatch = found.match(catalogIdRegex);
+                    mlaMatch = found.match(mlaRegex);
+                }
+
+                // Si falla, escaneo global (último recurso)
+                if (!mlaMatch && !catalogMatch) {
+                    catalogMatch = res.data.match(catalogIdRegex);
+                    mlaMatch = res.data.match(mlaRegex);
+                }
             }
         }
 
         if (!mlaMatch && !catalogMatch) throw new Error(`No se detectó un ID de producto válido. Asegúrate de que sea un link directo de Mercado Libre.`);
 
-        const itemId = mlaMatch ? (mlaMatch[1] + mlaMatch[2]).toUpperCase() : catalogMatch[0].toUpperCase();
+        // Prioridad al ID de catálogo alfanumérico si se encontró, luego al MLA/MLAU
+        const itemId = catalogMatch ? catalogMatch[0].toUpperCase() : (mlaMatch[1] + mlaMatch[2]).toUpperCase();
         console.log(`📡 Consultando API oficial de ML para el item: ${itemId}`);
 
         // 2. Llamada a la API de Mercado Libre (Híbrida: Items o Products)
