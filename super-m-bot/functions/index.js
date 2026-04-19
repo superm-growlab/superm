@@ -60,13 +60,15 @@ async function getAccessToken() {
 
 exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async (request) => {
     const urlInput = request.data.url;
-    if (!urlInput) throw new HttpsError("invalid-argument", "URL requerida");
+    const productIdInput = request.data.productId;
+
+    if (!urlInput && !productIdInput) throw new HttpsError("invalid-argument", "Se requiere URL o ID de producto");
 
     try {
         // Obtener la llave maestra para esta petición
         const accessToken = await getAccessToken();
 
-        console.log(`🔍 Procesando link: ${urlInput}`);
+        console.log(`🔍 Procesando link: ${urlInput} | ID Manual: ${productIdInput}`);
         
         // Capa 1: Buscar ID directamente en el link (MLA-123 o MLA123)
         const mlaRegex = /(MLAU|MLA|MLB|MLM|MLC|MLU)[-_]?(\d{8,15})\b/i;
@@ -128,34 +130,50 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
 
         if (!mlaMatch && !catalogMatch) throw new Error(`No se detectó un ID de producto válido. Asegúrate de que sea un link directo de Mercado Libre.`);
 
-        // Prioridad al ID de catálogo alfanumérico si se encontró, luego al MLA/MLAU
-        const itemId = catalogMatch ? catalogMatch[0].toUpperCase() : (mlaMatch[1] + mlaMatch[2]).toUpperCase();
+        // SELECCIÓN DE ID CON PRIORIDAD ABSOLUTA
+        let itemId = null;
+
+        if (productIdInput) {
+            // 1. Prioridad máxima al ID manual ingresado por el usuario
+            itemId = productIdInput.toUpperCase();
+            console.log(`🎯 Usando ID manual: ${itemId}`);
+        } else if (catalogMatch) {
+            // 2. Si no hay manual, buscamos IDs de catálogo en el link
+            const possibleId = catalogMatch[0].toUpperCase();
+            if (possibleId !== "ASSETS-PREFIX" && possibleId !== "IMAGE-SIZE") {
+                itemId = possibleId;
+            }
+        }
+        
+        // 3. Por último, usamos el ID MLA/MLAU del link
+        if (!itemId && mlaMatch) {
+            itemId = (mlaMatch[1] + mlaMatch[2]).toUpperCase();
+        }
+
+        if (!itemId) throw new Error("No se pudo determinar un ID de producto válido tras el escaneo.");
+
         console.log(`📡 Consultando API oficial de ML para el item: ${itemId}`);
 
         // 2. Llamada a la API de Mercado Libre (Híbrida: Items o Products)
+        const catalogIdRegexStrict = /\b([A-Z0-9]{5,12}-[A-Z0-9]{4,12})\b/i;
+        const isCatalogRequest = catalogIdRegexStrict.test(itemId) || itemId.startsWith("MLAU");
+
         let item;
         try {
-            try {
+            if (isCatalogRequest) {
+                console.log("📦 Detectado como ID de Catálogo. Consultando API /products...");
+                const prodRes = await axios.get(`https://api.mercadolibre.com/products/${itemId}`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                item = prodRes.data;
+                item.title = item.name;
+                if (item.buy_box_winner) item.price = item.buy_box_winner.price;
+            } else {
+                console.log("🏷️ Detectado como Item Individual. Consultando API /items...");
                 const apiRes = await axios.get(`https://api.mercadolibre.com/items/${itemId}`, {
                     headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
                 item = apiRes.data;
-                console.log("✅ Item individual hallado.");
-            } catch (err) {
-                // Si el item da 404, probamos si es un ID de Producto de Catálogo
-                if (err.response && err.response.status === 404) {
-                    console.log("⚠️ Item no hallado (404). Intentando como Producto de Catálogo...");
-                    const prodRes = await axios.get(`https://api.mercadolibre.com/products/${itemId}`, {
-                        headers: { 'Authorization': `Bearer ${accessToken}` }
-                    });
-                    item = prodRes.data;
-                    console.log("✅ Producto de catálogo hallado.");
-                    // Normalizamos datos de catálogo
-                    item.title = item.name;
-                    if (item.buy_box_winner) item.price = item.buy_box_winner.price;
-                } else {
-                    throw err;
-                }
             }
         } catch (err) {
             console.error(`❌ Error final en APIs de ML para ID ${itemId}:`, err.response?.data || err.message);

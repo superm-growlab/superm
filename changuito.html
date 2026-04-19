@@ -54,8 +54,9 @@
         <p style="text-align:center; font-size:0.7rem;">LOG: 15-04-2026 | TRANSMUTACIÓN FINAL</p>
 
         <div class="grid-form">
-            <input type="text" id="link-referido" class="full" placeholder="PEGAR LINK (Referido/Directo) o ID (MLA/Catálogo)">
-            
+            <input type="text" id="link-referido" class="full" placeholder="🔗 PEGAR LINK DE REFERIDO (meli.la)">
+            <input type="text" id="id-producto-manual" class="full" placeholder="🆔 PEGAR ID DE PRODUCTO (Ej: NG8WAT-MGKE o MLA...)">
+
             <button class="btn-bot full" onclick="botTransmutar()">⚡ BUSCAR (TRANSMUTAR)</button>
             <div id="status-bot" class="full">SISTEMA LISTO.</div>
         </div>
@@ -119,6 +120,7 @@
 
     async function botTransmutar() {
         const linkReferido = document.getElementById('link-referido').value.trim();
+        const idManual = document.getElementById('id-producto-manual').value.trim();
         const status = document.getElementById('status-bot');
         const editor = document.getElementById('editor-producto');
 
@@ -133,7 +135,7 @@
         try {
             // Llamada a la función DEPLOYADA (asegúrate de haber hecho deploy)
             const obtenerProductoML = firebase.functions().httpsCallable('obtenerProductoML');
-            const response = await obtenerProductoML({ url: linkReferido });
+            const response = await obtenerProductoML({ url: linkReferido, productId: idManual });
             const data = response.data;
 
             if (data.error) throw new Error(data.error);
