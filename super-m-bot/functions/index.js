@@ -70,11 +70,14 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
         
         // Capa 1: Buscar ID directamente en el link (MLA-123 o MLA123)
         const mlaRegex = /(MLAU|MLA|MLB|MLM|MLC|MLU)[-_]?(\d{8,12})\b/i;
+        const catalogIdRegex = /\b([A-Z0-9]{5,10}-[A-Z0-9]{4,10})\b/i;
+
         let mlaMatch = urlInput.match(mlaRegex);
+        let catalogMatch = urlInput.match(catalogIdRegex);
         let urlToProcess = urlInput;
 
-        // Capa 2: Si no hay ID (links cortos meli.la), navegar para encontrar el link real
-        if (!mlaMatch) {
+        // Capa 2: Si no hay ID detectado y parece ser un link, intentamos resolverlo
+        if (!mlaMatch && !catalogMatch && urlInput.toLowerCase().startsWith("http")) {
             console.log("📡 Resolviendo link corto o complejo...");
             const res = await axios.get(urlInput, {
                 maxRedirects: 15,
@@ -99,17 +102,19 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
             console.log(`📍 URL final resuelta: ${urlToProcess}`);
             
             mlaMatch = urlToProcess.match(mlaRegex);
+            catalogMatch = urlToProcess.match(catalogIdRegex);
 
             // Búsqueda de emergencia profunda: Escanear todo el contenido del HTML en busca de un ID
-            if (!mlaMatch && res.data && typeof res.data === 'string') {
+            if (!mlaMatch && !catalogMatch && res.data && typeof res.data === 'string') {
                 console.log("🕵️ ID no hallado en URL. Escaneando cuerpo de la respuesta...");
                 mlaMatch = res.data.match(mlaRegex);
+                catalogMatch = res.data.match(catalogIdRegex);
             }
         }
 
-        if (!mlaMatch) throw new Error(`No se detectó un ID de producto válido. Asegúrate de que sea un link directo de Mercado Libre.`);
+        if (!mlaMatch && !catalogMatch) throw new Error(`No se detectó un ID de producto válido. Asegúrate de que sea un link directo de Mercado Libre.`);
 
-        const itemId = (mlaMatch[1] + mlaMatch[2]).toUpperCase();
+        const itemId = mlaMatch ? (mlaMatch[1] + mlaMatch[2]).toUpperCase() : catalogMatch[0].toUpperCase();
         console.log(`📡 Consultando API oficial de ML para el item: ${itemId}`);
 
         // 2. Llamada a la API de Mercado Libre (Híbrida: Items o Products)
@@ -188,12 +193,15 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
             }
         }
 
+        // Si el usuario pegó solo el ID, generamos un permalink válido de ML como respaldo
+        const finalPermalink = urlInput.toLowerCase().startsWith("http") ? urlInput : `https://articulo.mercadolibre.com.ar/${itemId}`;
+
         return {
             id: itemId,
             title: nombre,
             price: precio,
             pictures: imagenes,
-            permalink: urlInput,
+            permalink: finalPermalink,
             attributes: caracteristicas,
             description: textoFicha,
             category_id: categoryId,
