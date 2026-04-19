@@ -340,7 +340,7 @@
                 cat: document.getElementById('edit-cat').value,
                 n: document.getElementById('edit-n').value,
                 p: parseFloat(document.getElementById('edit-p').value),
-                i: Array.isArray(productoTemporal.i) ? productoTemporal.i : (productoTemporal.i ? [productoTemporal.i] : ["🌿"]),
+                i: Array.isArray(productoTemporal.i) ? productoTemporal.i : [productoTemporal.i || "🌿"],
                 desc: document.getElementById('edit-desc').value.trim(),
                 specs: document.getElementById('edit-specs').value.split('|').map(s => s.trim()).filter(s => s),
                 linkPago: productoTemporal.linkOriginal,

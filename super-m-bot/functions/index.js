@@ -109,7 +109,7 @@ exports.obtenerProductoML = onCall({ region: 'us-central1', timeoutSeconds: 30 }
     let itemData, descData;
 
     try {
-        // 1er Intento: API con Token
+        // Intentar con Token (siempre)
         const [itemRes, descRes] = await Promise.all([
             axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: apiHeaders }),
             axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: apiHeaders }).catch(() => ({ data: { plain_text: "" } }))
@@ -117,14 +117,15 @@ exports.obtenerProductoML = onCall({ region: 'us-central1', timeoutSeconds: 30 }
         itemData = itemRes.data;
         descData = descRes.data;
     } catch (error) {
-        // Si falla con 401 (Unauthorized), intentamos refrescar el token
-        if (error.response?.status === 401) {
+        // Si falla con 401 o 403, intentamos refrescar el token obligatoriamente
+        if (error.response?.status === 401 || error.response?.status === 403) {
             try {
                 const newToken = await refreshMLToken();
-                apiHeaders['Authorization'] = `Bearer ${newToken}`;
+                const newHeaders = { ...apiHeaders, 'Authorization': `Bearer ${newToken}` };
+                
                 const [itemRes, descRes] = await Promise.all([
-                    axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: apiHeaders }),
-                    axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: apiHeaders }).catch(() => ({ data: { plain_text: "" } }))
+                    axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: newHeaders }),
+                    axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: newHeaders }).catch(() => ({ data: { plain_text: "" } }))
                 ]);
                 itemData = itemRes.data;
                 descData = descRes.data;
