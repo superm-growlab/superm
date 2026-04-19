@@ -262,6 +262,7 @@
             // Preparar los datos temporales para edición
             productoTemporal = {
                 id: data.id || ("PROD-" + Date.now()),
+                // Aseguramos que 'i' sea un array desde el inicio
                 i: (data.i && Array.isArray(data.i) && data.i.length > 0) ? data.i : ["🌿"],
                 linkOriginal: data.link || entradaFinal
             };
@@ -302,7 +303,7 @@
             if (e.code) {
                 switch (e.code) {
                     case 'permission-denied':
-                        errorMessage = "🚫 TOKEN VENCIDO O BLOQUEADO. Actualiza el access_token en la colección 'settings/mercadolibre_auth' de Firestore.";
+                        errorMessage = e.message.includes("client_secret") ? "🔑 ERROR DE SECRET: Verifica el client_secret en Firestore." : "🚫 ERROR DE AUTORIZACIÓN: El token expiró y el Refresh Token falló. Revisa tus credenciales en Firestore.";
                         break;
                     case 'not-found':
                         errorMessage = "🔍 Producto no encontrado. Verifica el ID.";
@@ -339,7 +340,7 @@
                 cat: document.getElementById('edit-cat').value,
                 n: document.getElementById('edit-n').value,
                 p: parseFloat(document.getElementById('edit-p').value),
-                i: productoTemporal.i,
+                i: productoTemporal.i, // Ya lo normalizamos al recibirlo
                 desc: document.getElementById('edit-desc').value.trim(),
                 specs: document.getElementById('edit-specs').value.split('|').map(s => s.trim()).filter(s => s),
                 linkPago: productoTemporal.linkOriginal,

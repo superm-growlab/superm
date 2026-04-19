@@ -1462,8 +1462,6 @@
             <span id="total-carrito" style="color:var(--p); font-weight: 900;">$0</span>
         </div>
         
-        <button class="btn btn-v" id="btn-despachar-maestro" style="width:100%; margin-top:20px; background: var(--s); color: #fff; display:none;" onclick="window.despacharTodoAlLab()">🚀 DESPACHAR TODO AL LAB</button>
-
         <button class="btn btn-v" id="btn-finalizar-carrito" style="width:100%; margin-top:20px" onclick="abrirModalEnvio('carrito')">Confirmar y Enviar Pedido</button>
     </section>
 
@@ -2259,12 +2257,10 @@ function verProducto(id, guardar = true) {
 
         function renderCarrito() {
             const lista = document.getElementById('lista-carrito');
-            const btnMaestro = document.getElementById('btn-despachar-maestro');
             let total = 0;
             if(!carrito.length) { 
                 lista.innerHTML = "Carrito vacío."; 
                 document.getElementById('total-carrito').innerText = "$0"; 
-                if(btnMaestro) btnMaestro.style.display = 'none';
                 return; 
             }
 
@@ -2290,11 +2286,6 @@ function verProducto(id, guardar = true) {
                            <input type="number" class="qty-input" value="${it.q}" readonly style="width: 30px; text-align: center; background: transparent; border: none; color: white; font-weight: bold;">
                             <button class="qty-btn" onclick="ajustarCarrito(${idx}, 1)">+</button>
                         </div>
-                        ${link ? `
-                            <button class="btn ${isLinked ? 'btn-m' : 'btn-mp'}" style="font-size: 0.8rem; padding: 8px 15px; ${isLinked ? 'border-color: var(--p); color: var(--p);' : ''}" onclick="window.vincularItem(${idx})">
-                                ${isLinked ? '✅ VINCULADO' : 'VINCULAR EN ML'}
-                            </button>
-                        ` : ''}
                         <button onclick="quitar(${idx})" style="color:#ff3131; background:none; border:none; cursor:pointer; font-size:1.2rem; font-weight: bold;">&times;</button>
                     </div>
                 </div>`;
@@ -2302,42 +2293,7 @@ function verProducto(id, guardar = true) {
             
             lista.innerHTML = html;
             document.getElementById('total-carrito').innerText = "$" + total.toLocaleString();
-            if(btnMaestro) btnMaestro.style.display = 'block';
         }
-
-        window.vincularItem = (idx) => {
-            const it = carrito[idx];
-            const pInfo = productos.find(p => p.id === it.id);
-            if (pInfo && pInfo.linkPago) {
-                window.open(pInfo.linkPago, '_blank');
-                carrito[idx].linked = true;
-                localStorage.setItem('superm_cart', JSON.stringify(carrito));
-                renderCarrito();
-            } else {
-                notify("⚠️ Este producto no tiene link de despacho.", "info");
-            }
-        };
-
-        window.despacharTodoAlLab = async () => {
-            let count = 0;
-            for (const it of carrito) {
-                const pInfo = productos.find(p => p.id === it.id);
-                if (pInfo && pInfo.linkPago && !it.linked) {
-                    window.open(pInfo.linkPago, '_blank');
-                    it.linked = true;
-                    count++;
-                    // Pequeño retraso de 500ms para que el navegador no bloquee las pestañas como SPAM
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
-            }
-            if (count > 0) {
-                localStorage.setItem('superm_cart', JSON.stringify(carrito));
-                renderCarrito();
-                notify(`🚀 Sincronizando ${count} protocolos con Mercado Libre...`, "success");
-            } else {
-                notify("ℹ️ Todos los protocolos ya han sido vinculados.", "info");
-            }
-        };
 
         function ajustarCarrito(idx, cambio) {
             carrito[idx].q += cambio;
