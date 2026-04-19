@@ -6,26 +6,40 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
     if (!urlInput) throw new HttpsError("invalid-argument", "URL requerida");
 
     try {
+        console.log(`🔍 Procesando link: ${urlInput}`);
+        
+        // Capa 1: Buscar ID directamente en el link (MLA-123 o MLA123)
+        const mlaRegex = /(MLA|MLB|MLM|MLC|MLU)[-_]?(\d{8,15})/i;
+        let mlaMatch = urlInput.match(mlaRegex);
         let urlToProcess = urlInput;
-        let mlaMatch = urlToProcess.match(/MLA[-_]?(\d+)/i);
+        let htmlContent = null;
 
-        // 1. RESOLVER LINKS CORTOS (meli.la, mpago.la, etc)
+        // Capa 2: Si no hay ID (links cortos meli.la), navegar para encontrar el link real
         if (!mlaMatch) {
-            console.log(`🔍 Resolviendo link corto: ${urlInput}`);
+            console.log("📡 Resolviendo link corto o complejo...");
             const res = await axios.get(urlInput, {
-                maxRedirects: 5,
+                maxRedirects: 10,
                 validateStatus: null,
                 headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
             });
             
-            // Buscamos la URL final en la respuesta de la redirección
-            urlToProcess = res.request?.res?.responseUrl || res.request?._redirectable?._currentUrl || urlInput;
-            mlaMatch = urlToProcess.match(/MLA[-_]?(\d+)/i);
+            // Obtener la URL final después de todas las redirecciones
+            urlToProcess = res.request?.res?.responseUrl || res.request?._redirectable?._currentUrl || res.config?.url || urlInput;
+            mlaMatch = urlToProcess.match(mlaRegex);
+            htmlContent = res.data;
+
+            // Capa 3: Si aún no hay ID en la URL, buscar en el HTML (etiquetas canonical u og:url)
+            if (!mlaMatch && typeof htmlContent === 'string') {
+                console.log("🕵️ Buscando ID dentro de los metadatos del HTML...");
+                const metaMatch = htmlContent.match(/property="og:url"\s+content="([^"]+)"/i) || 
+                                  htmlContent.match(/rel="canonical"\s+href="([^"]+)"/i);
+                if (metaMatch) mlaMatch = metaMatch[1].match(mlaRegex);
+            }
         }
 
-        if (!mlaMatch) throw new Error("No se detectó un ID de Mercado Libre válido (ej: MLA-...). Por favor usa el link completo del producto.");
+        if (!mlaMatch) throw new Error(`No se pudo detectar el ID en: ${urlToProcess}. Asegurate que sea un producto de Mercado Libre.`);
 
-        const itemId = mlaMatch[0].replace("-", "").toUpperCase();
+        const itemId = (mlaMatch[1] + mlaMatch[2]).toUpperCase();
         console.log(`📡 Consultando API oficial de ML para el item: ${itemId}`);
 
         // 2. Llamada a la API de Mercado Libre (Sin proxies intermedios)
