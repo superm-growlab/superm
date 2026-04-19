@@ -77,15 +77,26 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
         if (!mlaMatch) {
             console.log("📡 Resolviendo link corto o complejo...");
             const res = await axios.get(urlInput, {
-                maxRedirects: 10, // Aumentado para redirecciones profundas de afiliados
-                validateStatus: null,
-                // Quitamos responseType stream temporalmente para asegurar que axios resuelva el redirect completo
+                maxRedirects: 10,
+                validateStatus: (status) => status < 500, // Permitir 4xx para buscar el ID en el cuerpo si hay bloqueo
                 headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
             });
             
             // Obtener la URL final después de todas las redirecciones
             urlToProcess = res.request?.res?.responseUrl || res.request?._redirectable?._currentUrl || res.config?.url || urlInput;
+            console.log(`📍 URL final resuelta: ${urlToProcess}`);
+            
             mlaMatch = urlToProcess.match(mlaRegex);
+
+            // Búsqueda de emergencia: Si el ID no está en la URL final, lo buscamos en el HTML (canonical tag)
+            if (!mlaMatch && res.data && typeof res.data === 'string') {
+                console.log("🕵️ ID no hallado en URL. Escaneando metadatos HTML...");
+                const canonicalMatch = res.data.match(/property="og:url"\s+content="([^"]+)"/i) || 
+                                     res.data.match(/rel="canonical"\s+href="([^"]+)"/i);
+                if (canonicalMatch) {
+                    mlaMatch = canonicalMatch[1].match(mlaRegex);
+                }
+            }
         }
 
         if (!mlaMatch) throw new Error(`No se detectó un ID de producto válido. Asegúrate de que sea un link directo de Mercado Libre.`);
