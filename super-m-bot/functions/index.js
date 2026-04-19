@@ -1,6 +1,7 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const axios = require("axios");
+const { MercadoPagoConfig, Items } = require('mercadopago');
 
 admin.initializeApp();
 
@@ -105,52 +106,53 @@ exports.obtenerProductoML = onCall({ region: 'us-central1', timeoutSeconds: 30 }
 
     if (!itemId) throw new HttpsError("invalid-argument", "No se detectó un ID (MLA).");
 
-    let apiHeaders = await getApiHeaders();
+    // 1. Obtener Token de Firestore e inicializar SDK de Mercado Pago
+    const configDoc = await admin.firestore().collection('settings').doc('mercadolibre_auth').get();
+    const configData = configDoc.data();
+    let accessToken = configData?.access_token || "";
+
+    let client = new MercadoPagoConfig({ accessToken: accessToken });
+    let itemsClient = new Items(client);
+
     let itemData, descData;
 
     try {
-        // Intentar con Token (siempre)
-        const [itemRes, descRes] = await Promise.all([
-            axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: apiHeaders }),
-            axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: apiHeaders }).catch(() => ({ data: { plain_text: "" } }))
-        ]);
-        itemData = itemRes.data;
+        // 2. Intento Principal: Usando el SDK Items
+        itemData = await itemsClient.get({ id: itemId });
+        
+        // La descripción requiere axios (el SDK de MP no maneja el endpoint de catálogo /description)
+        const descRes = await axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        }).catch(() => ({ data: { plain_text: "" } }));
         descData = descRes.data;
     } catch (error) {
-        // Si falla con 401 o 403, intentamos refrescar el token obligatoriamente
-        if (error.response?.status === 401 || error.response?.status === 403) {
+        // 3. Manejo de errores de autenticación con Refresco automático
+        const status = error.status || error.response?.status;
+        if (status === 401 || status === 403) {
             try {
-                const newToken = await refreshMLToken();
-                const newHeaders = { ...apiHeaders, 'Authorization': `Bearer ${newToken}` };
+                accessToken = await refreshMLToken();
+                client = new MercadoPagoConfig({ accessToken: accessToken });
+                itemsClient = new Items(client);
                 
-                const [itemRes, descRes] = await Promise.all([
-                    axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: newHeaders }),
-                    axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: newHeaders }).catch(() => ({ data: { plain_text: "" } }))
-                ]);
-                itemData = itemRes.data;
+                itemData = await itemsClient.get({ id: itemId });
+                const descRes = await axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                }).catch(() => ({ data: { plain_text: "" } }));
                 descData = descRes.data;
             } catch (retryError) {
-                if (retryError.message === "MISSING_CLIENT_SECRET") {
-                    throw new HttpsError("permission-denied", "Falta el client_secret en Firestore para la renovación automática.");
-                }
-                console.error("Fallo reintento tras refresh:", retryError.response?.data || retryError.message);
                 throw new HttpsError("permission-denied", "Token expirado y no se pudo renovar.");
             }
         } else {
-            // Plan B: Intento público si no es error de token
+            // Plan B: Intento público via Axios si el SDK falla por otras razones
             try {
-                const pubHeaders = { ...ML_HEADERS, 'Accept': 'application/json' };
                 const [itemRes, descRes] = await Promise.all([
-                    axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: pubHeaders }),
-                    axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: pubHeaders }).catch(() => ({ data: { plain_text: "" } }))
+                    axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: { ...ML_HEADERS, 'Accept': 'application/json' } }),
+                    axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: { ...ML_HEADERS, 'Accept': 'application/json' } }).catch(() => ({ data: { plain_text: "" } }))
                 ]);
                 itemData = itemRes.data;
                 descData = descRes.data;
             } catch (e) {
-                if (e.response?.status === 403) {
-                    throw new HttpsError("permission-denied", "ML bloqueó el acceso público. Renueva el token manualmente.");
-                }
-                throw new HttpsError("internal", "Error al conectar con ML.");
+                throw new HttpsError("internal", "Error crítico de conexión con Mercado Libre.");
             }
         }
     }
