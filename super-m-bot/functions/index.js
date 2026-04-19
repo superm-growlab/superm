@@ -61,13 +61,14 @@ async function refreshMLToken() {
     if (!clientId || !clientSecret) throw new Error("MISSING_CLIENT_CREDENTIALS");
 
     console.log("🔄 Renovando Access Token...");
-    const response = await axios.post('https://api.mercadolibre.com/oauth/token', null, {
-        params: {
-            grant_type: 'refresh_token',
-            client_id: clientId,
-            client_secret: clientSecret,
-            refresh_token: data.refresh_token
-        }
+    const params = new URLSearchParams();
+    params.append('grant_type', 'refresh_token');
+    params.append('client_id', clientId);
+    params.append('client_secret', clientSecret);
+    params.append('refresh_token', data.refresh_token);
+
+    const response = await axios.post('https://api.mercadolibre.com/oauth/token', params.toString(), {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
 
     const newAuth = {
