@@ -69,7 +69,7 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
         console.log(`🔍 Procesando link: ${urlInput}`);
         
         // Capa 1: Buscar ID directamente en el link (MLA-123 o MLA123)
-        const mlaRegex = /(MLA|MLB|MLM|MLC|MLU|MLAU)[-_]?(\d{8,12})\b/i;
+        const mlaRegex = /(MLAU|MLA|MLB|MLM|MLC|MLU)[-_]?(\d{8,12})\b/i;
         let mlaMatch = urlInput.match(mlaRegex);
         let urlToProcess = urlInput;
 
