@@ -6,11 +6,26 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
     if (!urlInput) throw new HttpsError("invalid-argument", "URL requerida");
 
     try {
-        // 1. Extraer el ID del producto (MLA...)
-        const mlaMatch = urlInput.match(/MLA[-_]?(\d+)/i);
-        if (!mlaMatch) throw new Error("No se detectó un ID de Mercado Libre válido.");
-        const itemId = mlaMatch[0].replace("-", "");
+        let urlToProcess = urlInput;
+        let mlaMatch = urlToProcess.match(/MLA[-_]?(\d+)/i);
 
+        // 1. RESOLVER LINKS CORTOS (meli.la, mpago.la, etc)
+        if (!mlaMatch) {
+            console.log(`🔍 Resolviendo link corto: ${urlInput}`);
+            const res = await axios.get(urlInput, {
+                maxRedirects: 5,
+                validateStatus: null,
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+            });
+            
+            // Buscamos la URL final en la respuesta de la redirección
+            urlToProcess = res.request?.res?.responseUrl || res.request?._redirectable?._currentUrl || urlInput;
+            mlaMatch = urlToProcess.match(/MLA[-_]?(\d+)/i);
+        }
+
+        if (!mlaMatch) throw new Error("No se detectó un ID de Mercado Libre válido (ej: MLA-...). Por favor usa el link completo del producto.");
+
+        const itemId = mlaMatch[0].replace("-", "").toUpperCase();
         console.log(`📡 Consultando API oficial de ML para el item: ${itemId}`);
 
         // 2. Llamada a la API de Mercado Libre (Sin proxies intermedios)
@@ -49,6 +64,7 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
         }
 
         return {
+            id: itemId,
             n: nombre,
             p: precio,
             i: imagenes,

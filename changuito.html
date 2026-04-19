@@ -127,7 +127,7 @@
             return;
         }
 
-        status.innerText = "📡 SINTONIZANDO CON MERCADO LIBRE...";
+        status.innerText = " DESCIFRANDO LINK Y SINTONIZANDO...";
         status.style.color = "var(--s)";
 
         try {
@@ -140,7 +140,7 @@
 
             // Preparamos los datos temporales
                 productoTemporal = {
-                    id: data.link.match(/MLA[-_]?(\d+)/i)?.[0] || Date.now().toString(),
+                    id: data.id || data.link.match(/MLA[-_]?(\d+)/i)?.[0] || Date.now().toString(),
                     i: data.i,
                     desc: data.n, 
                     specs: (data.specs && data.specs.length > 0) ? data.specs : ["Calidad Super M"],
