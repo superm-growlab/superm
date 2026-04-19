@@ -47,6 +47,7 @@
     </style>
     <!-- Firebase SDKs (v8 compat) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-functions.js"></script>
 </head>
@@ -117,6 +118,28 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const ADMIN_UID = 'uYs87x57iGQPwR9WRilXf7dCYx62';
+
+        // 🛡️ Portero del Laboratorio: Verifica que seas tú
+        firebase.auth().onAuthStateChanged(user => {
+            const status = document.getElementById('status-bot');
+            const btnTransmutar = document.querySelector('.btn-bot.full');
+            
+            if (user && user.uid === ADMIN_UID) {
+                console.log("🧪 Acceso concedido al Gran Alquimista.");
+                status.innerText = "SISTEMA LISTO.";
+                btnTransmutar.disabled = false;
+                btnTransmutar.style.opacity = "1";
+                btnTransmutar.style.cursor = "pointer";
+            } else {
+                status.innerText = "🔒 ACCESO RESTRINGIDO. Identifícate en el Lab.";
+                status.style.color = "#ff3131";
+                btnTransmutar.disabled = true;
+                btnTransmutar.style.opacity = "0.5";
+                btnTransmutar.style.cursor = "not-allowed";
+            }
+        });
+
         let todosLosProductos = []; // Almacén global para el filtrado en tiempo real
 
         // AL CARGAR: Sincronizar con Firestore
