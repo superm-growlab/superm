@@ -1,7 +1,6 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const axios = require("axios");
-const { MercadoPagoConfig, Items } = require('mercadopago');
 
 admin.initializeApp();
 
@@ -17,36 +16,6 @@ const ML_HEADERS = {
     'Sec-Ch-Ua-Platform': '"Windows"',
     'Upgrade-Insecure-Requests': '1'
 };
-
-// Función para obtener headers API con Authorization
-async function getApiHeaders() {
-    try {
-        const configDoc = await admin.firestore()
-            .collection('settings')
-            .doc('mercadolibre_auth')
-            .get();
-        
-        const data = configDoc.data();
-        const accessToken = (data?.access_token || '').trim();
-
-        if (accessToken) {
-            console.log(`🔑 [ML-AUTH] Token detectado en Firestore (Inicia con: ${accessToken.substring(0, 10)}...)`);
-        } else {
-            console.warn("⚠️ [ML-AUTH] No se encontró access_token en Firestore.");
-        }
-
-        const apiHeaders = {
-            ...ML_HEADERS,
-            'Accept': 'application/json',
-        };
-        
-        if (accessToken) apiHeaders['Authorization'] = `Bearer ${accessToken}`;
-        return apiHeaders;
-    } catch (error) {
-        console.error("❌ Fallo al leer Firestore:", error.message);
-        return { ...ML_HEADERS, 'Accept': 'application/json' };
-    }
-}
 
 // Función para renovar el token usando el refresh_token
 async function refreshMLToken() {
@@ -72,6 +41,7 @@ async function refreshMLToken() {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
 
+    console.log("✅ Token renovado exitosamente.");
     const newAuth = {
         access_token: response.data.access_token,
         refresh_token: response.data.refresh_token,
@@ -85,14 +55,21 @@ async function refreshMLToken() {
 exports.obtenerProductoML = onCall({ region: 'us-central1', timeoutSeconds: 30 }, async (request) => {
     const urlInput = request.data.url;
     let itemId = "";
+    
+    // 1. Obtener Token de Firestore inmediatamente para usarlo en todo el proceso
+    const configDoc = await admin.firestore().collection('settings').doc('mercadolibre_auth').get();
+    const configData = configDoc.data();
+    let accessToken = configData?.access_token || "";
+    const authHeaders = { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' };
 
     if (urlInput.includes("MLA")) {
         const match = urlInput.match(/MLA-?\d{8,15}/i);
         if (match) itemId = match[0].replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
     } else {
         try {
+            // Intentamos resolver el link corto usando los headers identificados para evitar bloqueos
             const res = await axios.get(urlInput, {
-                headers: { ...ML_HEADERS, 'Referer': 'https://www.google.com/' },
+                headers: { ...ML_HEADERS, ...authHeaders, 'Referer': 'https://www.google.com/' },
                 maxRedirects: 10,
                 timeout: 10000
             });
@@ -100,55 +77,45 @@ exports.obtenerProductoML = onCall({ region: 'us-central1', timeoutSeconds: 30 }
             const comboMatch = content.match(/item_id":"(MLA\d+)"/i) || content.match(/id="itemId"\s+value="(MLA\d+)"/i);
             if (comboMatch) itemId = comboMatch[1];
         } catch (e) {
-            console.error("Fallo al resolver link:", e.message);
+            console.error("❌ Fallo al resolver link con token, reintentando anónimo:", e.message);
         }
     }
 
     if (!itemId) throw new HttpsError("invalid-argument", "No se detectó un ID (MLA).");
 
-    // 1. Obtener Token de Firestore
-    const configDoc = await admin.firestore().collection('settings').doc('mercadolibre_auth').get();
-    const configData = configDoc.data();
-    let accessToken = configData?.access_token || "";
-
     let itemData, descData;
 
     try {
         // 2. Intento Principal: API de Mercado Libre con Token
+        console.log(`📡 Solicitando item ${itemId} con token...`);
         const [itemRes, descRes] = await Promise.all([
-            axios.get(`https://api.mercadolibre.com/items/${itemId}`, { 
-                headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } 
-            }),
-            axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { 
-                headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } 
-            }).catch(() => ({ data: { plain_text: "" } }))
+            axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: authHeaders }),
+            axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: authHeaders }).catch(() => ({ data: { plain_text: "" } }))
         ]);
         itemData = itemRes.data;
         descData = descRes.data;
     } catch (error) {
-        // 3. Manejo de errores de autenticación con Refresco automático
         const status = error.status || error.response?.status;
         if (status === 401 || status === 403) {
             try {
-                accessToken = await refreshMLToken();
-                
+                console.log("🔑 Token rechazado o expirado. Intentando renovar...");
+                const newToken = await refreshMLToken();
                 const [itemRes, descRes] = await Promise.all([
                     axios.get(`https://api.mercadolibre.com/items/${itemId}`, { 
-                        headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } 
+                        headers: { 'Authorization': `Bearer ${newToken}`, 'Accept': 'application/json' } 
                     }),
                     axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { 
-                        headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } 
+                        headers: { 'Authorization': `Bearer ${newToken}`, 'Accept': 'application/json' } 
                     }).catch(() => ({ data: { plain_text: "" } }))
                 ]);
                 itemData = itemRes.data;
                 descData = descRes.data;
             } catch (retryError) {
-                console.error("Error en refresh:", retryError.message);
-                throw new HttpsError("permission-denied", "Token expirado y no se pudo renovar.");
+                console.error("❌ Error definitivo:", retryError.message);
+                throw new HttpsError("permission-denied", "Las llaves en Firestore son inválidas. Carga un Token y Refresh Token nuevos.");
             }
         } else {
-            console.error("Error en fetch principal:", error.message);
-            throw new HttpsError("internal", "Error crítico al obtener datos de ML.");
+            throw new HttpsError("internal", "Error de comunicación con el laboratorio de ML.");
         }
     }
 

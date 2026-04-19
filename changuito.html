@@ -326,7 +326,7 @@
             if (e.code) {
                 switch (e.code) {
                     case 'permission-denied':
-                        errorMessage = e.message.includes("client_secret") ? "🔑 ERROR DE SECRET: Verifica el client_secret en Firestore." : "🚫 ERROR DE AUTORIZACIÓN: El token expiró y el Refresh Token falló. Revisa tus credenciales en Firestore.";
+                        errorMessage = "🔑 LLAVES CORRUPTAS: El Token o el Secret en Firestore fallaron. Carga credenciales nuevas en settings/mercadolibre_auth.";
                         break;
                     case 'not-found':
                         errorMessage = "🔍 Producto no encontrado. Verifica el ID.";
@@ -338,7 +338,7 @@
                         errorMessage = "📡 Error de red: No se pudo conectar con el Laboratorio.";
                         break;
                     case 'internal':
-                        errorMessage = "⚠️ Error 500: Revisa los logs en Firebase Console o reinstala dependencias.";
+                        errorMessage = "⚠️ Error 500: Revisa si el servidor tiene todas las dependencias instaladas.";
                         break;
                     default:
                         errorMessage = `❌ Error [${e.code}]: ${e.message}`;
