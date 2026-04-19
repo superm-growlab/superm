@@ -104,20 +104,6 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Helper function to generate image HTML, copied from index.html
-        // Esto asegura que el HTML generado por el bot sea compatible con la función obtenerImagenHTML de index.html
-        function obtenerImagenHTML_changuito(input) {
-            let dato;
-            if (Array.isArray(input)) {
-                dato = input.length > 0 ? input[0] : "🌿"; // Si es array, toma el primer elemento o el ícono por defecto
-            } else {
-                dato = input || "🌿"; // Si es string, úsalo directamente o el ícono por defecto
-            }
-            
-            if (typeof dato === 'string' && dato.includes("http")) return `<img src="${dato}" class="img-real">`;
-            return `<div class="img-placeholder">${dato}</div>`;
-        }
-
     async function botTransmutar() {
         const linkReferido = document.getElementById('link-referido').value.trim();
         const status = document.getElementById('status-bot');
@@ -128,11 +114,12 @@
             return;
         }
 
-        status.innerText = "📡 CONECTANDO CON CLOUD FUNCTIONS...";
+        status.innerText = "📡 SINTONIZANDO CON MERCADO LIBRE...";
+        status.style.color = "var(--s)";
 
         try {
-            // Llamada a la función Cloud para obtener datos de ML
-            const obtenerProductoML = firebase.app().functions('us-central1').httpsCallable('obtenerProductoML');
+            // Llamada a la función DEPLOYADA (asegúrate de haber hecho deploy)
+            const obtenerProductoML = firebase.functions().httpsCallable('obtenerProductoML');
             const response = await obtenerProductoML({ url: linkReferido });
             const data = response.data;
 
@@ -142,15 +129,18 @@
                 productoTemporal = {
                     id: data.link.match(/MLA[-_]?(\d+)/i)?.[0] || Date.now().toString(),
                     i: data.i,
-                    desc: data.desc || data.n, 
-                    specs: Array.isArray(data.specs) ? data.specs : ["Calidad Super M"],
+                    desc: data.n, 
+                    specs: (data.specs && data.specs.length > 0) ? data.specs : ["Calidad Super M"],
                     linkOriginal: data.link
                 };
 
             // LLENADO DE FORMULARIO
             document.getElementById('edit-n').value = data.n || "";
             document.getElementById('edit-p').value = data.p || 0;
-            document.getElementById('edit-texto').value = data.texto || data.d || "";
+            
+            // Combinamos specs y texto para la ficha técnica
+            const fichaFormateada = (data.specs && data.specs.length > 0) ? data.specs.join("\n") : (data.texto || "");
+            document.getElementById('edit-texto').value = fichaFormateada;
             
             // Evitamos cargar el emoji como URL para prevenir el error 404
             const imgUrl = (data.i && data.i[0] && data.i[0].includes('http')) ? data.i[0] : '';

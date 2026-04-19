@@ -1,27 +1,65 @@
-// 4. Ficha Técnica (Especificaciones)
-const caracteristicas = [];
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const axios = require("axios");
 
-        // Intento 1: Tabla de especificaciones (Andes o UI PDP)
-        // Intento 1: Nuevo selector de ML para especificaciones (ui-pdp-specs__table__column)
-        const specsMatches = html.matchAll(/<th[^>]*class="ui-pdp-specs__table__column"[^>]*>([\s\S]*?)<\/th>\s*<td[^>]*class="ui-pdp-specs__table__column"[^>]*>([\s\S]*?)<\/td>/gi);
-        for (const match of specsMatches) {
-            const key = match[1].replace(/<[^>]+>/g, '').trim();
-            const val = match[2].replace(/<[^>]+>/g, '').trim();
-            if (key && val && !caracteristicas.some(c => c.toLowerCase().includes(key.toLowerCase()))) {
-                caracteristicas.push(`${key}: ${val}`);
+exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async (request) => {
+    const urlInput = request.data.url;
+    if (!urlInput) throw new HttpsError("invalid-argument", "URL requerida");
+
+    try {
+        // 1. Extraer el ID del producto (MLA...)
+        const mlaMatch = urlInput.match(/MLA[-_]?(\d+)/i);
+        if (!mlaMatch) throw new Error("No se detectó un ID de Mercado Libre válido.");
+        const itemId = mlaMatch[0].replace("-", "");
+
+        console.log(`📡 Consultando API oficial de ML para el item: ${itemId}`);
+
+        // 2. Llamada a la API de Mercado Libre (Sin proxies intermedios)
+        const apiRes = await axios.get(`https://api.mercadolibre.com/items/${itemId}`);
+        const item = apiRes.data;
+
+        const nombre = item.title || "Producto Super M";
+        const precio = item.price || 0;
+        
+        console.log(`💎 [BOT] Título: ${nombre} | Precio: ${precio}`);
+
+        // 3. Extraer Imágenes (URLs de alta calidad)
+        const imagenes = item.pictures 
+            ? item.pictures.slice(0, 10).map(p => p.secure_url || p.url) 
+            : ["🌿"];
+
+        // 4. La "Ficha Técnica" (Atributos)
+        const caracteristicas = [];
+        if (item.attributes) {
+            item.attributes.forEach(attr => {
+                if (attr.name && attr.value_name) {
+                    caracteristicas.push(`${attr.name}: ${attr.value_name}`);
+                }
+            });
+        }
+
+        // 5. Intentar obtener descripción de texto si no hay atributos
+        let textoFicha = "";
+        if (caracteristicas.length === 0) {
+            try {
+                const descRes = await axios.get(`https://api.mercadolibre.com/items/${itemId}/description`);
+                textoFicha = descRes.data.plain_text || "";
+            } catch (e) {
+                console.log("No se pudo obtener descripción de texto.");
             }
         }
 
-        // Intento 2: Tabla de especificaciones (Andes o UI PDP)
-const tableMatches = html.matchAll(/<tr[^>]*class="[^"]*(?:ui-pdp-table__row|andes-table__row)[^"]*"[^>]*>[\s\S]*?<th[^>]*>([\s\S]*?)<\/th>[\s\S]*?<t[db][^>]*>([\s\S]*?)<\/t[db]>/gi);
-for (const match of tableMatches) {
-const key = match[1].replace(/<[^>]+>/g, '').trim();
-@@ -87,7 +97,7 @@ exports.obtenerProductoML = onCall({
-}
-}
+        return {
+            n: nombre,
+            p: precio,
+            i: imagenes,
+            link: urlInput,
+            specs: caracteristicas,
+            texto: textoFicha,
+            status: "Transmutación Exitosa vía API Oficial"
+        };
 
-        // Intento 2: Bullet points de resumen (ui-pdp-features__item)
-        // Intento 3: Bullet points de resumen (ui-pdp-features__item)
-const caracMatches = html.matchAll(/<li[^>]+class="ui-pdp-features__item"[^>]*>([\s\S]*?)<\/li>/gi);
-for (const match of caracMatches) {
-const texto = match[1].replace(/<[^>]+>/g, '').trim();
+    } catch (error) {
+        console.error("Error en botTransmutar:", error.message);
+        throw new HttpsError("internal", "Error al conectar con Mercado Libre: " + error.message);
+    }
+});
