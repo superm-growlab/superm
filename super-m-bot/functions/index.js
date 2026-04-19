@@ -41,7 +41,11 @@ async function refreshMLToken() {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
 
-    console.log("✅ Token renovado exitosamente.");
+    if (!response.data.access_token) {
+        throw new Error("La respuesta de ML no incluyó un access_token.");
+    }
+
+    console.log("✅ [ML-AUTH] Token renovado exitosamente.");
     const newAuth = {
         access_token: response.data.access_token,
         refresh_token: response.data.refresh_token,
@@ -50,6 +54,21 @@ async function refreshMLToken() {
 
     await configRef.update(newAuth);
     return response.data.access_token;
+}
+
+// Función auxiliar para intentar petición pública si el token falla
+async function fetchPublico(itemId) {
+    console.log(`🌐 [PLAN B] Intentando acceso público para ${itemId}...`);
+    try {
+        const [itemRes, descRes] = await Promise.all([
+            axios.get(`https://api.mercadolibre.com/items/${itemId}`, { headers: ML_HEADERS }),
+            axios.get(`https://api.mercadolibre.com/items/${itemId}/description`, { headers: ML_HEADERS }).catch(() => ({ data: { plain_text: "" } }))
+        ]);
+        return { item: itemRes.data, desc: descRes.data };
+    } catch (e) {
+        console.error("❌ [PLAN B] También falló el acceso público:", e.message);
+        throw e;
+    }
 }
 
 exports.obtenerProductoML = onCall({ region: 'us-central1', timeoutSeconds: 30 }, async (request) => {
@@ -95,11 +114,12 @@ exports.obtenerProductoML = onCall({ region: 'us-central1', timeoutSeconds: 30 }
         itemData = itemRes.data;
         descData = descRes.data;
     } catch (error) {
-        const status = error.status || error.response?.status;
+        const status = error.response?.status || error.status;
         if (status === 401 || status === 403) {
             try {
-                console.log("🔑 Token rechazado o expirado. Intentando renovar...");
+                console.log(`🔑 [ML-AUTH] Error ${status}. Intentando refrescar token...`);
                 const newToken = await refreshMLToken();
+                
                 const [itemRes, descRes] = await Promise.all([
                     axios.get(`https://api.mercadolibre.com/items/${itemId}`, { 
                         headers: { 'Authorization': `Bearer ${newToken}`, 'Accept': 'application/json' } 
@@ -111,11 +131,15 @@ exports.obtenerProductoML = onCall({ region: 'us-central1', timeoutSeconds: 30 }
                 itemData = itemRes.data;
                 descData = descRes.data;
             } catch (retryError) {
-                console.error("❌ Error definitivo:", retryError.message);
-                throw new HttpsError("permission-denied", "Las llaves en Firestore son inválidas. Carga un Token y Refresh Token nuevos.");
+                console.warn("⚠️ [ML-AUTH] Falló el token y el refresh. Ejecutando Plan B...");
+                const publicData = await fetchPublico(itemId).catch(() => {
+                    throw new HttpsError("permission-denied", "ML bloqueó el acceso (403). Verifica que tu App sea de Producción y tus llaves sean nuevas.");
+                });
+                itemData = publicData.item;
+                descData = publicData.desc;
             }
         } else {
-            throw new HttpsError("internal", "Error de comunicación con el laboratorio de ML.");
+            throw new HttpsError("internal", `Error de comunicación con ML: ${error.message}`);
         }
     }
 
