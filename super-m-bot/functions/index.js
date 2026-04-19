@@ -77,9 +77,17 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
         if (!mlaMatch) {
             console.log("📡 Resolviendo link corto o complejo...");
             const res = await axios.get(urlInput, {
-                maxRedirects: 10,
-                validateStatus: (status) => status < 500, // Permitir 4xx para buscar el ID en el cuerpo si hay bloqueo
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+                maxRedirects: 15,
+                timeout: 20000,
+                validateStatus: (status) => status < 500, 
+                headers: { 
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'es-AR,es;q=0.8,en-US;q=0.5,en;q=0.3',
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache',
+                    'Referer': 'https://www.google.com/'
+                }
             });
             
             // Obtener la URL final después de todas las redirecciones
@@ -88,14 +96,10 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
             
             mlaMatch = urlToProcess.match(mlaRegex);
 
-            // Búsqueda de emergencia: Si el ID no está en la URL final, lo buscamos en el HTML (canonical tag)
+            // Búsqueda de emergencia profunda: Escanear todo el contenido del HTML en busca de un ID
             if (!mlaMatch && res.data && typeof res.data === 'string') {
-                console.log("🕵️ ID no hallado en URL. Escaneando metadatos HTML...");
-                const canonicalMatch = res.data.match(/property="og:url"\s+content="([^"]+)"/i) || 
-                                     res.data.match(/rel="canonical"\s+href="([^"]+)"/i);
-                if (canonicalMatch) {
-                    mlaMatch = canonicalMatch[1].match(mlaRegex);
-                }
+                console.log("🕵️ ID no hallado en URL. Escaneando cuerpo de la respuesta...");
+                mlaMatch = res.data.match(mlaRegex);
             }
         }
 
