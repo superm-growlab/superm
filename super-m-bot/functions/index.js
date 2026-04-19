@@ -90,6 +90,10 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
                 }
             });
             
+            if (res.status === 404) {
+                throw new Error("Mercado Libre devolvió 404 al intentar resolver el link. El producto podría no estar disponible o el link es inválido.");
+            }
+
             // Obtener la URL final después de todas las redirecciones
             urlToProcess = res.request?.res?.responseUrl || res.request?._redirectable?._currentUrl || res.config?.url || urlInput;
             console.log(`📍 URL final resuelta: ${urlToProcess}`);
@@ -108,14 +112,33 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
         const itemId = (mlaMatch[1] + mlaMatch[2]).toUpperCase();
         console.log(`📡 Consultando API oficial de ML para el item: ${itemId}`);
 
-        // 2. Llamada a la API de Mercado Libre con el token dinámico
-        const apiRes = await axios.get(`https://api.mercadolibre.com/items/${itemId}`, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
+        // 2. Llamada a la API de Mercado Libre (Híbrida: Items o Products)
+        let item;
+        try {
+            const apiRes = await axios.get(`https://api.mercadolibre.com/items/${itemId}`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            item = apiRes.data;
+        } catch (err) {
+            // Si el item da 404, probamos si es un ID de Producto de Catálogo
+            if (err.response && err.response.status === 404) {
+                console.log("⚠️ Item no hallado. Intentando como Producto de Catálogo...");
+                const prodRes = await axios.get(`https://api.mercadolibre.com/products/${itemId}`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                item = prodRes.data;
+                // Normalizamos: en productos el título está en 'name'
+                item.title = item.name;
+                // El precio en catálogo suele estar en el 'buy_box_winner'
+                if (item.buy_box_winner) {
+                    item.price = item.buy_box_winner.price;
+                }
+            } else {
+                throw err;
+            }
+        }
 
-        const item = apiRes.data;
-
-        const nombre = item.title || "Producto Super M";
+        const nombre = item.title || item.name || "Producto Super M";
         const precio = item.price || 0;
         
         console.log(`💎 [BOT] Título: ${nombre} | Precio: ${precio}`);
