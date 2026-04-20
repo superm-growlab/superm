@@ -595,7 +595,7 @@
 
     <div id="loader-global">
         <div class="spinner"></div>
-        <p style="color: var(--p); margin-top: 15px; font-family: 'Courier New', monospace; letter-spacing: 2px; font-size: 0.8rem;">SINTONIZANDO...</p>
+        <p style="color: var(--p); margin-top: 15px; font-family: 'Courier New', monospace; letter-spacing: 2px; font-size: 0.8rem;">CARGANDO...</p>
     </div>
 
     <div id="notificacion"></div>
@@ -1498,28 +1498,6 @@
     <!-- Botón Volver Único y Fijo -->
     <button id="btn-global-back" onclick="history.back()">[ VOLVER ]</button>
 
-    <!-- PROTOCOLO DE PROTECCIÓN DE PROPIEDAD INTELECTUAL - SUPER M -->
-    <script>
-        (function() {
-            // 1. Bloqueo de Clic Derecho y Copia
-            document.addEventListener('contextmenu', e => e.preventDefault());
-            document.addEventListener('copy', e => e.preventDefault());
-
-            // 2. Bloqueo de Teclas de Desarrollador (F12, Ctrl+Shift+I/J, Ctrl+U)
-            document.addEventListener('keydown', e => {
-                if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
-                    e.preventDefault();
-                    return false;
-                }
-            });
-
-            // 3. Blindaje de Consola (Loop de limpieza)
-            setInterval(() => {
-                console.clear();
-                console.log('%c [ ACCESO RESTRINGIDO - PROPIEDAD DE SUPER M GROWLAB ] ', 'background: #050505; color: #39ff14; font-size: 18px; font-weight: bold; border: 2px solid #39ff14; padding: 10px;');
-            }, 100);
-        })();
-    </script>
 
     <script>
         window.mostrarLoader = () => { document.getElementById('loader-global').style.display = 'flex'; };
@@ -1595,11 +1573,18 @@
 
         async function cargarProductosDesdeSheet() {
             try {
-                const r = await fetch(URL_SHEET_PRODUCTOS);
+                const r = await fetch(URL_SHEET_PRODUCTOS, { cache: "no-store" });
+                if (!r.ok) throw new Error(`HTTP Error: ${r.status}`);
                 const t = (await r.text()).replace(/^\uFEFF/, '').replace(/\r/g, '');
+                console.log("📊 Datos crudos de Sheets (primeros 100 caracteres):", t.substring(0, 100));
+                
                 const f = t.split(/\n(?=(?:(?:[^"]*"){2})*[^"]*$)/).slice(1);
+                if (f.length === 0) { console.warn("⚠️ El CSV de productos parece estar vacío."); return; }
+                
+                const primerLinea = t.split('\n')[0];
+                const sep = primerLinea.includes(';') ? ';' : ',';
+
                 productos = f.filter(x => x.trim() !== "").map((linea, index) => {
-                    const sep = linea.includes(';') ? ';' : ',';
                     const c = [];
                     let curr = "", quotes = false;
                     for (let char of linea) {
@@ -5454,22 +5439,21 @@ window.cargarModeracion = async (coleccion) => {
     try {
         let items = [];
         if (coleccion === 'todos') {
-            const qCom = query(collection(db, 'comentarios'), orderBy('timestamp', 'desc'), limit(30));
-            const qRes = query(collection(db, 'reseñas_productos'), orderBy('timestamp', 'desc'), limit(30));
-            const qNot = query(collection(db, 'sugerencias_notas'), orderBy('timestamp', 'desc'), limit(30));
-            const qSol = query(collection(db, 'solicitudes_tablas'), orderBy('timestamp', 'desc'), limit(30));
-            const [sCom, sRes, sNot, sSol] = await Promise.all([getDocs(qCom), getDocs(qRes), getDocs(qNot), getDocs(qSol)]);
-            
-            sCom.docs.forEach(doc => items.push({ id: doc.id, col: 'comentarios', ...doc.data() }));
-            sRes.docs.forEach(doc => items.push({ id: doc.id, col: 'reseñas_productos', ...doc.data() }));
-            sNot.docs.forEach(doc => {
-                const data = doc.data();
-                // Omitir los registros técnicos de votos sobre notas de Sheets
-                if (data.origen !== 'sheet_override') items.push({ id: doc.id, col: 'sugerencias_notas', ...data });
+            const colecciones = ['comentarios', 'reseñas_productos', 'sugerencias_notas', 'solicitudes_tablas'];
+            const fetchPromises = colecciones.map(async (colName) => {
+                try {
+                    const q = query(collection(db, colName), orderBy('timestamp', 'desc'), limit(30));
+                    const snap = await getDocs(q);
+                    snap.docs.forEach(doc => {
+                        const data = doc.data();
+                        if (colName === 'sugerencias_notas' && data.origen === 'sheet_override') return;
+                        items.push({ id: doc.id, col: colName, ...data });
+                    });
+                } catch (err) {
+                    console.warn(`Error cargando canal ${colName}:`, err);
+                }
             });
-            sSol.docs.forEach(doc => items.push({ id: doc.id, col: 'solicitudes_tablas', ...doc.data() }));
-            
-            // Ordenar por fecha (timestamp) descendente (más nuevos primero)
+            await Promise.all(fetchPromises);
             items.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
         } else {
             const q = query(collection(db, coleccion), orderBy('timestamp', 'desc'), limit(50));
@@ -5524,7 +5508,7 @@ window.cargarModeracion = async (coleccion) => {
                           onclick="window.leerPropuestaAdmin('${d.id}')">LEER</button>`;
             } else if (d.col !== 'solicitudes_tablas') {
                 viewBtn = `<button class="btn" style="background:transparent; border:1px solid var(--p); color:var(--p); font-size:0.7rem; padding: 5px 15px;" 
-                          onclick="window.irAInteraccion('${d.col}', '${d.id}', ${prodIdParam}, '${d.status || ''}')">VER</button>`;
+                          onclick="window.irAInteraccion('${d.col}', '${d.id}', ${prodIdParam})">VER</button>`;
             }
 
             return `
