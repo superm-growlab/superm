@@ -79,7 +79,7 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
         let urlToProcess = urlInput;
 
         // Capa 2: Si no hay ID detectado y parece ser un link, intentamos resolverlo
-        if (!mlaMatch && !catalogMatch && urlInput.toLowerCase().startsWith("http")) {
+        if (!mlaMatch && !catalogMatch && urlInput && urlInput.toLowerCase().startsWith("http")) {
             console.log("📡 Resolviendo link corto o complejo...");
             const res = await axios.get(urlInput, {
                 maxRedirects: 15,
@@ -155,32 +155,58 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
         console.log(`📡 Consultando API oficial de ML para el item: ${itemId}`);
 
         // 2. Llamada a la API de Mercado Libre (Híbrida: Items o Products)
-        const catalogIdRegexStrict = /\b([A-Z0-9]{5,12}-[A-Z0-9]{4,12})\b/i;
-        const isCatalogRequest = catalogIdRegexStrict.test(itemId) || itemId.startsWith("MLAU");
-
         let item;
+        const catalogIdRegexStrict = /\b([A-Z0-9]{5,12}-[A-Z0-9]{4,12})\b/i;
+        const isCatalogID = catalogIdRegexStrict.test(itemId) || itemId.startsWith("MLAU");
+
+        // Función interna para normalizar datos de producto a item
+        const normalizeProduct = (data) => {
+            data.title = data.name || data.title;
+            if (data.buy_box_winner) data.price = data.buy_box_winner.price;
+            return data;
+        };
+
         try {
-            if (isCatalogRequest) {
-                console.log("📦 Detectado como ID de Catálogo. Consultando API /products...");
-                const prodRes = await axios.get(`https://api.mercadolibre.com/products/${itemId}`, {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                });
-                item = prodRes.data;
-                item.title = item.name;
-                if (item.buy_box_winner) item.price = item.buy_box_winner.price;
+            if (isCatalogID) {
+                try {
+                    console.log("📦 Intentando API /products...");
+                    const res = await axios.get(`https://api.mercadolibre.com/products/${itemId}`, {
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                    item = normalizeProduct(res.data);
+                } catch (e) {
+                    if (e.response?.status === 404) {
+                        console.log("🔄 No hallado en products. Reintentando en /items...");
+                        const res = await axios.get(`https://api.mercadolibre.com/items/${itemId}`, {
+                            headers: { 'Authorization': `Bearer ${accessToken}` }
+                        });
+                        item = res.data;
+                    } else throw e;
+                }
             } else {
-                console.log("🏷️ Detectado como Item Individual. Consultando API /items...");
-                const apiRes = await axios.get(`https://api.mercadolibre.com/items/${itemId}`, {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                });
-                item = apiRes.data;
+                try {
+                    console.log("🏷️ Intentando API /items...");
+                    const res = await axios.get(`https://api.mercadolibre.com/items/${itemId}`, {
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                    item = res.data;
+                } catch (e) {
+                    if (e.response?.status === 404) {
+                        console.log("🔄 No hallado en items. Reintentando en /products...");
+                        const res = await axios.get(`https://api.mercadolibre.com/products/${itemId}`, {
+                            headers: { 'Authorization': `Bearer ${accessToken}` }
+                        });
+                        item = normalizeProduct(res.data);
+                    } else throw e;
+                }
             }
         } catch (err) {
-            console.error(`❌ Error final en APIs de ML para ID ${itemId}:`, err.response?.data || err.message);
-            throw new Error(`El producto ${itemId} no es accesible. Puede estar pausado, ser de una categoría con restricciones de venta (como ciertos artículos de growshop) o ser un link de catálogo no soportado.`);
+            const status = err.response?.status || "unknown";
+            console.error(`❌ Error final [${status}] para ID ${itemId}:`, err.response?.data || err.message);
+            throw new Error(`El producto ${itemId} devolvió error ${status}. Puede estar pausado o ser de una categoría restringida.`);
         }
 
-        const nombre = item.title || item.name || "Producto Super M";
+        const nombre = item.title || "Producto Super M";
         const precio = item.price || 0;
         const categoryId = item.category_id;
         let nombreCategoria = "General";
@@ -227,7 +253,8 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
         }
 
         // Si el usuario pegó solo el ID, generamos un permalink válido de ML como respaldo
-        const finalPermalink = urlInput.toLowerCase().startsWith("http") ? urlInput : `https://articulo.mercadolibre.com.ar/${itemId}`;
+        const hasUrl = urlInput && urlInput.toLowerCase().startsWith("http");
+        const finalPermalink = hasUrl ? urlInput : `https://articulo.mercadolibre.com.ar/${itemId}`;
 
         return {
             id: itemId,
