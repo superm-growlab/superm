@@ -268,14 +268,14 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
 
         return {
             id: itemId,
-            title: nombre,
-            price: precio,
-            pictures: imagenes,
-            permalink: finalPermalink,
-            attributes: caracteristicas,
-            description: textoFicha,
-            category_id: categoryId,
-            category_name: nombreCategoria,
+            n: nombre,
+            p: precio,
+            i: imagenes,
+            link: finalPermalink,
+            specs: caracteristicas,
+            texto: textoFicha,
+            catId: categoryId,
+            catName: nombreCategoria,
             status: "Transmutación Exitosa",
             debug: {
                 api_usada: usedApi,

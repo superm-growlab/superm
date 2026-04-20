@@ -1438,10 +1438,6 @@
     </section>
 
     <section id="view-admin" class="seccion" style="position: relative;">
-        <!-- Acceso Directo a Herramientas Admin -->
-        <div style="position: absolute; top: 15px; right: 5%; z-index: 10; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
-            <button class="btn btn-v" style="font-size: 0.65rem; padding: 8px 12px; border-radius: 5px; box-shadow: 0 0 10px var(--p);" onclick="window.open('changuito.html', '_blank')">🤖 CHANGUITO BOT</button>
-        </div>
         <h2 style="color:var(--s); text-align: center;">🛡️ PANEL DE MODERACIÓN</h2>
         <div id="admin-tabs" style="display:flex; gap:10px; justify-content:center; margin-bottom:30px;">
             <button class="btn btn-m" id="btn-mod-todos" onclick="window.cargarModeracion('todos')">Todos</button>
@@ -1541,6 +1537,7 @@
         const mp = new MercadoPago('APP_USR-b1a36115-fd8e-4b35-ae27-fc6be6a9d178', { locale: 'es-AR' });
         const MI_NUMERO = "5492966637000";
         const URL_GOOGLE_SHEETS = "https://script.google.com/macros/s/AKfycbzk6fUHwGdI4wCgL_ZPBuV_pXFuWiLsSRo3TxPKs_KCWRBzaU4-Aw8B0emmy7OBg9A/exec";
+        const URL_SHEET_PRODUCTOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=0&single=true&output=csv";
         const URL_SHEET_RECETARIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=654571090&single=true&output=csv";
         const URL_SHEET_NOTAS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=188672931&single=true&output=tsv";
 
@@ -1587,12 +1584,47 @@
 
         async function cargarInventario() {
             try {
-                productos = []; // Vaciamos para usar solo Firebase
-                if (window.sincronizarProductosFirebase) {
-                    await window.sincronizarProductosFirebase();
-                }
+                productos = []; 
+                await cargarProductosDesdeSheet();
+                // Forzar renderizado si el usuario está en la vista de tienda
+                if (localStorage.getItem('ultimaVista') === 'tienda') mostrarCategorias();
             } catch (e) { 
-                console.error("Error al sincronizar inventario:", e); 
+                console.error("Error al cargar inventario:", e); 
+            }
+        }
+
+        async function cargarProductosDesdeSheet() {
+            try {
+                const r = await fetch(URL_SHEET_PRODUCTOS);
+                const t = (await r.text()).replace(/^\uFEFF/, '').replace(/\r/g, '');
+                const f = t.split(/\n(?=(?:(?:[^"]*"){2})*[^"]*$)/).slice(1);
+                productos = f.filter(x => x.trim() !== "").map((linea, index) => {
+                    const sep = linea.includes(';') ? ';' : ',';
+                    const c = [];
+                    let curr = "", quotes = false;
+                    for (let char of linea) {
+                        if (char === '"') quotes = !quotes;
+                        else if (char === sep && !quotes) {
+                            c.push(curr); curr = "";
+                        } else { curr += char; }
+                    }
+                    c.push(curr);
+                    const clean = (val) => val ? val.replace(/^"|"$/g, '').trim() : "";
+                    
+                    return {
+                        id: clean(c[0]) || `p-${index}`,
+                        n: clean(c[1]), // Título
+                        cat: clean(c[2]), // Categoría
+                        desc: clean(c[3]), // Descripción
+                        p: parseFloat(clean(c[4]).replace(/[^0-9.-]+/g,"")) || 0, // Precio
+                        i: clean(c[5]), // Imagen
+                        permalink: clean(c[6]), // Link de compra
+                        specs: clean(c[7]) ? clean(c[7]).split('|') : [] // Atributos opcionales (separados por | en la celda)
+                    };
+                });
+                console.log("✅ Catálogo Sheets cargado:", productos.length, "ítems.");
+            } catch (e) {
+                console.error("Error al cargar productos desde Sheets:", e);
             }
         }
 
@@ -3107,29 +3139,6 @@ const CONFIG_COMUNIDAD = {
 const app = initializeApp(firebaseConfig);
 const authInstance = getAuth(app);
 const db = getFirestore(app);
-
-// PUENTE DE PRODUCTOS: Carga productos desde Firestore y los integra al catálogo global
-window.sincronizarProductosFirebase = async () => {
-    try {
-        const snap = await getDocs(collection(db, "productos_tienda"));
-        snap.forEach(docSnap => {
-            const p = docSnap.data();
-            // Evitar duplicados si ya existen por Google Sheets
-            if (!productos.find(x => x.id === p.id)) productos.push(p);
-        });
-        console.log("✅ Firestore Sync:", productos.length, "ítems.");
-        // Renderizado inmediato si estamos en la sección tienda
-        const ultima = localStorage.getItem('ultimaVista');
-        if (ultima === 'tienda') {
-            const state = history.state;
-            if (state && state.sub === 'category') {
-                filtrarProductos(state.catId, state.nombre, false);
-            } else {
-                mostrarCategorias();
-            }
-        }
-    } catch (e) { console.error("Error al sincronizar productos desde Firebase:", e); }
-};
 
 // FUNCIÓN DE COMPRESIÓN DE IMÁGENES (Máx 800px, 0.7 Calidad)
 window.comprimirImagen = (file) => {
