@@ -1578,11 +1578,13 @@
                 const t = (await r.text()).replace(/^\uFEFF/, '').replace(/\r/g, '');
                 console.log("📊 Datos crudos de Sheets (primeros 100 caracteres):", t.substring(0, 100));
                 
-                const f = t.split(/\n(?=(?:(?:[^"]*"){2})*[^"]*$)/).slice(1);
-                if (f.length === 0) { console.warn("⚠️ El CSV de productos parece estar vacío."); return; }
+                const filas = t.split(/\n(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                const encabezado = filas[0] || "";
+                const f = filas.slice(1);
                 
-                const primerLinea = t.split('\n')[0];
-                const sep = primerLinea.includes(';') ? ';' : ',';
+                if (f.length === 0) { console.warn("⚠️ El catálogo parece estar vacío."); return; }
+                
+                const sep = encabezado.includes('\t') ? '\t' : (encabezado.includes(';') ? ';' : ',');
 
                 productos = f.filter(x => x.trim() !== "").map((linea, index) => {
                     const c = [];
@@ -1598,19 +1600,20 @@
                     
                     return {
                         id: clean(c[0]) || `p-${index}`,
-                        n: clean(c[2]), // Nombre
-                        title: clean(c[2]),
-                        cat: clean(c[1]), // Categoría
-                        category_id: clean(c[1]),
-                        desc: clean(c[5]), // Descripción
-                        description: clean(c[5]),
-                        p: parseFloat(clean(c[3]).replace(/[^0-9.-]+/g,"")) || 0, // Precio
-                        price: parseFloat(clean(c[3]).replace(/[^0-9.-]+/g,"")) || 0,
-                        i: clean(c[4]), // Imagen/Emoji
-                        pictures: [clean(c[4])],
-                        permalink: clean(c[7]), // Link de pago
-                        specs: clean(c[6]) ? clean(c[6]).split('|') : [], // Specs
-                        attributes: clean(c[6]) ? clean(c[6]).split('|') : []
+                        n: clean(c[2]), // Nombre (col 2)
+                        title: clean(c[2]), 
+                        cat: clean(c[1]), // Categoría (col 1)
+                        category_id: clean(c[1]), 
+                        desc: clean(c[5]), // Descripción (col 5)
+                        description: clean(c[5]), 
+                        p: parseFloat(clean(c[3]).replace(/\./g, "").replace(/[^0-9,-]+/g,"").replace(',', '.')) || 0, // Precio (col 3)
+                        price: parseFloat(clean(c[3]).replace(/\./g, "").replace(/[^0-9,-]+/g,"").replace(',', '.')) || 0,
+                        i: clean(c[4]) ? clean(c[4]).split('|')[0] : "🌿", // Imagen/Emoji (col 4)
+                        pictures: clean(c[4]) ? clean(c[4]).split('|') : [], 
+                        permalink: clean(c[7]), // Link Pago (col 7)
+                        specs: clean(c[6]) ? clean(c[6]).split('|') : [], // Specs (col 6)
+                        attributes: clean(c[6]) ? clean(c[6]).split('|') : [],
+                        texto: clean(c[8]) // Reporte Técnico (col 8)
                     };
                 });
                 console.log("✅ Catálogo Sheets cargado:", productos.length, "ítems.");
@@ -2173,7 +2176,7 @@ function verProducto(id, guardar = true) {
     };
 
     const btnMP = `<button class="btn btn-mp" style="width:100%; margin-top:10px" onclick="window.comprarDirecto('${p.id}')">Comprar</button>`;
-    const btnFicha = (p.description || p.texto) ? `<button class="btn btn-m" style="width:100%; margin-top:10px; border-color:var(--s); color:var(--s);" onclick="window.verNotasCompletas(decodeURIComponent('${encodeURIComponent(p.description || p.texto)}'), '📖 FICHA TÉCNICA')">📄 FICHA TÉCNICA</button>` : '';
+    const btnFicha = (p.texto || p.description) ? `<button class="btn btn-m" style="width:100%; margin-top:10px; border-color:var(--s); color:var(--s);" onclick="window.verNotasCompletas(decodeURIComponent('${encodeURIComponent(p.texto || p.description)}'), '📖 FICHA TÉCNICA')">📄 FICHA TÉCNICA</button>` : '';
     
     document.getElementById('detalle-p').innerHTML = `
         <div class="producto-detalle">
