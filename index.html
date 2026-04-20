@@ -1584,7 +1584,10 @@
                 
                 if (f.length === 0) { console.warn("⚠️ El catálogo parece estar vacío."); return; }
                 
-                const sep = encabezado.includes('\t') ? '\t' : (encabezado.includes(';') ? ';' : ',');
+                // Detección de separador más robusta
+                let sep = ',';
+                if (encabezado.includes('\t')) sep = '\t';
+                else if (encabezado.includes(';')) sep = ';';
 
                 productos = f.filter(x => x.trim() !== "").map((linea, index) => {
                     const c = [];
@@ -1596,27 +1599,35 @@
                         } else { curr += char; }
                     }
                     c.push(curr);
-                    const clean = (val) => val ? val.replace(/^"|"$/g, '').trim() : "";
                     
+                    // Limpieza profunda de espacios y comillas
+                    const clean = (val) => val ? val.replace(/^"|"$/g, '').replace(/\r?\n|\r/g, " ").trim() : "";
+                    
+                    const categoryValue = clean(c[1]);
+                    const nameValue = clean(c[2]);
+                    const rawPrice = clean(c[3]);
+                    const rawImages = clean(c[4]);
+
                     return {
                         id: clean(c[0]) || `p-${index}`,
-                        n: clean(c[2]), // Nombre (col 2)
-                        title: clean(c[2]), 
-                        cat: clean(c[1]), // Categoría (col 1)
-                        category_id: clean(c[1]), 
+                        n: nameValue,
+                        title: nameValue,
+                        cat: categoryValue,
+                        category_id: categoryValue,
                         desc: clean(c[5]), // Descripción (col 5)
                         description: clean(c[5]), 
-                        p: parseFloat(clean(c[3]).replace(/\./g, "").replace(/[^0-9,-]+/g,"").replace(',', '.')) || 0, // Precio (col 3)
-                        price: parseFloat(clean(c[3]).replace(/\./g, "").replace(/[^0-9,-]+/g,"").replace(',', '.')) || 0,
-                        i: clean(c[4]) ? clean(c[4]).split('|')[0] : "🌿", // Imagen/Emoji (col 4)
-                        pictures: clean(c[4]) ? clean(c[4]).split('|') : [], 
+                        // Parsing de precio mejorado para 838.080 o 89000
+                        p: parseFloat(rawPrice.replace(/\./g, "").replace(/[^0-9,-]+/g,"").replace(',', '.')) || 0,
+                        price: parseFloat(rawPrice.replace(/\./g, "").replace(/[^0-9,-]+/g,"").replace(',', '.')) || 0,
+                        i: rawImages ? rawImages.split('|')[0] : "🌿",
+                        pictures: rawImages ? rawImages.split('|') : [], 
                         permalink: clean(c[7]), // Link Pago (col 7)
                         specs: clean(c[6]) ? clean(c[6]).split('|') : [], // Specs (col 6)
                         attributes: clean(c[6]) ? clean(c[6]).split('|') : [],
                         texto: clean(c[8]) // Reporte Técnico (col 8)
                     };
                 });
-                console.log("✅ Catálogo Sheets cargado:", productos.length, "ítems.");
+                console.log("✅ Catálogo Sheets cargado:", productos.length, "ítems.", productos);
             } catch (e) {
                 console.error("Error al cargar productos desde Sheets:", e);
             }
@@ -2022,8 +2033,14 @@
             if(aviso) aviso.style.display = 'block';
             const grid = document.getElementById('grid-p');
             grid.innerHTML = categorias.map(c => {
-                // Compara contra nombre o ID para el contador
-                const total = productos.filter(p => (p.category_id || p.cat || '').toLowerCase() === c.n.toLowerCase() || (p.category_id || p.cat || '').toLowerCase() === c.id.toLowerCase()).length;
+                // Filtrado más flexible para el contador
+                const total = productos.filter(p => {
+                    const pCat = (p.category_id || p.cat || "").toLowerCase().trim();
+                    const cId = c.id.toLowerCase().trim();
+                    const cNombre = c.n.toLowerCase().trim();
+                    return pCat === cId || pCat === cNombre || pCat.includes(cId);
+                }).length;
+
                 return `
                 <div class="tarjeta" onclick="filtrarProductos('${c.id}', '${c.n}')">
                     <div class="contenedor-img">${obtenerImagenHTML(c.i)}</div>
@@ -2041,8 +2058,13 @@
             const aviso = document.getElementById('aviso-laboratorio-tienda');
             if(aviso) aviso.style.display = 'none';
             
-            // Filtra buscando coincidencias con el nombre visible o el ID técnico
-            const fil = productos.filter(p => (p.category_id || '').toLowerCase() === nombre.toLowerCase() || (p.category_id || '').toLowerCase() === catId.toLowerCase());
+            // Filtrado de productos mejorado
+            const fil = productos.filter(p => {
+                const pCat = (p.category_id || "").toLowerCase().trim();
+                return pCat === nombre.toLowerCase().trim() || pCat === catId.toLowerCase().trim() || pCat.includes(catId.toLowerCase().trim());
+            });
+            
+            console.log(`🔎 Filtrando por ${catId}: encontrados ${fil.length} productos.`);
             renderGrid(fil);
         }
 
