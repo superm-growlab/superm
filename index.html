@@ -5509,7 +5509,7 @@ window.cargarModeracion = async (coleccion) => {
                     <div style="color:var(--p); font-weight:900; font-size:0.9rem; margin-bottom:3px; display:flex; align-items:center;">${(d.titulo || 'Sin Título').toUpperCase()}</div>
                     <div style="color:var(--s); font-size:0.65rem; font-weight:bold; letter-spacing:1px; margin-bottom:8px;">CATEGORÍA: ${(d.cat || 'General').toUpperCase()}</div>
                     <div style="color:#ccc; font-style:italic; line-height:1.4; border-left: 2px solid #333; padding-left:10px;">${d.resumen || 'Sin resumen proporcionado.'}</div>
-                    <div style="margin-top:8px;"><small style="color:#555; font-size:0.6rem;">ESTADO: ${d.status.toUpperCase()}</small></div>`;
+                    <div style="margin-top:8px;"><small style="color:#555; font-size:0.6rem;">ESTADO: ${(d.status || 'pendiente').toUpperCase()}</small></div>`;
             }
             else if (d.col === 'solicitudes_tablas') {
                 mainText = `
