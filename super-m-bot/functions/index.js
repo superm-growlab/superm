@@ -62,6 +62,12 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
     const urlInput = request.data.url;
     const productIdInput = request.data.productId;
 
+    // Modo prueba de conexión
+    if (request.data.action === "test") {
+        const token = await getAccessToken();
+        return { status: "success", message: "Conexión con Mercado Libre exitosa. Llaves activas.", token: token.substring(0, 15) + "..." };
+    }
+
     if (!urlInput && !productIdInput) throw new HttpsError("invalid-argument", "Se requiere URL o ID de producto");
 
     try {
@@ -170,6 +176,7 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
             if (isCatalogID) {
                 try {
                     console.log("📦 Intentando API /products...");
+                    var usedApi = "/products";
                     const res = await axios.get(`https://api.mercadolibre.com/products/${itemId}`, {
                         headers: { 'Authorization': `Bearer ${accessToken}` }
                     });
@@ -177,6 +184,7 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
                 } catch (e) {
                     if (e.response?.status === 404) {
                         console.log("🔄 No hallado en products. Reintentando en /items...");
+                        usedApi = "/items (fallback)";
                         const res = await axios.get(`https://api.mercadolibre.com/items/${itemId}`, {
                             headers: { 'Authorization': `Bearer ${accessToken}` }
                         });
@@ -186,6 +194,7 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
             } else {
                 try {
                     console.log("🏷️ Intentando API /items...");
+                    usedApi = "/items";
                     const res = await axios.get(`https://api.mercadolibre.com/items/${itemId}`, {
                         headers: { 'Authorization': `Bearer ${accessToken}` }
                     });
@@ -193,6 +202,7 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
                 } catch (e) {
                     if (e.response?.status === 404) {
                         console.log("🔄 No hallado en items. Reintentando en /products...");
+                        usedApi = "/products (fallback)";
                         const res = await axios.get(`https://api.mercadolibre.com/products/${itemId}`, {
                             headers: { 'Authorization': `Bearer ${accessToken}` }
                         });
@@ -266,7 +276,12 @@ exports.obtenerProductoML = onCall({ timeoutSeconds: 60, memory: "1GiB" }, async
             description: textoFicha,
             category_id: categoryId,
             category_name: nombreCategoria,
-            status: "Transmutación Exitosa vía API Oficial"
+            status: "Transmutación Exitosa",
+            debug: {
+                api_usada: usedApi,
+                id_procesado: itemId,
+                token_valido: true
+            }
         };
 
     } catch (error) {
