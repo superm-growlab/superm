@@ -1598,13 +1598,19 @@
                     
                     return {
                         id: clean(c[0]) || `p-${index}`,
-                        n: clean(c[1]), // Título
-                        cat: clean(c[2]), // Categoría
-                        desc: clean(c[3]), // Descripción
-                        p: parseFloat(clean(c[4]).replace(/[^0-9.-]+/g,"")) || 0, // Precio
-                        i: clean(c[5]), // Imagen
-                        permalink: clean(c[6]), // Link de compra
-                        specs: clean(c[7]) ? clean(c[7]).split('|') : [] // Atributos opcionales (separados por | en la celda)
+                        n: clean(c[2]), // Nombre
+                        title: clean(c[2]),
+                        cat: clean(c[1]), // Categoría
+                        category_id: clean(c[1]),
+                        desc: clean(c[5]), // Descripción
+                        description: clean(c[5]),
+                        p: parseFloat(clean(c[3]).replace(/[^0-9.-]+/g,"")) || 0, // Precio
+                        price: parseFloat(clean(c[3]).replace(/[^0-9.-]+/g,"")) || 0,
+                        i: clean(c[4]), // Imagen/Emoji
+                        pictures: [clean(c[4])],
+                        permalink: clean(c[7]), // Link de pago
+                        specs: clean(c[6]) ? clean(c[6]).split('|') : [], // Specs
+                        attributes: clean(c[6]) ? clean(c[6]).split('|') : []
                     };
                 });
                 console.log("✅ Catálogo Sheets cargado:", productos.length, "ítems.");
