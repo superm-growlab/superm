@@ -1997,8 +1997,7 @@
             const grid = document.getElementById('grid-p');
             grid.innerHTML = categorias.map(c => {
                 // Compara contra nombre o ID para el contador
-                const total = productos.filter(p => p.cat.toLowerCase() === c.n.toLowerCase() || p.cat.toLowerCase() === c.id.toLowerCase()).length;
-                const total = productos.filter(p => (p.category_id || '').toLowerCase() === c.n.toLowerCase() || (p.category_id || '').toLowerCase() === c.id.toLowerCase()).length;
+                const total = productos.filter(p => (p.category_id || p.cat || '').toLowerCase() === c.n.toLowerCase() || (p.category_id || p.cat || '').toLowerCase() === c.id.toLowerCase()).length;
                 return `
                 <div class="tarjeta" onclick="filtrarProductos('${c.id}', '${c.n}')">
                     <div class="contenedor-img">${obtenerImagenHTML(c.i)}</div>
@@ -2017,7 +2016,6 @@
             if(aviso) aviso.style.display = 'none';
             
             // Filtra buscando coincidencias con el nombre visible o el ID técnico
-            const fil = productos.filter(p => p.cat.toLowerCase() === nombre.toLowerCase() || p.cat.toLowerCase() === catId.toLowerCase());
             const fil = productos.filter(p => (p.category_id || '').toLowerCase() === nombre.toLowerCase() || (p.category_id || '').toLowerCase() === catId.toLowerCase());
             renderGrid(fil);
         }
@@ -2026,16 +2024,12 @@
             const grid = document.getElementById('grid-p');
             grid.innerHTML = lista.map(p => `
                 <div class="tarjeta" onclick="verProducto('${p.id}')">
-                    <div class="contenedor-img">${obtenerImagenHTML(p.i)}</div>
-                    <div class="contenedor-img">${obtenerImagenHTML(p.pictures)}</div>
+                    <div class="contenedor-img">${obtenerImagenHTML(p.pictures || p.i)}</div>
                     <div class="tarjeta-body">
-                        <h3 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #ccc; font-weight: 400; line-height: 1.2;">${p.n}</h3>
-                        <h3 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #ccc; font-weight: 400; line-height: 1.2;">${p.title}</h3>
+                        <h3 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #ccc; font-weight: 400; line-height: 1.2;">${p.title || p.n}</h3>
                         <div id="stars-grid-${p.id}" style="font-size:0.7rem; margin-bottom:8px;"></div>
-                        <div style="color: var(--p); font-size: 1.4rem; font-weight: 600; margin-top: auto;">$${p.p.toLocaleString()}</div>
-                        ${p.texto ? `<button class="btn btn-m" style="font-size: 0.6rem; padding: 5px; margin-top: 10px; border-color:var(--s); color:var(--s); width:100%;" onclick="event.stopPropagation(); window.verNotasCompletas(decodeURIComponent('${encodeURIComponent(p.texto)}'), '📖 FICHA TÉCNICA')">VER FICHA TÉCNICA</button>` : ''}
-                        <div style="color: var(--p); font-size: 1.4rem; font-weight: 600; margin-top: auto;">$${p.price.toLocaleString()}</div>
-                        ${p.description ? `<button class="btn btn-m" style="font-size: 0.6rem; padding: 5px; margin-top: 10px; border-color:var(--s); color:var(--s); width:100%;" onclick="event.stopPropagation(); window.verNotasCompletas(decodeURIComponent('${encodeURIComponent(p.description)}'), '📖 FICHA TÉCNICA')">VER FICHA TÉCNICA</button>` : ''}
+                        <div style="color: var(--p); font-size: 1.4rem; font-weight: 600; margin-top: auto;">$${(p.price || p.p).toLocaleString()}</div>
+                        ${(p.description || p.texto) ? `<button class="btn btn-m" style="font-size: 0.6rem; padding: 5px; margin-top: 10px; border-color:var(--s); color:var(--s); width:100%;" onclick="event.stopPropagation(); window.verNotasCompletas(decodeURIComponent('${encodeURIComponent(p.description || p.texto)}'), '📖 FICHA TÉCNICA')">VER FICHA TÉCNICA</button>` : ''}
                     </div>
                 </div>`).join('');
             // Cargamos ratings usando el ID como string
@@ -2061,18 +2055,12 @@
             if (!p) return;
 
             // Registro del evento en Google Analytics
-            gtag('event', 'click_adquirir', {'nombre_producto': p.n});
-            gtag('event', 'click_adquirir', {'nombre_producto': p.title});
+            gtag('event', 'click_adquirir', {'nombre_producto': p.title || p.n});
 
-            if (p.linkPago && p.linkPago.trim() !== "") {
             if (p.permalink && p.permalink.trim() !== "") {
-                // Si hay link, abre Mercado Pago directamente
-                window.open(p.linkPago, '_blank');
                 window.open(p.permalink, '_blank');
             } else {
-                // Si está vacío, redirige al WhatsApp de contacto
-                const msgWA = encodeURIComponent(`¡Hola! Me interesa adquirir este producto: ${p.n}`);
-                const msgWA = encodeURIComponent(`¡Hola! Me interesa adquirir este producto: ${p.title}`);
+                const msgWA = encodeURIComponent(`¡Hola! Me interesa adquirir este producto: ${p.title || p.n}`);
                 window.open(`https://wa.me/${MI_NUMERO}?text=${msgWA}`, '_blank');
             }
         };
@@ -2162,14 +2150,12 @@ function verProducto(id, guardar = true) {
     };
 
     const btnMP = `<button class="btn btn-mp" style="width:100%; margin-top:10px" onclick="window.comprarDirecto('${p.id}')">Comprar</button>`;
-    const btnFicha = p.texto ? `<button class="btn btn-m" style="width:100%; margin-top:10px; border-color:var(--s); color:var(--s);" onclick="window.verNotasCompletas(decodeURIComponent('${encodeURIComponent(p.texto)}'), '📖 FICHA TÉCNICA')">📄 FICHA TÉCNICA</button>` : '';
-    const btnFicha = p.description ? `<button class="btn btn-m" style="width:100%; margin-top:10px; border-color:var(--s); color:var(--s);" onclick="window.verNotasCompletas(decodeURIComponent('${encodeURIComponent(p.description)}'), '📖 FICHA TÉCNICA')">📄 FICHA TÉCNICA</button>` : '';
+    const btnFicha = (p.description || p.texto) ? `<button class="btn btn-m" style="width:100%; margin-top:10px; border-color:var(--s); color:var(--s);" onclick="window.verNotasCompletas(decodeURIComponent('${encodeURIComponent(p.description || p.texto)}'), '📖 FICHA TÉCNICA')">📄 FICHA TÉCNICA</button>` : '';
     
     document.getElementById('detalle-p').innerHTML = `
         <div class="producto-detalle">
             <div class="det-media-col"> 
-                ${renderProductGallery(p.i)}
-                ${renderProductGallery(p.pictures)}
+                ${renderProductGallery(p.pictures || p.i)}
                 <div id="avg-rating-display" style="margin-top: 20px;"></div>
                 
                 <!-- El selector de estrellas ahora vive bajo el resumen de calificación -->
@@ -2186,19 +2172,15 @@ function verProducto(id, guardar = true) {
             </div>
 
             <div class="det-info">
-                <h2 style="margin-top: 0;">${p.n}</h2>
-                <p>${p.desc}</p>
-                <h2 style="margin-top: 0;">${p.title}</h2>
-                <p>${p.description_short}</p>
+                <h2 style="margin-top: 0;">${p.title || p.n}</h2>
+                <p>${p.description_short || p.desc}</p>
                 <div class="det-ficha">
                     <strong>ESPECIFICACIONES:</strong>
                     <ul style="color:var(--p);">
-                        ${Array.isArray(p.specs) ? p.specs.map(s => `<li>${s}</li>`).join('') : `<li>${p.specs || 'Calidad Super M'}</li>`}
-                        ${Array.isArray(p.attributes) ? p.attributes.map(s => `<li>${s}</li>`).join('') : `<li>${p.attributes || 'Calidad Super M'}</li>`}
+                        ${Array.isArray(p.attributes || p.specs) ? (p.attributes || p.specs).map(s => `<li>${s}</li>`).join('') : `<li>${p.attributes || p.specs || 'Calidad Super M'}</li>`}
                     </ul>
                 </div>
-                <div class="det-precio">$${p.p.toLocaleString()}</div>
-                <div class="det-precio">$${p.price.toLocaleString()}</div>
+                <div class="det-precio">$${(p.price || p.p).toLocaleString()}</div>
                 
                 <div style="display:flex; gap:15px; flex-direction:column; margin-top:10px;">
                     <div class="qty-selector" style="width:100%; display:flex; justify-content:space-between; align-items:center;">
@@ -2240,10 +2222,13 @@ function verProducto(id, guardar = true) {
             const p = productos.find(x => x.id === id);
             const q = parseInt(document.getElementById('qty-det').value) || 1;
             const ex = carrito.find(i => i.id === id);
-            if(ex) ex.q += q; else carrito.push({id: p.id, n: p.n, p: p.p, q: q});
-            if(ex) ex.q += q; else carrito.push({id: p.id, title: p.title, price: p.price, q: q});
+            if(ex) {
+                ex.q += q;
+            } else {
+                carrito.push({id: p.id, title: p.title || p.n, price: p.price || p.p, q: q});
+            }
             localStorage.setItem('superm_cart', JSON.stringify(carrito));
-            updateCartUI(); notify(`Añadido: ${p.n}`, 'success');
+            updateCartUI(); notify(`Añadido: ${p.title || p.n}`, 'success');
         }
 
         window.notify = function(m, type = 'success') {

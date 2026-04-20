@@ -41,6 +41,11 @@
         .html-snippet { background: #0a0a0a; color: #eee; font-size: 0.6rem; padding: 8px; border: 1px solid var(--p); margin-top: 5px; word-break: break-all; cursor: pointer; white-space: pre-wrap; text-align: left; max-height: 100px; overflow-y: auto; }
         .csv-row { background: #111; color: #888; font-size: 0.6rem; padding: 8px; border: 1px solid #222; margin-top: 5px; word-break: break-all; cursor: pointer; }
         .csv-row:hover { color: var(--p); border-color: var(--p); }
+        
+        .preview-box { background: rgba(57, 255, 20, 0.05); border: 1px dashed var(--p); padding: 15px; margin-top: 15px; border-radius: 8px; }
+        .mini-table { width: 100%; font-size: 0.65rem; border-collapse: collapse; margin-top: 10px; color: #aaa; }
+        .mini-table th { color: var(--s); text-align: left; padding: 4px; border-bottom: 1px solid #333; }
+        .mini-table td { padding: 4px; border-bottom: 1px solid #111; }
     </style>
     <!-- Firebase SDKs (v8 compat) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -70,14 +75,36 @@
                 <img id="edit-preview-img" class="preview-mini" src="">
                 <div style="flex:1;">
                     <span class="label-edit">TÍTULO DEL PRODUCTO</span>
-                    <input type="text" id="edit-n">
+                    <input type="text" id="edit-n" oninput="actualizarMesaInspeccion()">
                 </div>
             </div>
 
             <div class="grid-form" style="margin-top:0;">
-                <div><span class="label-edit">PRECIO ($)</span><input type="number" id="edit-p"></div>
-                <div><span class="label-edit">CATEGORÍA</span><select id="edit-cat" style="background:#000; border:1px solid var(--s); color:var(--p); padding:10px; width:100%; border-radius:5px;"><option value="cat-nutricion">🧪 NUTRICIÓN</option><option value="cat-iluminacion">☀️ ILUMINACIÓN</option><option value="cat-sustratos">📦 SUSTRATOS</option><option value="cat-control">🔬 CONTROL</option><option value="cat-carpas">⛺ INDOOR</option></select></div>
-                <div class="full"><span class="label-edit">FICHA TÉCNICA (TEXTO)</span><textarea id="edit-texto" rows="4"></textarea></div>
+                <div><span class="label-edit">PRECIO ($)</span><input type="number" id="edit-p" oninput="actualizarMesaInspeccion()"></div>
+                <div><span class="label-edit">CATEGORÍA</span><select id="edit-cat" onchange="actualizarMesaInspeccion()" style="background:#000; border:1px solid var(--s); color:var(--p); padding:10px; width:100%; border-radius:5px;"><option value="cat-nutricion">🧪 NUTRICIÓN</option><option value="cat-iluminacion">☀️ ILUMINACIÓN</option><option value="cat-sustratos">📦 SUSTRATOS</option><option value="cat-control">🔬 CONTROL</option><option value="cat-carpas">⛺ INDOOR</option></select></div>
+                <div class="full"><span class="label-edit">FICHA TÉCNICA (TEXTO)</span><textarea id="edit-texto" rows="4" oninput="actualizarMesaInspeccion()"></textarea></div>
+            </div>
+
+            <!-- MESA DE INSPECCIÓN: VISTA PREVIA ANTES DE CARGAR -->
+            <div class="preview-box">
+                <span class="label-edit" style="text-align: center; color: var(--p);">🧪 MESA DE INSPECCIÓN (VISTA PREVIA)</span>
+                
+                <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; margin-top: 10px;">
+                    <!-- Mini Tarjeta de Tienda -->
+                    <div id="mini-card-preview" style="width: 200px; transform: scale(0.8); transform-origin: top left;"></div>
+                    
+                    <!-- Previsualización de Fila de Planilla -->
+                    <div style="flex: 1; min-width: 250px;">
+                        <span class="label-edit" style="font-size: 0.5rem;">DATOS PARA GOOGLE SHEETS:</span>
+                        <table class="mini-table">
+                            <tr><th>COLUMNA</th><th>VALOR</th></tr>
+                            <tr><td>TÍTULO</td><td id="row-preview-titulo">-</td></tr>
+                            <tr><td>PRECIO</td><td id="row-preview-precio">-</td></tr>
+                            <tr><td>CATEGORÍA</td><td id="row-preview-cat">-</td></tr>
+                            <tr><td>LINK</td><td id="row-preview-link" style="color: var(--s);">-</td></tr>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <button class="btn-confirm" onclick="cargarAFirebase()">🚀 SUBIR A CLOUD (FIREBASE)</button>
@@ -93,6 +120,36 @@
     <script>
         // Variable global para guardar los datos temporales mientras editas
         let productoTemporal = null;
+
+        function actualizarMesaInspeccion() {
+            if (!productoTemporal) return;
+            
+            const n = document.getElementById('edit-n').value;
+            const p = parseFloat(document.getElementById('edit-p').value) || 0;
+            const cat = document.getElementById('edit-cat').value;
+            const texto = document.getElementById('edit-texto').value;
+            const link = document.getElementById('link-referido').value;
+
+            // Actualizar Previsualización de Fila
+            document.getElementById('row-preview-titulo').innerText = n;
+            document.getElementById('row-preview-precio').innerText = "$" + p.toLocaleString();
+            document.getElementById('row-preview-cat').innerText = cat.replace('cat-', '').toUpperCase();
+            document.getElementById('row-preview-link').innerText = link.substring(0, 30) + "...";
+
+            // Actualizar Mini Tarjeta (HTML real que vería el usuario)
+            const miniCard = document.getElementById('mini-card-preview');
+            miniCard.innerHTML = `
+                <div class="tarjeta">
+                    <div class="contenedor-img">${obtenerImagenHTML_changuito(productoTemporal.pictures)}</div>
+                    <div class="tarjeta-body">
+                        <h3 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #ccc;">${n}</h3>
+                        <div style="color: var(--p); font-size: 1.4rem; font-weight: 600;">$${p.toLocaleString()}</div>
+                        ${texto ? `<button class="btn-m" style="width:100%; margin-top:10px;">📄 FICHA TÉCNICA</button>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
         const URL_GAS = "https://script.google.com/macros/s/AKfycbzk6fUHwGdI4wCgL_ZPBuV_pXFuWiLsSRo3TxPKs_KCWRBzaU4-Aw8B0emmy7OBg9A/exec";
 
         async function probarConexionLlaves() {
@@ -185,6 +242,7 @@
             status.innerHTML = `✨ TRANSMUTADO: [${data.category_name || 'General'}]<br>
                                <small style="font-size:0.6rem; opacity:0.7;">API: ${data.debug?.api_usada} | ID: ${data.debug?.id_procesado}</small>`;
             status.style.color = "var(--p)";
+            actualizarMesaInspeccion();
 
             editor.style.display = 'block';
             editor.scrollIntoView({ behavior: 'smooth' });
