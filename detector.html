@@ -415,99 +415,85 @@
             }
         };
 
-        // 🤖 AGENTE DE CONSULTA DINÁMICA (MIGRACIÓN A GEMINI VIA CLOUD FUNCTION)
+        // 🤖 AGENTE DE CONSULTA DINÁMICA
         window.ejecutarAgenteConsultor = async (item, diagExistente) => {
             const contenido = document.getElementById('contenido-resultado');
+            const initialImg = (item.imageUrls?.[0]) || item.img || 'https://placehold.co/400x300?text=SIN+IMAGEN';
             
-            contenido.innerHTML = `
-                <div class="agente-badge">🤖 AGENTE DINÁMICO ACTIVO</div>
-                <p class="loading">Invocando Inteligencia Gemini Flash para:<br><strong>${item.titulo}</strong>...</p>
-                <p style="font-size:0.7rem; color:#555; text-align:center;">Fuentes prioritarias: ${FUENTES_MAESTRAS.join(', ')}</p>
-            `;
-
-            let hallazgo;
-
-            if (diagExistente) {
-                hallazgo = { ...diagExistente, es_nuevo: false };
-            } else {
-                try {
-                    const result = await consultarOraculoFn({
-                        titulo: item.titulo || item.title, // Soporte para ambos nombres de campo
-                        tags: item.tags || []
-                    });
-                    
-                    hallazgo = { ...result.data, es_nuevo: true };
-
-                    if (hallazgo.error) {
-                        contenido.innerHTML = `<p style="color:red; text-align:center;">🔮 ERROR DEL ORÁCULO:<br>${hallazgo.error}</p>`;
-                        return;
-                    }
-
-                    // 💾 PERSISTENCIA EN LABORATORIO LOCAL
-                    if (authInstance.currentUser && !hallazgo.error) {
-                        let diagId = item.id_diagnostico || (item.tags && item.tags[0]) || item.id;
-                        await setDoc(doc(db, "diagnosticos", diagId), {
-                            ph_rango: hallazgo.ph_rango || "No especificado",
-                            ec_rango: hallazgo.ec_rango || "No especificado",
-                            ambiente_detalles: hallazgo.ambiente_detalles || "No especificado",
-                            solucion_alquimista: hallazgo.solucion_alquimista || "Consultar guía técnica",
-                            fuente: hallazgo.fuente || "Super M Lab AI",
-                            url_imagen: hallazgo.url_imagen || "https://i.postimg.cc/rF9GqwGS/favicon.png",
-                            timestamp: serverTimestamp()
-                        });
-                    }
-
-                } catch (error) {
-                    console.error("Error en Agente:", error);
-                    hallazgo = {
-                        solucion_alquimista: "Error al consultar el Oráculo.",
-                        es_nuevo: true
-                    };
-                }
-            }
-
-            const finalImgUrl = hallazgo.url_imagen || (item.imageUrls?.[0]) || item.img || 'https://placehold.co/400x300?text=SIN+IMAGEN';
-            const galleryItems = hallazgo.url_imagen ? [hallazgo.url_imagen, ...(item.imageUrls || [])] : (item.imageUrls || []);
-
+            // 1. RENDERIZADO INMEDIATO (Muestra la tarjeta vacía mientras carga la IA)
             contenido.innerHTML = `
                 <div class="split-diagnostico">
                     <div class="col-visual">
-                        <img src="${finalImgUrl}" class="img-expandida" alt="Muestra de ADN" 
+                        <img src="${initialImg}" class="img-expandida" id="diag-img-principal" alt="Muestra de ADN" 
                              onerror='window.handleImageError(this)'
                              referrerpolicy="no-referrer">
-                        <div id="gallery-indicator" style="display:flex; gap:5px; margin-top:5px; justify-content:center;">
-                            ${galleryItems.map((u) => `<span onclick="this.closest('.col-visual').querySelector('img').src='${u}'" style="cursor:pointer; font-size:1.2rem; color:var(--s);">•</span>`).join('')}
-                        </div>
                         <p style="font-size:0.6rem; color:#555; margin-top:10px; text-align:center;">MUESTRA DE REFERENCIA: ${item.id}</p>
                     </div>
                     <div class="info-tecnica">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                             <h3 style="color: var(--p); margin:0;">🔮 ${item.titulo.toUpperCase()}</h3>
-                            ${hallazgo.es_nuevo ? '<span style="color:var(--s); font-size:0.5rem; border:1px solid var(--s); padding:2px 5px; border-radius:3px;">IA LIVE</span>' : ''}
+                            <span id="ai-status-badge" style="color:var(--s); font-size:0.5rem; border:1px solid var(--s); padding:2px 5px; border-radius:3px;">SINCRONIZANDO...</span>
                         </div>
                         
-                        <div style="background:rgba(57, 255, 20, 0.03); padding:15px; border-radius:8px; border-left: 3px solid var(--p); margin-bottom:20px;">
-                            <p style="color:var(--p); font-size:0.65rem; font-weight:bold; margin-bottom:5px;">PROTOCOLO DE REPARACIÓN:</p>
-                            <p style="font-size:0.95rem; color:#fff; line-height:1.5; margin:0;">${hallazgo.solucion_alquimista}</p>
+                        <div id="ai-solucion-box" style="background:rgba(57, 255, 20, 0.03); padding:15px; border-radius:8px; border-left: 3px solid #333; margin-bottom:20px;">
+                            <p style="color:#666; font-size:0.65rem; font-weight:bold; margin-bottom:5px;">PROTOCOLO DE REPARACIÓN:</p>
+                            <p id="ai-solucion-text" style="font-size:0.95rem; color:#888; line-height:1.5; margin:0;">Invocando sabiduría del Oráculo...</p>
                         </div>
 
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                             <div>
                                 <p style="color:var(--s); font-size:0.55rem; font-weight:bold;">VALORES RED pH</p>
-                                <p style="font-size:0.85rem; color:#ccc;">${hallazgo.ph_rango || 'N/A'}</p>
+                                <p id="ai-ph-val" style="font-size:0.85rem; color:#444;">--</p>
                             </div>
                             <div>
                                 <p style="color:var(--s); font-size:0.55rem; font-weight:bold;">VALORES RED EC</p>
-                                <p style="font-size:0.85rem; color:#ccc;">${hallazgo.ec_rango || 'N/A'}</p>
+                                <p id="ai-ec-val" style="font-size:0.85rem; color:#444;">--</p>
                             </div>
                         </div>
 
                         <div style="margin-top:20px; border-top:1px solid #222; padding-top:15px;">
-                            <p style="color:#555; font-size:0.55rem; margin:0;">FUENTE DE INFORMACIÓN: ${hallazgo.fuente || 'Super M Lab In-House Knowledge'}</p>
+                            <p id="ai-fuente" style="color:#444; font-size:0.55rem; margin:0;">Consultando la Gran Biblioteca...</p>
                         </div>
                     </div>
                 </div>
             `;
+
+            let hallazgo;
+            try {
+                if (diagExistente) {
+                    hallazgo = { ...diagExistente, es_nuevo: false };
+                } else {
+                    const result = await consultarOraculoFn({ titulo: item.titulo || item.title, tags: item.tags || [] });
+                    hallazgo = { ...result.data, es_nuevo: true };
+                }
+
+                if (hallazgo.error) throw new Error(hallazgo.error);
+
+                // 2. ACTUALIZACIÓN DINÁMICA DE LA TARJETA
+                document.getElementById('diag-img-principal').src = hallazgo.url_imagen || initialImg;
+                document.getElementById('ai-solucion-text').innerText = hallazgo.solucion_alquimista;
+                document.getElementById('ai-solucion-text').style.color = "#fff";
+                document.getElementById('ai-solucion-box').style.borderLeftColor = "var(--p)";
+                document.getElementById('ai-ph-val').innerText = hallazgo.ph_rango || "N/A";
+                document.getElementById('ai-ph-val').style.color = "#ccc";
+                document.getElementById('ai-ec-val').innerText = hallazgo.ec_rango || "N/A";
+                document.getElementById('ai-ec-val').style.color = "#ccc";
+                document.getElementById('ai-fuente').innerText = "FUENTE: " + (hallazgo.fuente || "Super M AI Engine");
+                
+                const badge = document.getElementById('ai-status-badge');
+                badge.innerText = hallazgo.es_nuevo ? "IA LIVE" : "ARCHIVO";
+                if (hallazgo.es_nuevo) badge.style.color = "var(--p)";
+
+                // Persistencia local
+                if (hallazgo.es_nuevo && authInstance.currentUser) {
+                    let diagId = item.id_diagnostico || (item.tags && item.tags[0]) || item.id;
+                    await setDoc(doc(db, "diagnosticos", diagId), { ...hallazgo, timestamp: serverTimestamp() });
+                }
+            } catch (error) {
+                document.getElementById('ai-status-badge').innerText = "FALLO";
+                document.getElementById('ai-status-badge').style.color = "red";
+                document.getElementById('ai-solucion-text').innerHTML = `<span style="color:red;">🔮 ERROR DEL ORÁCULO:</span><br>${error.message}`;
+            }
         };
 
         // 🌱 FUNCIÓN PARA POBLAR LA BIBLIOTECA CON 20 IMÁGENES DE LA WEB
@@ -515,26 +501,26 @@
             if (!confirm("¿Deseas poblar la biblioteca con 20 muestras de referencia de la web?")) return;
             
             const muestras = [
-                { id: "nitrógeno_carencia", titulo: "Carencia de Nitrógeno", tags: ["nitrógeno", "amarilleo", "hojas bajas"], imageUrls: ["https://2fast4buds.com/static/769bd2469614a9ec0f4369403d6d3765/d6061/marijuana-nitrogen-deficiency-symptoms.jpg"] },
-                { id: "fósforo_carencia", titulo: "Carencia de Fósforo", tags: ["fósforo", "manchas oscuras", "tallo morado"], imageUrls: ["https://2fast4buds.com/static/74889c2586616422f28148f986259063/82260/marijuana-phosphorus-deficiency-symptoms.jpg"] },
-                { id: "potasio_carencia", titulo: "Carencia de Potasio", tags: ["potasio", "bordes quemados", "puntas amarillas"], imageUrls: ["https://2fast4buds.com/static/86c5729e925828464972e38209867512/82260/marijuana-potassium-deficiency-symptoms.jpg"] },
-                { id: "calcio_carencia", titulo: "Carencia de Calcio", tags: ["calcio", "puntos marrones", "hojas arrugadas"], imageUrls: ["https://2fast4buds.com/static/d7831f50f225be3a016664d125211915/82260/marijuana-calcium-deficiency-symptoms.jpg"] },
-                { id: "magnesio_carencia", titulo: "Carencia de Magnesio", tags: ["magnesio", "clorosis interverval", "bordes verdes"], imageUrls: ["https://2fast4buds.com/static/005694723933f7c469f36f9064619717/82260/marijuana-magnesium-deficiency-symptoms.jpg"] },
-                { id: "hierro_carencia", titulo: "Carencia de Hierro", tags: ["hierro", "hojas nuevas amarillas", "nervadura verde"], imageUrls: ["https://2fast4buds.com/static/cc5567a505b266d6d45e54d89e5f5f4b/82260/marijuana-iron-deficiency-symptoms.jpg"] },
-                { id: "boro_carencia", titulo: "Carencia de Boro", tags: ["boro", "puntas muertas", "crecimiento lento"], imageUrls: ["https://2fast4buds.com/static/74889c2586616422f28148f986259063/82260/marijuana-boron-deficiency-symptoms.jpg"] },
-                { id: "azufre_carencia", titulo: "Carencia de Azufre", tags: ["azufre", "amarilleo superior", "hojas pequeñas"], imageUrls: ["https://2fast4buds.com/static/30a38b695781a704e908993f4e2f4942/82260/marijuana-sulfur-deficiency-symptoms.jpg"] },
-                { id: "zinc_carencia", titulo: "Carencia de Zinc", tags: ["zinc", "hojas retorcidas", "entrenudos cortos"], imageUrls: ["https://2fast4buds.com/static/f562624d5500f40d34204859a848a604/82260/marijuana-zinc-deficiency-symptoms.jpg"] },
-                { id: "manganeso_carencia", titulo: "Carencia de Manganeso", tags: ["manganeso", "manchas amarillas", "hojas moteadas"], imageUrls: ["https://2fast4buds.com/static/90b79313936467362a7925e0a0d0d84a/82260/marijuana-manganese-deficiency-symptoms.jpg"] },
-                { id: "cobre_carencia", titulo: "Carencia de Cobre", tags: ["cobre", "hojas oscuras", "puntas rizadas"], imageUrls: ["https://2fast4buds.com/static/86c5729e925828464972e38209867512/82260/marijuana-copper-deficiency-symptoms.jpg"] },
-                { id: "molibdeno_carencia", titulo: "Carencia de Molibdeno", tags: ["molibdeno", "bordes rosas", "hojas pálidas"], imageUrls: ["https://2fast4buds.com/static/568971f0088b90680a653f5383569472/82260/marijuana-molybdenum-deficiency-symptoms.jpg"] },
-                { id: "nitrógeno_exceso", titulo: "Exceso de Nitrógeno", tags: ["nitrógeno", "verde oscuro", "garra"], imageUrls: ["https://2fast4buds.com/static/58882895697669d6175e1104e768e82a/82260/marijuana-nitrogen-toxicity-symptoms.jpg"] },
-                { id: "luz_quemadura", titulo: "Quemadura por Luz", tags: ["luz", "blanqueamiento", "calor"], imageUrls: ["https://2fast4buds.com/static/30a38b695781a704e908993f4e2f4942/82260/marijuana-light-burn-symptoms.jpg"] },
-                { id: "calor_estres", titulo: "Estrés por Calor", tags: ["calor", "bordes serrados hacia arriba", "sequedad"], imageUrls: ["https://2fast4buds.com/static/c7028b18f509e5c9a29e160a28f80456/82260/marijuana-heat-stress-symptoms.jpg"] },
-                { id: "riego_exceso", titulo: "Exceso de Riego", tags: ["riego", "hojas pesadas", "caídas"], imageUrls: ["https://2fast4buds.com/static/005694723933f7c469f36f9064619717/82260/marijuana-overwatering-symptoms.jpg"] },
-                { id: "ph_fluctuacion", titulo: "Fluctuación de pH", tags: ["ph", "manchas aleatorias", "bloqueo"], imageUrls: ["https://2fast4buds.com/static/cc5567a505b266d6d45e54d89e5f5f4b/82260/marijuana-ph-fluctuations-symptoms.jpg"] },
-                { id: "nutrientes_quemadura", titulo: "Quemadura de Nutrientes", tags: ["nutes", "puntas quemadas", "ec alta"], imageUrls: ["https://2fast4buds.com/static/30a38b695781a704e908993f4e2f4942/82260/marijuana-nutrient-burn-symptoms.jpg"] },
-                { id: "moho_blanco", titulo: "Oídio / Moho Blanco", tags: ["hongo", "polvo blanco", "humedad"], imageUrls: ["https://2fast4buds.com/static/c7028b18f509e5c9a29e160a28f80456/82260/marijuana-white-powdery-mildew-symptoms.jpg"] },
-                { id: "araña_roja", titulo: "Araña Roja", tags: ["plaga", "puntos blancos", "telarañas"], imageUrls: ["https://2fast4buds.com/static/f562624d5500f40d34204859a848a604/82260/marijuana-spider-mites-symptoms.jpg"] }
+                { id: "nitrógeno_carencia", titulo: "Carencia de Nitrógeno", tags: ["nitrógeno", "amarilleo"] },
+                { id: "fósforo_carencia", titulo: "Carencia de Fósforo", tags: ["fósforo", "manchas oscuras"] },
+                { id: "potasio_carencia", titulo: "Carencia de Potasio", tags: ["potasio", "bordes quemados"] },
+                { id: "calcio_carencia", titulo: "Carencia de Calcio", tags: ["calcio", "puntos marrones"] },
+                { id: "magnesio_carencia", titulo: "Carencia de Magnesio", tags: ["magnesio", "clorosis"] },
+                { id: "hierro_carencia", titulo: "Carencia de Hierro", tags: ["hierro", "hojas amarillas"] },
+                { id: "boro_carencia", titulo: "Carencia de Boro", tags: ["boro", "puntas muertas"] },
+                { id: "azufre_carencia", titulo: "Carencia de Azufre", tags: ["azufre", "amarilleo superior"] },
+                { id: "zinc_carencia", titulo: "Carencia de Zinc", tags: ["zinc", "hojas retorcidas"] },
+                { id: "manganeso_carencia", titulo: "Carencia de Manganeso", tags: ["manganeso", "manchas amarillas"] },
+                { id: "cobre_carencia", titulo: "Carencia de Cobre", tags: ["cobre", "hojas oscuras"] },
+                { id: "molibdeno_carencia", titulo: "Carencia de Molibdeno", tags: ["molibdeno", "bordes rosas"] },
+                { id: "nitrógeno_exceso", titulo: "Exceso de Nitrógeno", tags: ["nitrógeno", "verde oscuro"] },
+                { id: "luz_quemadura", titulo: "Quemadura por Luz", tags: ["luz", "blanqueamiento"] },
+                { id: "calor_estres", titulo: "Estrés por Calor", tags: ["calor", "bordes hacia arriba"] },
+                { id: "riego_exceso", titulo: "Exceso de Riego", tags: ["riego", "hojas pesadas"] },
+                { id: "ph_fluctuacion", titulo: "Fluctuación de pH", tags: ["ph", "manchas aleatorias"] },
+                { id: "nutrientes_quemadura", titulo: "Quemadura de Nutrientes", tags: ["nutes", "puntas quemadas"] },
+                { id: "moho_blanco", titulo: "Oídio / Moho Blanco", tags: ["hongo", "polvo blanco"] },
+                { id: "araña_roja", titulo: "Araña Roja", tags: ["plaga", "puntos blancos"] }
             ];
 
             for (const m of muestras) {

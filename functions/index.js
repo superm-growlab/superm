@@ -80,9 +80,9 @@ exports.consultarOraculo = onCall({
         return { ...diagnosis, url_imagen };
 
     } catch (error) {
-        logger.error("Error en Gemini AI:", error);
+        logger.error("Fallo crítico en el Oráculo:", error);
         return {
-            error: "No se pudo transmutar la información del Oráculo."
+            error: `Error de transmutación: ${error.message}`
         };
     }
 });
