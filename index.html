@@ -2372,8 +2372,8 @@ function verProducto(id, guardar = true) {
             
             // 1. Captura de datos (IDs verificados de tu HTML)
             const n = document.getElementById('f-nombre').value;
-            const t = document.getElementById('f-tel').value; 
-        const d = document.getElementById('f-direccion').value;
+            const t = document.getElementById('f-tel').value;
+            const d = document.getElementById('f-direccion').value;
             const dni = document.getElementById('f-dni').value;
             const e = document.getElementById('f-email').value;
             const loc = document.getElementById('f-localidad').value;
@@ -2395,8 +2395,8 @@ function verProducto(id, guardar = true) {
 
                 // 3. Lógica de Captura de Producto (Para evitar el error de "Indoor Lab")
                 if (contextoEnvio === 'carrito') {
-                    pedidoTexto = carrito.map(i => `${i.q}x ${i.n}`).join(", ");
-                    totalPedido = carrito.reduce((a, b) => a + (b.p * b.q), 0);
+                    pedidoTexto = carrito.map(i => `${i.q}x ${i.title}`).join(", ");
+                    totalPedido = carrito.reduce((a, b) => a + (b.price * b.q), 0);
                 } else {
                     // Leemos lo que hay en pantalla en el detalle del producto
                     const tituloActual = document.querySelector('#detalle-p h2')?.innerText || "Producto";
@@ -3111,6 +3111,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 import { 
     getFirestore, 
     collection, 
@@ -3157,6 +3158,7 @@ const CONFIG_COMUNIDAD = {
 
 const app = initializeApp(firebaseConfig);
 const authInstance = getAuth(app);
+const functions = getFunctions(app);
 const db = getFirestore(app);
 
 // FUNCIÓN DE COMPRESIÓN DE IMÁGENES (Máx 800px, 0.7 Calidad)

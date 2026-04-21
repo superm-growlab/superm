@@ -331,7 +331,8 @@
                 const mainImg = (item.imageUrls && item.imageUrls.length > 0) ? item.imageUrls[0] : (item.img || '');
                 celda.innerHTML = `
                     <img src="${mainImg}" alt="${item.titulo}" 
-                         onerror='window.handleImageError(this)' 
+                         onerror='window.handleImageError(this)'
+                         referrerpolicy="no-referrer" 
                          loading="lazy">
                     <p>${item.titulo}</p>
                 `;
@@ -431,23 +432,30 @@
             } else {
                 try {
                     const result = await consultarOraculoFn({
-                        titulo: item.titulo,
+                        titulo: item.titulo || item.title, // Soporte para ambos nombres de campo
                         tags: item.tags || []
                     });
                     
                     hallazgo = { ...result.data, es_nuevo: true };
 
+                    if (hallazgo.error) {
+                        contenido.innerHTML = `<p style="color:red; text-align:center;">🔮 ERROR DEL ORÁCULO:<br>${hallazgo.error}</p>`;
+                        return;
+                    }
+
                     // 💾 PERSISTENCIA EN LABORATORIO LOCAL
-                    let diagId = item.id_diagnostico || (item.tags && item.tags[0]) || item.id;
-                    await setDoc(doc(db, "diagnosticos", diagId), {
-                        ph_rango: hallazgo.ph_rango || "No especificado",
-                        ec_rango: hallazgo.ec_rango || "No especificado",
-                        ambiente_detalles: hallazgo.ambiente_detalles || "No especificado",
-                        solucion_alquimista: hallazgo.solucion_alquimista || "Consultar guía técnica",
-                        fuente: hallazgo.fuente || "Super M Lab AI",
-                        url_imagen: hallazgo.url_imagen || "https://i.postimg.cc/rF9GqwGS/favicon.png",
-                        timestamp: serverTimestamp()
-                    });
+                    if (authInstance.currentUser && !hallazgo.error) {
+                        let diagId = item.id_diagnostico || (item.tags && item.tags[0]) || item.id;
+                        await setDoc(doc(db, "diagnosticos", diagId), {
+                            ph_rango: hallazgo.ph_rango || "No especificado",
+                            ec_rango: hallazgo.ec_rango || "No especificado",
+                            ambiente_detalles: hallazgo.ambiente_detalles || "No especificado",
+                            solucion_alquimista: hallazgo.solucion_alquimista || "Consultar guía técnica",
+                            fuente: hallazgo.fuente || "Super M Lab AI",
+                            url_imagen: hallazgo.url_imagen || "https://i.postimg.cc/rF9GqwGS/favicon.png",
+                            timestamp: serverTimestamp()
+                        });
+                    }
 
                 } catch (error) {
                     console.error("Error en Agente:", error);
@@ -458,14 +466,15 @@
                 }
             }
 
-            const finalImgUrl = hallazgo.url_imagen || (item.imageUrls && item.imageUrls[0]) || item.img || 'https://placehold.co/400x300?text=SIN+IMAGEN';
+            const finalImgUrl = hallazgo.url_imagen || (item.imageUrls?.[0]) || item.img || 'https://placehold.co/400x300?text=SIN+IMAGEN';
             const galleryItems = hallazgo.url_imagen ? [hallazgo.url_imagen, ...(item.imageUrls || [])] : (item.imageUrls || []);
 
             contenido.innerHTML = `
                 <div class="split-diagnostico">
                     <div class="col-visual">
                         <img src="${finalImgUrl}" class="img-expandida" alt="Muestra de ADN" 
-                             onerror='window.handleImageError(this)'>
+                             onerror='window.handleImageError(this)'
+                             referrerpolicy="no-referrer">
                         <div id="gallery-indicator" style="display:flex; gap:5px; margin-top:5px; justify-content:center;">
                             ${galleryItems.map((u) => `<span onclick="this.closest('.col-visual').querySelector('img').src='${u}'" style="cursor:pointer; font-size:1.2rem; color:var(--s);">•</span>`).join('')}
                         </div>
