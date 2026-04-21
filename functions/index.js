@@ -45,9 +45,9 @@ exports.consultarOraculo = onCall({
         const response = await result.response;
         const text = response.text();
         
-        // Con responseMimeType, el texto ya es un JSON válido
-        return JSON.parse(text);
-
+        // Extracción robusta por si acaso
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        return jsonMatch ? JSON.parse(jsonMatch[0]) : { error: "Respuesta ilegible" };
     } catch (error) {
         logger.error("Error en Gemini AI:", error);
         return {
