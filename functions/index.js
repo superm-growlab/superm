@@ -58,14 +58,15 @@ exports.consultarOraculo = onCall({
         // 🔎 BÚSQUEDA DINÁMICA DE IMÁGENES (Google Search API)
         let url_imagen = "https://i.postimg.cc/rF9GqwGS/favicon.png"; // Fallback por defecto
         try {
-            const query = encodeURIComponent(`${titulo} cannabis leaf deficiency symptom`);
-            const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${process.env.GOOGLE_SEARCH_API_KEY}&cx=${process.env.CUSTOM_SEARCH_ID}&q=${query}&searchType=image&num=1`;
+            const query = encodeURIComponent(`${titulo} cannabis plant deficiency`);
+            const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${process.env.GOOGLE_SEARCH_API_KEY}&cx=${process.env.CUSTOM_SEARCH_ID || 'e014b6fa1fb9c424a'}&q=${query}&searchType=image&num=1`;
             
             const searchRes = await fetch(searchUrl);
             const searchData = await searchRes.json();
             
             if (searchData.items && searchData.items.length > 0) {
                 url_imagen = searchData.items[0].link;
+                logger.info(`Imagen encontrada para ${titulo}: ${url_imagen}`);
             }
         } catch (err) {
             logger.warn("Error en búsqueda de imágenes:", err);
