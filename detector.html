@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oráculo Alquimista | Super M Lab</title>
+    <style>
+        :root {
+            --p: #39ff14; /* Verde Neón */
+            --s: #bc13fe; /* Púrpura Neón */
+            --bg: #050505;
+            --card: #111;
+            --text: #fff;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        h1 { text-align: center; text-shadow: 0 0 10px var(--p); color: var(--p); }
+        h2 { color: var(--s); text-align: center; margin-top: 30px; }
+
+        .contenedor-principal {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 🖼️ GRILLA DE SÍNTOMAS VISUALES */
+        .grilla-sintomas {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .celda-sintoma {
+            background: var(--card);
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .celda-sintoma:hover {
+            border-color: var(--p);
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .celda-sintoma img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+            filter: grayscale(100%) brightness(0.7);
+            transition: 0.3s;
+        }
+
+        .celda-sintoma:hover img {
+            filter: grayscale(0%) brightness(1);
+        }
+
+        .celda-sintoma p {
+            margin: 8px 0 0 0;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+
+        .celda-sintoma:hover p {
+            color: var(--p);
+        }
+
+        /* 🚀 UPLOADER DE FOTOS */
+        .seccion-uploader {
+            background: var(--card);
+            border: 2px dashed var(--s);
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            margin-top: 30px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .seccion-uploader:hover {
+            background: #1a1a1a;
+            box-shadow: 0 0 20px rgba(188, 19, 254, 0.2);
+        }
+
+        .seccion-uploader p { color: var(--s); font-weight: bold; }
+        .icon-upload { font-size: 2rem; margin-bottom: 10px; }
+
+        /* 🔮 PANEL DE RESULTADOS */
+        #panel-resultados {
+            margin-top: 30px;
+            padding: 20px;
+            border: 2px solid var(--p);
+            border-radius: 10px;
+            background: #000;
+            animation: aparece 0.5s ease-out;
+        }
+
+        .loading {
+            text-align: center;
+            color: var(--s);
+            font-style: italic;
+        }
+
+        @keyframes aparece {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hidden { display: none; }
+        
+        button.btn-reset {
+            background: transparent;
+            border: 1px solid var(--s);
+            color: var(--s);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            margin-top: 20px;
+            width: 100%;
+        }
+        button.btn-reset:hover {
+            background: var(--s);
+            color: #fff;
+        }
+
+        /* 🔍 BARRA DE BÚSQUEDA TÉCNICA */
+        .buscador-adn-cont {
+            width: 100%;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .input-adn {
+            width: 100%;
+            background: #000;
+            border: 1px solid var(--s);
+            padding: 15px;
+            color: var(--p);
+            border-radius: 8px;
+            font-family: inherit;
+            outline: none;
+            box-sizing: border-box;
+        }
+        .input-adn:focus { box-shadow: 0 0 15px var(--s); }
+
+        /*  ESTILOS PARA FUENTES Y DATOS TÉCNICOS */
+        .fuente-link {
+            display: inline-block;
+            background: rgba(188, 19, 254, 0.1);
+            border: 1px solid var(--s);
+            color: var(--s);
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.7rem;
+            margin-right: 5px;
+            margin-top: 5px;
+            transition: 0.3s;
+        }
+        .fuente-link:hover {
+            background: var(--s);
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🔬 ORÁCULO DETECTOR HÍBRIDO</h1>
+
+    <div class="contenedor-principal">
+        
+        <h2>Buscador de ADN Botánico</h2>
+        <div class="buscador-adn-cont">
+            <input type="text" id="search-tags" class="input-adn" placeholder="🔍 Escribe síntomas (ej: clorosis, puntas quemadas, nervadura)..." onkeyup="filtrarPorADN()">
+        </div>
+
+        <p style="text-align:center; color:#888; font-size: 0.8rem;">Selecciona una muestra de la biblioteca para el análisis de transmutación.</p>
+        
+        <div id="grilla-sintomas" class="grilla-sintomas"></div>
+
+        <hr border="1" color="#222" style="margin: 40px 0;">
+
+        <h2>Portal de Escaneo IA</h2>
+        <div class="seccion-uploader" onclick="document.getElementById('file-input').click()">
+            <div class="icon-upload">📸</div>
+            <p>Arrastra o sube la foto de tu planta</p>
+            <p style="font-size:0.7rem; color:#666;">(La IA extraerá las etiquetas de ADN y buscará coincidencias en Firestore)</p>
+            <input type="file" id="file-input" class="hidden" accept="image/*" onchange="simularComparacionIA()">
+        </div>
+
+        <div id="panel-resultados" class="hidden">
+            <div id="contenido-resultado"></div>
+            <button class="btn-reset" onclick="resetOraculo()">NUEVA CONSULTA</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // 🧪 INTEGRACIÓN FIREBASE SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyArXS-nRFGb7MRQ30BsPM4vYdqXWfxNdg4",
+            authDomain: "super-m-growshop.firebaseapp.com",
+            projectId: "super-m-growshop",
+            storageBucket: "super-m-growshop.firebasestorage.app",
+            messagingSenderId: "851787326044",
+            appId: "1:851787326044:web:727818a787e52d9a19fc99"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        let bibliotecaVisual = [];
+
+        // 🔌 CARGA DESDE FIRESTORE
+        async function cargarBiblioteca() {
+            const querySnapshot = await getDocs(collection(db, "biblioteca_visual"));
+            bibliotecaVisual = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            renderizarGaleria(bibliotecaVisual);
+        }
+
+        // 🖼️ RENDERIZADO DE GALERÍA DINÁMICA
+        window.renderizarGaleria = (items) => {
+            const grilla = document.getElementById('grilla-sintomas');
+            grilla.innerHTML = "";
+            items.forEach(item => {
+                const celda = document.createElement('div');
+                celda.className = 'celda-sintoma';
+                celda.onclick = () => window.consultarOraculo(item.id);
+                celda.innerHTML = `
+                    <img src="${item.img}" alt="${item.titulo}">
+                    <p>${item.titulo}</p>
+                `;
+                grilla.appendChild(celda);
+            });
+        };
+
+        //  FILTRO POR ADN (TAGS)
+        window.filtrarPorADN = () => {
+            const busqueda = document.getElementById('search-tags').value.toLowerCase();
+            if (!busqueda) return renderizarGaleria(bibliotecaVisual);
+
+            const filtrados = bibliotecaVisual.filter(item => {
+                // Busca en el array de tags o en el título
+                const matchTags = item.tags && item.tags.some(tag => tag.toLowerCase().includes(busqueda));
+                const matchTitulo = item.titulo.toLowerCase().includes(busqueda);
+                return matchTags || matchTitulo;
+            });
+            renderizarGaleria(filtrados);
+        };
+
+        // 🔮 MOTOR DE INFERENCIA (FIREBASE CLIENT)
+        window.consultarOraculo = async (idDoc) => {
+            const panel = document.getElementById('panel-resultados');
+            const contenido = document.getElementById('contenido-resultado');
+            
+            panel.classList.remove('hidden');
+            contenido.innerHTML = `<p class="loading">Sincronizando con Firestore...<br>Recuperando metadatos de transmutación para ID: ${idDoc}</p>`;
+            window.scrollTo({ top: panel.offsetTop - 50, behavior: 'smooth' });
+
+            try {
+                const docRef = doc(db, "biblioteca_visual", idDoc);
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const fuentesHtml = data.fuentes ? data.fuentes.map((f, i) => 
+                        `<a href="${f}" target="_blank" class="fuente-link">F-[${i+1}] Base Técnica</a>`
+                    ).join('') : '';
+
+                    contenido.innerHTML = `
+                        <h3 style="color: var(--p); text-align:center;">VERDICTO ALQUIMISTA: ${data.titulo}</h3>
+                        <hr border="1" color="#222">
+                        <div style="background:#1a1a1a; padding:15px; border-radius:5px; margin-top:15px;">
+                            <p style="color:var(--p); font-size:0.7rem; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">[ ADN VISUAL DETECTADO ]</p>
+                            <p style="font-size:0.85rem; color:#ccc;">${data.patrones || 'Sin descripción de patrones.'}</p>
+                            
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+                                <div>
+                                    <p style="color:var(--s); font-size:0.6rem; font-weight:bold;">PH / EC (RANGOS)</p>
+                                    <p style="font-size:0.8rem;">${data.tecnico || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p style="color:var(--s); font-size:0.6rem; font-weight:bold;">AMBIENTE (VPD/T)</p>
+                                    <p style="font-size:0.8rem;">${data.ambiente || 'N/A'}</p>
+                                </div>
+                            </div>
+
+                            <p style="color:var(--p); border-top:1px solid #333; padding-top:10px; margin-top:15px;"><strong>TRANSMUTACIÓN RECOMENDADA:</strong><br>${data.solucion || 'Consultar con el Gran Alquimista.'}</p>
+                            
+                            <div style="margin-top:15px; border-top:1px solid #222; padding-top:10px;">
+                                <p style="font-size:0.6rem; color:#555;">FUENTES CONSULTADAS:</p>
+                                ${fuentesHtml}
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error("Error en el Oráculo:", error);
+                contenido.innerHTML = `<p style="color:red;">Error al consultar la base de datos.</p>`;
+            }
+        };
+
+        // 📸 SIMULACIÓN IA
+        window.simularComparacionIA = () => {
+            const panel = document.getElementById('panel-resultados');
+            const contenido = document.getElementById('contenido-resultado');
+            panel.classList.remove('hidden');
+            contenido.innerHTML = `<p class="loading">Escaneando ADN visual de la muestra...<br>Buscando etiquetas compatibles en la Biblioteca Visual...</p>`;
+
+            setTimeout(() => {
+                // Simula que la IA detectó etiquetas y encontró el ID "calcio_carencia"
+                window.consultarOraculo("calcio_carencia");
+            }, 2000);
+        };
+
+        window.resetOraculo = () => {
+            document.getElementById('panel-resultados').classList.add('hidden');
+            document.getElementById('file-input').value = "";
+            document.getElementById('search-tags').value = "";
+            window.renderizarGaleria(bibliotecaVisual);
+            window.scrollTo(0, 0);
+        };
+
+        // Inicio
+        cargarBiblioteca();
+    </script>
+</body>
+</html>
