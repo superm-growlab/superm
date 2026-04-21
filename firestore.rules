@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. PRODUCTOS: Lectura pública, escritura exclusiva para el Administrador
+    match /productos_tienda/{id} {
+      allow read: if true;
+      allow write, delete: if request.auth != null && request.auth.uid == 'uYs87x57iGQPwR9WRilXf7dCYx62';
+    }
+
+    // 2. SETTINGS (Tokens de ML): Solo el Administrador
+    match /settings/mercadolibre_auth {
+      allow read, write: if request.auth != null && request.auth.uid == 'uYs87x57iGQPwR9WRilXf7dCYx62';
+    }
+
+    // 3. SEGUIMIENTOS Y BITÁCORAS: Privacidad por usuario
+    match /seguimientos/{docId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.usuario;
+    }
+
+    // 4. COMUNIDAD, RESEÑAS, NOTAS Y BIBLIOTECA VISUAL
+    match /{col}/{docId} {
+      // Lectura: Pública para comunidad y biblioteca de síntomas. 
+      // Solicitudes de tabla SOLO para el Admin.
+      allow read: if col in ['comentarios', 'reseñas_productos', 'sugerencias_notas', 'biblioteca_visual', 'diagnosticos'] || 
+                  (col == 'solicitudes_tablas' && request.auth != null && request.auth.uid == 'uYs87x57iGQPwR9WRilXf7dCYx62');
+      
+      // Creación: Usuarios logueados
+      allow create: if request.auth != null && col in ['comentarios', 'reseñas_productos', 'sugerencias_notas', 'solicitudes_tablas', 'diagnosticos'];
+      
+      // Update/Delete: Solo el autor o el admin. 
+      // Para biblioteca_visual, solo el Admin (asumiendo que no tiene usuarioId el documento)
+      allow update, delete: if request.auth != null && 
+        ( (exists(resource.data.usuarioId) && request.auth.uid == resource.data.usuarioId) || request.auth.uid == 'uYs87x57iGQPwR9WRilXf7dCYx62');
+    }
+
+    // 5. NOTIFICACIONES
+    match /notificaciones/{notiId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.paraUid;
+      allow create: if request.auth != null;
+    }
+  }
+}
