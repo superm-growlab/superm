@@ -2095,6 +2095,7 @@
             }
             
             if (typeof dato === 'string' && dato.includes("http")) return `<img src="${dato}" class="img-real">`;
+            if (typeof dato === 'string' && dato.includes("http")) return `<img src="${dato}" class="img-real" onerror="this.onerror=null; this.src='https://i.postimg.cc/rF9GqwGS/favicon.png'; this.style.opacity='0.5';">`;
             return `<div class="img-placeholder">${dato}</div>`;
         }
 
