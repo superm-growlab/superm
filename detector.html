@@ -331,7 +331,7 @@
                 const mainImg = (item.imageUrls && item.imageUrls.length > 0) ? item.imageUrls[0] : (item.img || '');
                 celda.innerHTML = `
                     <img src="${mainImg}" alt="${item.titulo}" 
-                         onerror="window.handleImageError(this, ${JSON.stringify(item.imageUrls || [])})" 
+                         onerror='window.handleImageError(this, ${JSON.stringify(item.imageUrls || [])})' 
                          loading="lazy">
                     <p>${item.titulo}</p>
                 `;
@@ -447,7 +447,7 @@
                 <div class="split-diagnostico">
                     <div class="col-visual">
                         <img src="${imgUrl}" class="img-expandida" alt="Muestra de ADN" 
-                             onerror="window.handleImageError(this, ${JSON.stringify(item.imageUrls || [])})">
+                             onerror='window.handleImageError(this, ${JSON.stringify(item.imageUrls || [])})'>
                         <div id="gallery-indicator" style="display:flex; gap:5px; margin-top:5px; justify-content:center;">
                             ${(item.imageUrls || []).map((u, i) => `<span onclick="this.closest('.col-visual').querySelector('img').src='${u}'" style="cursor:pointer; font-size:1.2rem; color:var(--s);">•</span>`).join('')}
                         </div>
