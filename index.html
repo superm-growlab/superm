@@ -3883,6 +3883,13 @@ window.abrirReporteAlquimia = (dataJson) => {
             <h4 style="color:var(--p); margin:0; font-size:0.8rem; letter-spacing:1px;">SEMANA ${semana}: ${config.n.toUpperCase()}</h4>
             <span style="font-size:0.7rem; font-weight:bold; color:${colorStatus};">${alert ? '⚠ AJUSTE NECESARIO' : '✔ BALANCEADO'}</span>
         </div>
+        ${data.url_imagen ? `
+            <div style="text-align:center; margin-bottom:15px; border: 1px solid var(--s); border-radius: 12px; overflow: hidden; background: #000;">
+                <img src="${data.url_imagen}" style="width:100%; height:auto; display:block; cursor:pointer;" 
+                     onclick="window.verImagenAmpliada('${data.url_imagen}')" 
+                     onerror="this.src='https://i.postimg.cc/rF9GqwGS/favicon.png'; this.style.opacity='0.5';">
+            </div>
+        ` : ''}
         <div style="font-size:0.8rem; line-height:1.4; color:#fff;">
             <p style="margin:8px 0; border-left: 2px solid ${ph > config.ph[1] || ph < config.ph[0] ? 'var(--s)' : 'var(--p)'}; padding-left:10px;">${dPh}</p>
             <p style="margin:8px 0; border-left: 2px solid ${ec > config.ec[1] || ec < config.ec[0] ? 'var(--s)' : 'var(--p)'}; padding-left:10px;">${dEc}</p>

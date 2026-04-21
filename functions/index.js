@@ -10,13 +10,14 @@ exports.consultarOraculo = onCall({
     region: "us-central1",
     secrets: ["GEMINI_API_KEY", "GOOGLE_SEARCH_API_KEY", "CUSTOM_SEARCH_ID"] 
 }, async (request) => {
-    const { titulo, tags } = request.data;
+    const { titulo, tags = [] } = request.data;
 
     if (!titulo) {
         logger.error("Consulta fallida: Título ausente");
         throw new Error("El título de la muestra es obligatorio.");
     }
 
+    const tagsText = Array.isArray(tags) ? tags.join(", ") : "sin etiquetas";
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ 
         model: "gemini-flash-latest",
@@ -25,7 +26,7 @@ exports.consultarOraculo = onCall({
 
     const prompt = `
         Eres el Agente Inteligente de Super M Lab, experto botánico en cultivo de cannabis.
-        Analiza el siguiente síntoma: "${titulo}" con las etiquetas de ADN visual: ${tags.join(", ")}.
+        Analiza el siguiente síntoma: "${titulo}" con las etiquetas de ADN visual: ${tagsText}.
         
         Tu tarea es generar un diagnóstico técnico detallado basado en literatura técnica de cultivo (GrowWeedEasy, RQS, etc.).
         
@@ -58,15 +59,19 @@ exports.consultarOraculo = onCall({
         // 🔎 BÚSQUEDA DINÁMICA DE IMÁGENES (Google Search API)
         let url_imagen = "https://i.postimg.cc/rF9GqwGS/favicon.png"; // Fallback por defecto
         try {
-            const query = encodeURIComponent(`${titulo} cannabis plant deficiency`);
-            const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${process.env.GOOGLE_SEARCH_API_KEY}&cx=${process.env.CUSTOM_SEARCH_ID || 'e014b6fa1fb9c424a'}&q=${query}&searchType=image&num=1`;
+            // Realizamos una búsqueda dinámica para obtener un link fresco y evitar el error 404
+            const query = encodeURIComponent(`cannabis ${titulo} deficiency symptoms leaf`);
+            const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${process.env.GOOGLE_SEARCH_API_KEY}&cx=${process.env.CUSTOM_SEARCH_ID}&q=${query}&searchType=image&num=1&safe=active`;
             
             const searchRes = await fetch(searchUrl);
-            const searchData = await searchRes.json();
-            
-            if (searchData.items && searchData.items.length > 0) {
-                url_imagen = searchData.items[0].link;
-                logger.info(`Imagen encontrada para ${titulo}: ${url_imagen}`);
+            if (searchRes.ok) {
+                const searchData = await searchRes.json();
+                if (searchData.items && searchData.items.length > 0) {
+                    url_imagen = searchData.items[0].link;
+                    logger.info(`Imagen dinámica encontrada para ${titulo}: ${url_imagen}`);
+                }
+            } else {
+                logger.error(`Google Search API falló: ${searchRes.statusText}`);
             }
         } catch (err) {
             logger.warn("Error en búsqueda de imágenes:", err);
