@@ -212,6 +212,21 @@
             background: var(--s);
             color: #fff;
         }
+
+        /* 🌱 BOTÓN DE SEMBRADO (ADMIN) */
+        .btn-seed {
+            background: none;
+            border: 1px dashed #333;
+            color: #555;
+            font-size: 0.7rem;
+            padding: 10px;
+            margin-top: 50px;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.3s;
+            border-radius: 8px;
+        }
+        .btn-seed:hover { border-color: var(--p); color: var(--p); background: rgba(57, 255, 20, 0.05); }
     </style>
 </head>
 <body>
@@ -290,7 +305,7 @@
                     id: doc.id,
                     ...doc.data()
                 }));
-                renderizarGaleria(bibliotecaVisual);
+                window.renderizarGaleria(bibliotecaVisual);
             } catch (error) {
                 console.error("Error cargando biblioteca:", error);
                 grilla.innerHTML = `<p style='grid-column: 1/-1; text-align:center; color:red;'>Error de conexión con el Oráculo.</p>`;
@@ -298,12 +313,12 @@
         }
 
         // 🖼️ RENDERIZADO DE GALERÍA DINÁMICA
-        window.renderizarGaleria = (items = []) => {
+        const renderizarGaleria = (items = []) => {
             const grilla = document.getElementById('grilla-sintomas');
             grilla.innerHTML = "";
             
             if (!items || items.length === 0) {
-                grilla.innerHTML = "<p style='grid-column: 1/-1; text-align:center; color:#555;'>No hay coincidencias para este patrón de ADN.</p>";
+                grilla.innerHTML = "<p style='grid-column: 1/-1; text-align:center; color:#555;'>No hay muestras disponibles con este criterio.</p>";
                 return;
             }
 
@@ -320,11 +335,12 @@
                 grilla.appendChild(celda);
             });
         };
+        window.renderizarGaleria = renderizarGaleria;
 
         //  FILTRO POR ADN (TAGS)
         window.filtrarPorADN = () => {
             const busqueda = document.getElementById('search-tags').value.toLowerCase().trim();
-            if (!busqueda) return renderizarGaleria(bibliotecaVisual);
+            if (!busqueda) return window.renderizarGaleria(bibliotecaVisual);
 
             const terminos = busqueda.split(/\s+/);
             const filtrados = bibliotecaVisual.filter(item => {
