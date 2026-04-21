@@ -39,41 +39,41 @@
         /* 🖼️ GRILLA DE SÍNTOMAS VISUALES */
         .grilla-sintomas {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 10px;
             margin-top: 20px;
+            max-height: 320px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #0a0a0a;
+            border-radius: 8px;
+            border: 1px solid #222;
         }
 
         .celda-sintoma {
             background: var(--card);
-            border: 2px solid #333;
-            border-radius: 8px;
-            padding: 10px;
+            border: 2px solid #222;
+            border-radius: 4px;
+            padding: 4px;
             text-align: center;
             cursor: pointer;
             transition: 0.3s;
-            position: relative;
-            overflow: hidden;
         }
+
+        .celda-sintoma.seleccionada { border-color: var(--p); box-shadow: 0 0 15px var(--p); }
 
         .celda-sintoma:hover {
             border-color: var(--p);
-            box-shadow: 0 0 15px rgba(57, 255, 20, 0.3);
-            transform: translateY(-3px);
-        }
-
-        .celda-sintoma.seleccionada {
-            border-color: var(--p);
-            box-shadow: 0 0 20px var(--p);
-            background: rgba(57, 255, 20, 0.05);
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
+            background: #1a1a1a;
         }
 
         .celda-sintoma img {
-            width: 100%;
-            height: 100px;
+            width: 100px;
+            height: 80px;
             object-fit: cover;
             border-radius: 4px;
-            filter: grayscale(80%) brightness(0.8);
+            filter: grayscale(50%);
             transition: 0.3s;
         }
 
@@ -82,7 +82,7 @@
         }
 
         .celda-sintoma p {
-            margin: 8px 0 0 0;
+            margin: 5px 0 0 0;
             font-size: 0.8rem;
             color: #aaa;
             text-transform: uppercase;
@@ -91,39 +91,61 @@
         }
 
         .celda-sintoma:hover p {
-            color: var(--p);
+            color: #fff;
         }
 
         /* 🚀 UPLOADER DE FOTOS */
         .seccion-uploader {
-            background: var(--card);
+            background: #111;
             border: 2px dashed var(--s);
-            border-radius: 10px;
-            padding: 30px;
+            border-radius: 12px;
+            padding: 25px;
             text-align: center;
-            margin-top: 30px;
+            margin: 30px 0;
             cursor: pointer;
             transition: 0.3s;
         }
 
         .seccion-uploader:hover {
-            background: #1a1a1a;
+            border-color: var(--p);
+            background: #0a0a0a;
             box-shadow: 0 0 20px rgba(188, 19, 254, 0.2);
         }
 
-        .seccion-uploader p { color: var(--s); font-weight: bold; }
-        .icon-upload { font-size: 2rem; margin-bottom: 10px; }
+        .seccion-uploader p { color: var(--s); font-weight: bold; margin: 10px 0 0 0; }
+        .icon-upload { font-size: 2rem; }
 
         /* 🔮 PANEL DE RESULTADOS */
         #panel-resultados {
-            margin-top: 30px;
+            margin: 30px 0;
             padding: 20px;
-            border: 2px solid var(--p);
+            border: 1px solid var(--p);
             border-radius: 10px;
             background: #000;
             box-shadow: 0 0 30px rgba(57, 255, 20, 0.15);
-            animation: aparece 0.5s ease-out;
         }
+        .split-diagnostico {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 25px;
+            align-items: start;
+        }
+        @media (max-width: 700px) {
+            .split-diagnostico { grid-template-columns: 1fr; }
+        }
+        .img-expandida {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--s);
+            object-fit: contain;
+            background: #080808;
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.2);
+        }
+        .info-tecnica {
+            padding: 10px;
+            border-left: 1px solid #222;
+        }
+        @media (max-width: 700px) { .info-tecnica { border-left: none; border-top: 1px solid #222; margin-top: 15px; } }
 
         .loading {
             text-align: center;
@@ -139,7 +161,7 @@
         .hidden { display: none; }
         
         button.btn-reset {
-            background: transparent;
+            background: #000;
             border: 1px solid var(--s);
             color: var(--s);
             padding: 10px 20px;
@@ -196,31 +218,31 @@
 
     <h1>🔬 ORÁCULO DETECTOR HÍBRIDO</h1>
 
-    <div class="contenedor-principal">
-        
-        <h2>Buscador de ADN Botánico</h2>
+    <div class="contenedor-principal">        
         <div class="buscador-adn-cont">
-            <input type="text" id="search-tags" class="input-adn" placeholder="🔍 Escribe síntomas (ej: clorosis, puntas quemadas, nervadura)..." onkeyup="filtrarPorADN()">
+            <input type="text" id="search-tags" class="input-adn" placeholder="🔍 Filtrar síntomas de la biblioteca..." onkeyup="filtrarPorADN()">
         </div>
 
         <p style="text-align:center; color:#888; font-size: 0.8rem;">Selecciona una muestra de la biblioteca para el análisis de transmutación.</p>
         
         <div id="grilla-sintomas" class="grilla-sintomas"></div>
 
-        <hr border="1" color="#222" style="margin: 40px 0;">
-
-        <h2>Portal de Escaneo IA</h2>
-        <div class="seccion-uploader" onclick="document.getElementById('file-input').click()">
-            <div class="icon-upload">📸</div>
-            <p>Arrastra o sube la foto de tu planta</p>
-            <p style="font-size:0.7rem; color:#666;">(La IA extraerá las etiquetas de ADN y buscará coincidencias en Firestore)</p>
-            <input type="file" id="file-input" class="hidden" accept="image/*" onchange="simularComparacionIA()">
-        </div>
-
         <div id="panel-resultados" class="hidden">
             <div id="contenido-resultado"></div>
             <button class="btn-reset" onclick="resetOraculo()">NUEVA CONSULTA</button>
         </div>
+
+        <div style="text-align:center; margin-top: 40px;">
+            <p style="color:var(--s); font-size: 0.7rem; letter-spacing: 2px; margin:0;">¿TU SÍNTOMA NO ESTÁ EN LA BIBLIOTECA?</p>
+        </div>
+
+        <div class="seccion-uploader" onclick="document.getElementById('file-input').click()">
+            <div class="icon-upload">📸</div>
+            <p>SUBIR FOTO PARA ANÁLISIS IA</p>
+            <input type="file" id="file-input" class="hidden" accept="image/*" onchange="window.procesarImagenUsuario(event)">
+        </div>
+
+        <button class="btn-seed" onclick="window.sembrarBiblioteca()">🌱 SEMBRAR 20 MUESTRAS DE PRUEBA (SOLO ADMIN)</button>
     </div>
 
     <script type="module">
@@ -288,11 +310,11 @@
             items.forEach(item => {
                 const celda = document.createElement('div');
                 celda.className = 'celda-sintoma';
-                celda.onclick = () => window.consultarOraculo(item.id);
+                celda.onclick = () => window.consultarOraculo(item.id, celda);
                 // Atributo técnico para el buscador
                 celda.setAttribute('data-adn', (item.tags || []).join(','));
                 celda.innerHTML = `
-                    <img src="${item.img}" alt="${item.titulo}">
+                    <img src="${item.img}" alt="${item.titulo}" onerror="this.src='https://placehold.co/100x80?text=ADN+MUESTRA'">
                     <p>${item.titulo}</p>
                 `;
                 grilla.appendChild(celda);
@@ -315,9 +337,10 @@
         };
 
         // 🔮 MOTOR DE INFERENCIA (FIREBASE CLIENT)
-        window.consultarOraculo = async (idDoc) => {
+        window.consultarOraculo = async (idDoc, elemento = null) => {
             // Resaltar visualmente la selección
             document.querySelectorAll('.celda-sintoma').forEach(el => el.classList.remove('seleccionada'));
+            if (elemento) elemento.classList.add('seleccionada');
 
             const panel = document.getElementById('panel-resultados');
             const contenido = document.getElementById('contenido-resultado');
@@ -359,103 +382,133 @@
             
             contenido.innerHTML = `
                 <div class="agente-badge">🤖 AGENTE DINÁMICO ACTIVO</div>
-                <p class="loading">Invocando Inteligencia Gemini 1.5 Flash para:<br><strong>${item.titulo}</strong>...</p>
+                <p class="loading">Invocando Inteligencia Gemini Flash para:<br><strong>${item.titulo}</strong>...</p>
                 <p style="font-size:0.7rem; color:#555; text-align:center;">Fuentes prioritarias: ${FUENTES_MAESTRAS.join(', ')}</p>
             `;
 
             let hallazgo;
+            const imgUrl = item.img || 'https://placehold.co/400x300?text=SIN+IMAGEN';
 
             if (diagExistente) {
-                // 🟢 FLUJO CACHÉ (Costo $0)
                 hallazgo = { ...diagExistente, es_nuevo: false };
             } else {
                 try {
-                    // 🔵 FLUJO INTELIGENCIA (Cloud Function)
                     const result = await consultarOraculoFn({
                         titulo: item.titulo,
                         tags: item.tags || []
                     });
                     
                     hallazgo = { ...result.data, es_nuevo: true };
-
-                    // 💾 AUTO-GUARDADO EN FIRESTORE
-                    if (!hallazgo.error) {
-                        const diagId = item.id_diagnostico || (item.tags && item.tags[0]);
-                        if (diagId && authInstance.currentUser) {
-                            await setDoc(doc(db, "diagnosticos", diagId), {
-                                ...hallazgo,
-                                usuarioId: authInstance.currentUser.uid,
-                                es_nuevo: false, // Se guarda como verificado para la próxima
-                                timestamp: serverTimestamp()
-                            });
-                            console.log("✅ Diagnóstico auto-guardado en Firestore.");
-                        }
-                    }
                 } catch (error) {
-                    console.error("Error Gemini Function:", error);
                     hallazgo = {
-                        ph_rango: "Error API", ec_rango: "Error API",
-                        ambiente_detalles: "Sincronización fallida.",
-                        solucion_alquimista: "El Agente no pudo transmutar los datos técnicos en este momento.",
-                        fuente: "N/A", es_nuevo: true
+                        solucion_alquimista: "Error al consultar el Oráculo.",
+                        es_nuevo: true
                     };
                 }
             }
 
             contenido.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3 style="color: var(--p); margin:0;">🔮 VERDICTO: ${item.titulo.toUpperCase()}</h3>
-                    ${hallazgo.es_nuevo ? '<span style="color:var(--s); font-size:0.6rem; border:1px solid var(--s); padding:2px 5px; border-radius:4px;">IA LIVE</span>' : '<span style="color:var(--p); font-size:0.6rem; border:1px solid var(--p); padding:2px 5px; border-radius:4px;">LOCAL CACHE</span>'}
-                </div>
-                
-                <div style="background:#111; padding:20px; border-radius:10px; border: 1px solid #222;">
-                    <div style="margin-bottom: 20px;">
-                        <p style="color:var(--p); font-size:0.7rem; font-weight:bold; letter-spacing:1px; margin-bottom:10px;">[ ANÁLISIS DINÁMICO DE SÍNTOMAS ]</p>
-                        <p style="font-size:0.95rem; color:#eee; line-height:1.6;">${item.patrones || 'Patrón identificado mediante correspondencia visual en base de datos.'}</p>
+                <div class="split-diagnostico">
+                    <div class="col-visual">
+                        <img src="${imgUrl}" class="img-expandida" alt="Muestra de ADN" onerror="this.src='https://placehold.co/400x300?text=IMAGEN+NO+DISPONIBLE'">
+                        <p style="font-size:0.6rem; color:#555; margin-top:10px; text-align:center;">MUESTRA DE REFERENCIA: ${item.id}</p>
                     </div>
-                    
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom: 20px; border-top: 1px solid #222; padding-top: 20px;">
-                        <div>
-                            <p style="color:var(--s); font-size:0.65rem; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">RANGO TÉCNICO (RED)</p>
-                            <p style="font-size:0.85rem; color: #ccc;">pH: ${hallazgo.ph_rango} | EC: ${hallazgo.ec_rango}</p>
+                    <div class="info-tecnica">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                            <h3 style="color: var(--p); margin:0;">🔮 ${item.titulo.toUpperCase()}</h3>
+                            ${hallazgo.es_nuevo ? '<span style="color:var(--s); font-size:0.5rem; border:1px solid var(--s); padding:2px 5px; border-radius:3px;">IA LIVE</span>' : ''}
                         </div>
-                        <div>
-                            <p style="color:var(--s); font-size:0.65rem; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">FUENTE MAESTRA</p>
-                            <p style="font-size:0.85rem; color: var(--p);" class="fuente-maestra">${hallazgo.fuente || FUENTES_MAESTRAS[0]}</p>
+                        
+                        <div style="background:rgba(57, 255, 20, 0.03); padding:15px; border-radius:8px; border-left: 3px solid var(--p); margin-bottom:20px;">
+                            <p style="color:var(--p); font-size:0.65rem; font-weight:bold; margin-bottom:5px;">PROTOCOLO DE REPARACIÓN:</p>
+                            <p style="font-size:0.95rem; color:#fff; line-height:1.5; margin:0;">${hallazgo.solucion_alquimista}</p>
                         </div>
-                    </div>
 
-                    <div style="background: rgba(57, 255, 20, 0.05); padding: 15px; border-radius: 8px; border-left: 4px solid var(--p);">
-                        <p style="color:var(--p); font-size: 0.75rem; font-weight: bold; margin-bottom: 5px;">PROTOCOLO SUGERIDO:</p>
-                        <p style="font-size:1rem; color:#fff; line-height: 1.5;">${hallazgo.solucion_alquimista}</p>
-                    </div>
-                    
-                    <div style="margin-top:20px; border-top:1px solid #222; padding-top:15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
-                        <div>
-                            <span style="font-size:0.6rem; color:#444;">EVIDENCIA:</span>
-                            <span class="fuente-link">📡 Datos Verificados por Super M Lab</span>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                            <div>
+                                <p style="color:var(--s); font-size:0.55rem; font-weight:bold;">VALORES RED pH</p>
+                                <p style="font-size:0.85rem; color:#ccc;">${hallazgo.ph_rango || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p style="color:var(--s); font-size:0.55rem; font-weight:bold;">VALORES RED EC</p>
+                                <p style="font-size:0.85rem; color:#ccc;">${hallazgo.ec_rango || 'N/A'}</p>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:20px; border-top:1px solid #222; padding-top:15px;">
+                            <p style="color:#555; font-size:0.55rem; margin:0;">FUENTE DE INFORMACIÓN: ${hallazgo.fuente || 'Super M Lab In-House Knowledge'}</p>
                         </div>
                     </div>
                 </div>
             `;
         };
 
-        window.sincronizarHallazgo = async (idVisual, idDiag) => {
-            alert("Sincronizando hallazgo dinámico con Firestore...");
-            // Aquí integrarías el setDoc para guardar el resultado de la web en tu colección de diagnosticos
+        // 🌱 FUNCIÓN PARA POBLAR LA BIBLIOTECA CON 20 IMÁGENES DE LA WEB
+        window.sembrarBiblioteca = async () => {
+            if (!confirm("¿Deseas poblar la biblioteca con 20 muestras de referencia de la web?")) return;
+            
+            const muestras = [
+                { id: "nitrógeno_carencia", titulo: "Carencia de Nitrógeno", tags: ["nitrógeno", "amarilleo", "hojas bajas"], img: "https://2fast4buds.com/static/769bd2469614a9ec0f4369403d6d3765/d6061/marijuana-nitrogen-deficiency-symptoms.jpg" },
+                { id: "fósforo_carencia", titulo: "Carencia de Fósforo", tags: ["fósforo", "manchas oscuras", "tallo morado"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-phosphorus-deficiency.jpg" },
+                { id: "potasio_carencia", titulo: "Carencia de Potasio", tags: ["potasio", "bordes quemados", "puntas amarillas"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-potassium-deficiency.jpg" },
+                { id: "calcio_carencia", titulo: "Carencia de Calcio", tags: ["calcio", "puntos marrones", "hojas arrugadas"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-calcium-deficiency.jpg" },
+                { id: "magnesio_carencia", titulo: "Carencia de Magnesio", tags: ["magnesio", "clorosis interverval", "bordes verdes"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-magnesium-deficiency.jpg" },
+                { id: "hierro_carencia", titulo: "Carencia de Hierro", tags: ["hierro", "hojas nuevas amarillas", "nervadura verde"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-iron-deficiency.jpg" },
+                { id: "boro_carencia", titulo: "Carencia de Boro", tags: ["boro", "puntas muertas", "crecimiento lento"], img: "https://2fast4buds.com/static/74889c2586616422f28148f986259063/82260/marijuana-boron-deficiency-symptoms.jpg" },
+                { id: "azufre_carencia", titulo: "Carencia de Azufre", tags: ["azufre", "amarilleo superior", "hojas pequeñas"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-sulfur-deficiency.jpg" },
+                { id: "zinc_carencia", titulo: "Carencia de Zinc", tags: ["zinc", "hojas retorcidas", "entrenudos cortos"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-zinc-deficiency.jpg" },
+                { id: "manganeso_carencia", titulo: "Carencia de Manganeso", tags: ["manganeso", "manchas amarillas", "hojas moteadas"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-manganese-deficiency.jpg" },
+                { id: "cobre_carencia", titulo: "Carencia de Cobre", tags: ["cobre", "hojas oscuras", "puntas rizadas"], img: "https://2fast4buds.com/static/86c5729e925828464972e38209867512/82260/marijuana-copper-deficiency-symptoms.jpg" },
+                { id: "molibdeno_carencia", titulo: "Carencia de Molibdeno", tags: ["molibdeno", "bordes rosas", "hojas pálidas"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-molybdenum-deficiency.jpg" },
+                { id: "nitrógeno_exceso", titulo: "Exceso de Nitrógeno", tags: ["nitrógeno", "verde oscuro", "garra"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-nitrogen-toxicity.jpg" },
+                { id: "luz_quemadura", titulo: "Quemadura por Luz", tags: ["luz", "blanqueamiento", "calor"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-light-burn.jpg" },
+                { id: "calor_estres", titulo: "Estrés por Calor", tags: ["calor", "bordes serrados hacia arriba", "sequedad"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-heat-stress.jpg" },
+                { id: "riego_exceso", titulo: "Exceso de Riego", tags: ["riego", "hojas pesadas", "caídas"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-overwatering.jpg" },
+                { id: "ph_fluctuacion", titulo: "Fluctuación de pH", tags: ["ph", "manchas aleatorias", "bloqueo"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-ph-fluctuations.jpg" },
+                { id: "nutrientes_quemadura", titulo: "Quemadura de Nutrientes", tags: ["nutes", "puntas quemadas", "ec alta"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-nutrient-burn.jpg" },
+                { id: "moho_blanco", titulo: "Oídio / Moho Blanco", tags: ["hongo", "polvo blanco", "humedad"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-white-powdery-mildew.jpg" },
+                { id: "araña_roja", titulo: "Araña Roja", tags: ["plaga", "puntos blancos", "telarañas"], img: "https://www.royalqueenseeds.es/img/cms/marijuana-spider-mites.jpg" }
+            ];
+
+            for (const m of muestras) {
+                await setDoc(doc(db, "biblioteca_visual", m.id), m);
+            }
+            alert("🚀 ¡20 muestras sembradas con éxito! Recargando biblioteca...");
+            cargarBiblioteca();
         };
 
-        // 📸 SIMULACIÓN IA
-        window.simularComparacionIA = () => {
-            const panel = document.getElementById('panel-resultados');
-            const contenido = document.getElementById('contenido-resultado');
-            panel.classList.remove('hidden');
-            contenido.innerHTML = `<p class="loading">Escaneando ADN visual de la muestra...<br>Buscando etiquetas compatibles en la Biblioteca Visual...</p>`;
+        // 📸 LÓGICA DE PROCESAMIENTO DE IMAGEN USUARIO
+        window.procesarImagenUsuario = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
 
-            setTimeout(() => {
-                // Simula que la IA detectó etiquetas y encontró el ID "calcio_carencia"
-                window.consultarOraculo("calcio_carencia");
-            }, 2000);
+            // En el futuro, aquí llamaríamos a un modelo de Visión para comparar.
+            // Por ahora, simulamos el flujo que pides: Comparar y diagnosticar.
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const userImgBase64 = e.target.result;
+                
+                const panel = document.getElementById('panel-resultados');
+                const contenido = document.getElementById('contenido-resultado');
+                panel.classList.remove('hidden');
+                window.scrollTo({ top: panel.offsetTop - 50, behavior: 'smooth' });
+
+                contenido.innerHTML = `
+                    <div style="text-align:center;">
+                        <p class="loading">ANALIZANDO ADN VISUAL DE TU MUESTRA...</p>
+                        <img src="${userImgBase64}" style="width:150px; border-radius:10px; border:2px solid var(--s); opacity:0.6; filter: hue-rotate(90deg);">
+                        <p style="font-size:0.7rem; color:var(--s); margin-top:10px;">Buscando patrones de carencias y excesos en la base de datos...</p>
+                    </div>
+                `;
+
+                setTimeout(() => {
+                    // Simulación: La IA detecta que tu foto se parece a "calcio_carencia"
+                    // En un sistema real, pasaríamos el base64 a Gemini Vision.
+                    window.consultarOraculo("calcio_carencia");
+                }, 2500);
+            };
+            reader.readAsDataURL(file);
         };
 
         window.resetOraculo = () => {
