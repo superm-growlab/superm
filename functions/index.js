@@ -46,7 +46,14 @@ exports.consultarOraculo = onCall({
         const text = response.text();
         
         const jsonMatch = text.match(/\{[\s\S]*\}/);
-        const diagnosis = jsonMatch ? JSON.parse(jsonMatch[0]) : { error: "Respuesta ilegible" };
+        let diagnosis = jsonMatch ? JSON.parse(jsonMatch[0]) : { error: "Respuesta ilegible" };
+
+        // Limpieza de campos para evitar undefined en el cliente
+        diagnosis.ph_rango = diagnosis.ph_rango || "6.0 - 6.5";
+        diagnosis.ec_rango = diagnosis.ec_rango || "1.2 - 1.8 mS";
+        diagnosis.ambiente_detalles = diagnosis.ambiente_detalles || "Ajustar según VPD";
+        diagnosis.solucion_alquimista = diagnosis.solucion_alquimista || "Revisar equilibrio de nutrientes.";
+        diagnosis.fuente = diagnosis.fuente || "GrowWeedEasy / RQS Technical Library";
 
         // 🔎 BÚSQUEDA DINÁMICA DE IMÁGENES (Google Search API)
         let url_imagen = "https://i.postimg.cc/rF9GqwGS/favicon.png"; // Fallback por defecto

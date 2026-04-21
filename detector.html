@@ -441,12 +441,12 @@
                     // 💾 PERSISTENCIA EN LABORATORIO LOCAL
                     let diagId = item.id_diagnostico || (item.tags && item.tags[0]) || item.id;
                     await setDoc(doc(db, "diagnosticos", diagId), {
-                        ph_rango: hallazgo.ph_rango,
-                        ec_rango: hallazgo.ec_rango,
-                        ambiente_detalles: hallazgo.ambiente_detalles,
-                        solucion_alquimista: hallazgo.solucion_alquimista,
-                        fuente: hallazgo.fuente,
-                        url_imagen: hallazgo.url_imagen,
+                        ph_rango: hallazgo.ph_rango || "No especificado",
+                        ec_rango: hallazgo.ec_rango || "No especificado",
+                        ambiente_detalles: hallazgo.ambiente_detalles || "No especificado",
+                        solucion_alquimista: hallazgo.solucion_alquimista || "Consultar guía técnica",
+                        fuente: hallazgo.fuente || "Super M Lab AI",
+                        url_imagen: hallazgo.url_imagen || "https://i.postimg.cc/rF9GqwGS/favicon.png",
                         timestamp: serverTimestamp()
                     });
 
