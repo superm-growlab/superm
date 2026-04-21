@@ -340,23 +340,22 @@
         };
         window.renderizarGaleria = renderizarGaleria;
 
-        // 🔄 MANEJO DE FALLBACK PARA IMÁGENES HOTLINKED
+        // 🔄 MANEJO DE FALLBACK PARA IMÁGENES BLOQUEADAS (ORB / 404)
         window.handleImageError = (img) => {
             img.onerror = null; 
             const parent = img.parentElement;
             if (!parent) return;
             
+            // Creamos un contenedor Neon en lugar de mostrar el icono de imagen rota
             const placeholder = document.createElement('div');
             placeholder.style.cssText = `
-                width: 100%; height: 100%; min-height: 80px; 
-                background: #000; border: 1px solid var(--s); 
-                display: flex; align-items: center; justify-content: center; 
-                color: var(--p); font-size: 0.55rem; font-weight: 900;
-                text-shadow: 0 0 8px var(--p); text-align: center;
-                padding: 10px; box-sizing: border-box; font-family: monospace;
-                box-shadow: inset 0 0 15px rgba(188, 19, 254, 0.2);
+                width: 100%; height: 80px; background: #080808; 
+                border: 1px solid var(--s); display: flex; align-items: center; 
+                justify-content: center; color: var(--p); font-size: 0.5rem; 
+                text-align: center; font-family: monospace; padding: 5px;
+                box-shadow: inset 0 0 10px rgba(188, 19, 254, 0.2);
             `;
-            placeholder.innerHTML = "[ ENLACE EXTERNO BLOQUEADO ]<br>TRANSCODIFICANDO MUESTRA...";
+            placeholder.innerHTML = "[ ADN BLOQUEADO ]<br>CONSULTA AL ORÁCULO";
             parent.replaceChild(placeholder, img);
         };
 
@@ -507,26 +506,26 @@
             if (!confirm("¿Deseas poblar la biblioteca con 20 muestras de referencia de la web?")) return;
             
             const muestras = [
-                { id: "nitrógeno_carencia", titulo: "Carencia de Nitrógeno", tags: ["nitrógeno", "amarilleo", "hojas bajas"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/nitrogen-deficiency-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-nitrogen-deficiency.jpg"] },
-                { id: "fósforo_carencia", titulo: "Carencia de Fósforo", tags: ["fósforo", "manchas oscuras", "tallo morado"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/phosphorus-deficiency-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-phosphorus-deficiency.jpg"] },
-                { id: "potasio_carencia", titulo: "Carencia de Potasio", tags: ["potasio", "bordes quemados", "puntas amarillas"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/potassium-deficiency-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-potassium-deficiency.jpg"] },
-                { id: "calcio_carencia", titulo: "Carencia de Calcio", tags: ["calcio", "puntos marrones", "hojas arrugadas"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2012/03/calcium-deficiency-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-calcium-deficiency.jpg"] },
-                { id: "magnesio_carencia", titulo: "Carencia de Magnesio", tags: ["magnesio", "clorosis interverval", "bordes verdes"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/magnesium-deficiency-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-magnesium-deficiency.jpg"] },
-                { id: "hierro_carencia", titulo: "Carencia de Hierro", tags: ["hierro", "hojas nuevas amarillas", "nervadura verde"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/iron-deficiency-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-iron-deficiency.jpg"] },
-                { id: "boro_carencia", titulo: "Carencia de Boro", tags: ["boro", "puntas muertas", "crecimiento lento"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/boron-deficiency-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-boron-deficiency.jpg"] },
-                { id: "azufre_carencia", titulo: "Carencia de Azufre", tags: ["azufre", "amarilleo superior", "hojas pequeñas"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/sulfur-deficiency-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-sulfur-deficiency.jpg"] },
-                { id: "zinc_carencia", titulo: "Carencia de Zinc", tags: ["zinc", "hojas retorcidas", "entrenudos cortos"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/zinc-deficiency-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-zinc-deficiency.jpg"] },
-                { id: "manganeso_carencia", titulo: "Carencia de Manganeso", tags: ["manganeso", "manchas amarillas", "hojas moteadas"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/manganese-deficiency-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-manganese-deficiency.jpg"] },
-                { id: "cobre_carencia", titulo: "Carencia de Cobre", tags: ["cobre", "hojas oscuras", "puntas rizadas"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/copper-deficiency-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-copper-deficiency.jpg"] },
-                { id: "molibdeno_carencia", titulo: "Carencia de Molibdeno", tags: ["molibdeno", "bordes rosas", "hojas pálidas"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/molybdenum-deficiency-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-molybdenum-deficiency.jpg"] },
-                { id: "nitrógeno_exceso", titulo: "Exceso de Nitrógeno", tags: ["nitrógeno", "verde oscuro", "garra"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/nitrogen-toxicity-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-nitrogen-toxicity.jpg"] },
-                { id: "luz_quemadura", titulo: "Quemadura por Luz", tags: ["luz", "blanqueamiento", "calor"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/light-burn-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-light-burn.jpg"] },
-                { id: "calor_estres", titulo: "Estrés por Calor", tags: ["calor", "bordes serrados hacia arriba", "sequedad"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/heat-stress-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-heat-stress.jpg"] },
-                { id: "riego_exceso", titulo: "Exceso de Riego", tags: ["riego", "hojas pesadas", "caídas"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/overwatering-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-overwatering.jpg"] },
-                { id: "ph_fluctuacion", titulo: "Fluctuación de pH", tags: ["ph", "manchas aleatorias", "bloqueo"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/ph-fluctuations-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-ph-fluctuations.jpg"] },
-                { id: "nutrientes_quemadura", titulo: "Quemadura de Nutrientes", tags: ["nutes", "puntas quemadas", "ec alta"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/nutrient-burn-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-nutrient-burn.jpg"] },
-                { id: "moho_blanco", titulo: "Oídio / Moho Blanco", tags: ["hongo", "polvo blanco", "humedad"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/white-powdery-mildew-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-white-powdery-mildew.jpg"] },
-                { id: "araña_roja", titulo: "Araña Roja", tags: ["plaga", "puntos blancos", "telarañas"], imageUrls: ["https://www.growweedeasy.com/wp-content/uploads/2010/06/spider-mites-cannabis.jpg", "https://www.royalqueenseeds.es/img/cms/marijuana-spider-mites.jpg"] }
+                { id: "nitrógeno_carencia", titulo: "Carencia de Nitrógeno", tags: ["nitrógeno", "amarilleo", "hojas bajas"], imageUrls: ["https://2fast4buds.com/static/769bd2469614a9ec0f4369403d6d3765/d6061/marijuana-nitrogen-deficiency-symptoms.jpg"] },
+                { id: "fósforo_carencia", titulo: "Carencia de Fósforo", tags: ["fósforo", "manchas oscuras", "tallo morado"], imageUrls: ["https://2fast4buds.com/static/74889c2586616422f28148f986259063/82260/marijuana-phosphorus-deficiency-symptoms.jpg"] },
+                { id: "potasio_carencia", titulo: "Carencia de Potasio", tags: ["potasio", "bordes quemados", "puntas amarillas"], imageUrls: ["https://2fast4buds.com/static/86c5729e925828464972e38209867512/82260/marijuana-potassium-deficiency-symptoms.jpg"] },
+                { id: "calcio_carencia", titulo: "Carencia de Calcio", tags: ["calcio", "puntos marrones", "hojas arrugadas"], imageUrls: ["https://2fast4buds.com/static/d7831f50f225be3a016664d125211915/82260/marijuana-calcium-deficiency-symptoms.jpg"] },
+                { id: "magnesio_carencia", titulo: "Carencia de Magnesio", tags: ["magnesio", "clorosis interverval", "bordes verdes"], imageUrls: ["https://2fast4buds.com/static/005694723933f7c469f36f9064619717/82260/marijuana-magnesium-deficiency-symptoms.jpg"] },
+                { id: "hierro_carencia", titulo: "Carencia de Hierro", tags: ["hierro", "hojas nuevas amarillas", "nervadura verde"], imageUrls: ["https://2fast4buds.com/static/cc5567a505b266d6d45e54d89e5f5f4b/82260/marijuana-iron-deficiency-symptoms.jpg"] },
+                { id: "boro_carencia", titulo: "Carencia de Boro", tags: ["boro", "puntas muertas", "crecimiento lento"], imageUrls: ["https://2fast4buds.com/static/74889c2586616422f28148f986259063/82260/marijuana-boron-deficiency-symptoms.jpg"] },
+                { id: "azufre_carencia", titulo: "Carencia de Azufre", tags: ["azufre", "amarilleo superior", "hojas pequeñas"], imageUrls: ["https://2fast4buds.com/static/30a38b695781a704e908993f4e2f4942/82260/marijuana-sulfur-deficiency-symptoms.jpg"] },
+                { id: "zinc_carencia", titulo: "Carencia de Zinc", tags: ["zinc", "hojas retorcidas", "entrenudos cortos"], imageUrls: ["https://2fast4buds.com/static/f562624d5500f40d34204859a848a604/82260/marijuana-zinc-deficiency-symptoms.jpg"] },
+                { id: "manganeso_carencia", titulo: "Carencia de Manganeso", tags: ["manganeso", "manchas amarillas", "hojas moteadas"], imageUrls: ["https://2fast4buds.com/static/90b79313936467362a7925e0a0d0d84a/82260/marijuana-manganese-deficiency-symptoms.jpg"] },
+                { id: "cobre_carencia", titulo: "Carencia de Cobre", tags: ["cobre", "hojas oscuras", "puntas rizadas"], imageUrls: ["https://2fast4buds.com/static/86c5729e925828464972e38209867512/82260/marijuana-copper-deficiency-symptoms.jpg"] },
+                { id: "molibdeno_carencia", titulo: "Carencia de Molibdeno", tags: ["molibdeno", "bordes rosas", "hojas pálidas"], imageUrl: ["https://2fast4buds.com/static/568971f0088b90680a653f5383569472/82260/marijuana-molybdenum-deficiency-symptoms.jpg"] },
+                { id: "nitrógeno_exceso", titulo: "Exceso de Nitrógeno", tags: ["nitrógeno", "verde oscuro", "garra"], imageUrls: ["https://2fast4buds.com/static/58882895697669d6175e1104e768e82a/82260/marijuana-nitrogen-toxicity-symptoms.jpg"] },
+                { id: "luz_quemadura", titulo: "Quemadura por Luz", tags: ["luz", "blanqueamiento", "calor"], imageUrls: ["https://2fast4buds.com/static/30a38b695781a704e908993f4e2f4942/82260/marijuana-light-burn-symptoms.jpg"] },
+                { id: "calor_estres", titulo: "Estrés por Calor", tags: ["calor", "bordes serrados hacia arriba", "sequedad"], imageUrls: ["https://2fast4buds.com/static/c7028b18f509e5c9a29e160a28f80456/82260/marijuana-heat-stress-symptoms.jpg"] },
+                { id: "riego_exceso", titulo: "Exceso de Riego", tags: ["riego", "hojas pesadas", "caídas"], imageUrls: ["https://2fast4buds.com/static/005694723933f7c469f36f9064619717/82260/marijuana-overwatering-symptoms.jpg"] },
+                { id: "ph_fluctuacion", titulo: "Fluctuación de pH", tags: ["ph", "manchas aleatorias", "bloqueo"], imageUrls: ["https://2fast4buds.com/static/cc5567a505b266d6d45e54d89e5f5f4b/82260/marijuana-ph-fluctuations-symptoms.jpg"] },
+                { id: "nutrientes_quemadura", titulo: "Quemadura de Nutrientes", tags: ["nutes", "puntas quemadas", "ec alta"], imageUrls: ["https://2fast4buds.com/static/30a38b695781a704e908993f4e2f4942/82260/marijuana-nutrient-burn-symptoms.jpg"] },
+                { id: "moho_blanco", titulo: "Oídio / Moho Blanco", tags: ["hongo", "polvo blanco", "humedad"], imageUrls: ["https://2fast4buds.com/static/c7028b18f509e5c9a29e160a28f80456/82260/marijuana-white-powdery-mildew-symptoms.jpg"] },
+                { id: "araña_roja", titulo: "Araña Roja", tags: ["plaga", "puntos blancos", "telarañas"], imageUrls: ["https://2fast4buds.com/static/f562624d5500f40d34204859a848a604/82260/marijuana-spider-mites-symptoms.jpg"] }
             ];
 
             for (const m of muestras) {
