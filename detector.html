@@ -62,12 +62,18 @@
             transform: translateY(-3px);
         }
 
+        .celda-sintoma.seleccionada {
+            border-color: var(--p);
+            box-shadow: 0 0 20px var(--p);
+            background: rgba(57, 255, 20, 0.05);
+        }
+
         .celda-sintoma img {
             width: 100%;
             height: 100px;
             object-fit: cover;
             border-radius: 4px;
-            filter: grayscale(100%) brightness(0.7);
+            filter: grayscale(80%) brightness(0.8);
             transition: 0.3s;
         }
 
@@ -79,6 +85,9 @@
             margin: 8px 0 0 0;
             font-size: 0.8rem;
             color: #aaa;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
         }
 
         .celda-sintoma:hover p {
@@ -112,6 +121,7 @@
             border: 2px solid var(--p);
             border-radius: 10px;
             background: #000;
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.15);
             animation: aparece 0.5s ease-out;
         }
 
@@ -224,7 +234,8 @@
             projectId: "super-m-growshop",
             storageBucket: "super-m-growshop.firebasestorage.app",
             messagingSenderId: "851787326044",
-            appId: "1:851787326044:web:727818a787e52d9a19fc99"
+            appId: "1:851787326044:web:727818a787e52d9a19fc99",
+            measurementId: "G-KEPKJYST55"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -233,22 +244,42 @@
 
         // 🔌 CARGA DESDE FIRESTORE
         async function cargarBiblioteca() {
-            const querySnapshot = await getDocs(collection(db, "biblioteca_visual"));
-            bibliotecaVisual = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            renderizarGaleria(bibliotecaVisual);
+            const grilla = document.getElementById('grilla-sintomas');
+            grilla.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:var(--s);">Sincronizando con la base de datos de ADN...</p>`;
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "biblioteca_visual"));
+                if (querySnapshot.empty) {
+                    grilla.innerHTML = "<p style='grid-column: 1/-1; text-align:center; color:#555;'>No se encontraron muestras en el laboratorio...</p>";
+                    return;
+                }
+                bibliotecaVisual = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                renderizarGaleria(bibliotecaVisual);
+            } catch (error) {
+                console.error("Error cargando biblioteca:", error);
+                grilla.innerHTML = `<p style='grid-column: 1/-1; text-align:center; color:red;'>Error de conexión con el Oráculo.</p>`;
+            }
         }
 
         // 🖼️ RENDERIZADO DE GALERÍA DINÁMICA
         window.renderizarGaleria = (items) => {
             const grilla = document.getElementById('grilla-sintomas');
             grilla.innerHTML = "";
+            
+            if (items.length === 0) {
+                grilla.innerHTML = "<p style='grid-column: 1/-1; text-align:center; color:#555;'>No hay coincidencias para este patrón de ADN.</p>";
+                return;
+            }
+
             items.forEach(item => {
                 const celda = document.createElement('div');
                 celda.className = 'celda-sintoma';
                 celda.onclick = () => window.consultarOraculo(item.id);
+                // Atributo técnico para el buscador
+                celda.setAttribute('data-adn', (item.tags || []).join(','));
                 celda.innerHTML = `
                     <img src="${item.img}" alt="${item.titulo}">
                     <p>${item.titulo}</p>
@@ -259,67 +290,107 @@
 
         //  FILTRO POR ADN (TAGS)
         window.filtrarPorADN = () => {
-            const busqueda = document.getElementById('search-tags').value.toLowerCase();
+            const busqueda = document.getElementById('search-tags').value.toLowerCase().trim();
             if (!busqueda) return renderizarGaleria(bibliotecaVisual);
 
+            const terminos = busqueda.split(/\s+/);
             const filtrados = bibliotecaVisual.filter(item => {
-                // Busca en el array de tags o en el título
-                const matchTags = item.tags && item.tags.some(tag => tag.toLowerCase().includes(busqueda));
-                const matchTitulo = item.titulo.toLowerCase().includes(busqueda);
-                return matchTags || matchTitulo;
+                // Cruza el título y los tags del documento
+                const combinedAdn = [item.titulo, ...(item.tags || [])].join(' ').toLowerCase();
+                // Asegura que todos los términos buscados estén presentes (AND logic)
+                return terminos.every(term => combinedAdn.includes(term));
             });
             renderizarGaleria(filtrados);
         };
 
         // 🔮 MOTOR DE INFERENCIA (FIREBASE CLIENT)
         window.consultarOraculo = async (idDoc) => {
+            // Resaltar visualmente la selección
+            document.querySelectorAll('.celda-sintoma').forEach(el => el.classList.remove('seleccionada'));
+
             const panel = document.getElementById('panel-resultados');
             const contenido = document.getElementById('contenido-resultado');
             
             panel.classList.remove('hidden');
-            contenido.innerHTML = `<p class="loading">Sincronizando con Firestore...<br>Recuperando metadatos de transmutación para ID: ${idDoc}</p>`;
+            contenido.innerHTML = `<p class="loading">Analizando patrones bioquímicos...</p>`;
             window.scrollTo({ top: panel.offsetTop - 50, behavior: 'smooth' });
 
+            // 1. Obtener datos visuales de la caché local (Biblioteca Visual)
+            const visualData = bibliotecaVisual.find(item => item.id === idDoc);
+            
+            if (!visualData) {
+                contenido.innerHTML = `<p style="color:red;">Error: No se encontró la muestra en la base de datos local.</p>`;
+                return;
+            }
+
             try {
-                const docRef = doc(db, "biblioteca_visual", idDoc);
-                const docSnap = await getDoc(docRef);
+                // 2. Lógica de Correspondencia Técnica (Cross-Reference)
+                let diagId = visualData.id_diagnostico;
                 
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const fuentesHtml = data.fuentes ? data.fuentes.map((f, i) => 
-                        `<a href="${f}" target="_blank" class="fuente-link">F-[${i+1}] Base Técnica</a>`
-                    ).join('') : '';
+                // Lógica de "Cruce por Tags": Si no hay ID explícito, usamos el tag principal para buscar el diagnóstico
+                if (!diagId && visualData.tags && visualData.tags.length > 0) {
+                    diagId = visualData.tags[0];
+                }
 
+                let diagData = null;
+                if (diagId) {
+                    const diagRef = doc(db, "diagnosticos", diagId);
+                    const diagSnap = await getDoc(diagRef);
+                    if (diagSnap.exists()) {
+                        diagData = diagSnap.data();
+                    }
+                }
+
+                // Manejo de Error: Diagnóstico no mapeado aún
+                if (!diagData) {
                     contenido.innerHTML = `
-                        <h3 style="color: var(--p); text-align:center;">VERDICTO ALQUIMISTA: ${data.titulo}</h3>
-                        <hr border="1" color="#222">
-                        <div style="background:#1a1a1a; padding:15px; border-radius:5px; margin-top:15px;">
-                            <p style="color:var(--p); font-size:0.7rem; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">[ ADN VISUAL DETECTADO ]</p>
-                            <p style="font-size:0.85rem; color:#ccc;">${data.patrones || 'Sin descripción de patrones.'}</p>
-                            
-                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
-                                <div>
-                                    <p style="color:var(--s); font-size:0.6rem; font-weight:bold;">PH / EC (RANGOS)</p>
-                                    <p style="font-size:0.8rem;">${data.tecnico || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <p style="color:var(--s); font-size:0.6rem; font-weight:bold;">AMBIENTE (VPD/T)</p>
-                                    <p style="font-size:0.8rem;">${data.ambiente || 'N/A'}</p>
-                                </div>
-                            </div>
+                        <h3 style="color: var(--p); text-align:center;">🔍 MUESTRA IDENTIFICADA: ${visualData.titulo.toUpperCase()}</h3>
+                        <p style="text-align:center; color:var(--s); margin-top:20px; font-size:0.9rem; line-height:1.4;">
+                            Muestra visual identificada, pero los registros técnicos aún están en proceso de transmutación.
+                        </p>
+                    `;
+                    return;
+                }
 
-                            <p style="color:var(--p); border-top:1px solid #333; padding-top:10px; margin-top:15px;"><strong>TRANSMUTACIÓN RECOMENDADA:</strong><br>${data.solucion || 'Consultar con el Gran Alquimista.'}</p>
-                            
-                            <div style="margin-top:15px; border-top:1px solid #222; padding-top:10px;">
-                                <p style="font-size:0.6rem; color:#555;">FUENTES CONSULTADAS:</p>
-                                ${fuentesHtml}
+                // 3. Renderizado de la Ficha Técnica (Datos de Calle B)
+                const fuentesHtml = diagData.fuentes_bibliograficas ? diagData.fuentes_bibliograficas.map((f, i) => 
+                    `<a href="${f}" target="_blank" class="fuente-link">REF-[${i+1}] Protocolo Técnico</a>`
+                ).join('') : '';
+
+                contenido.innerHTML = `
+                    <h3 style="color: var(--p); text-align:center; margin-bottom: 20px;">🔮 VERDICTO: ${visualData.titulo.toUpperCase()}</h3>
+                    
+                    <div style="background:#111; padding:20px; border-radius:10px; border: 1px solid #222;">
+                        <div style="margin-bottom: 20px;">
+                            <p style="color:var(--p); font-size:0.7rem; font-weight:bold; letter-spacing:1px; margin-bottom:10px;">[ SINTOMATOLOGÍA Y PATRONES ]</p>
+                            <p style="font-size:0.95rem; color:#eee; line-height:1.6; font-family: sans-serif;">${visualData.patrones || 'Análisis de patrones visuales completado.'}</p>
+                        </div>
+                        
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom: 20px; border-top: 1px solid #222; padding-top: 20px;">
+                            <div>
+                                <p style="color:var(--s); font-size:0.65rem; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">RANGO TÉCNICO pH/EC</p>
+                                <p style="font-size:0.85rem; color: #ccc;">pH: ${diagData.ph_rango || 'N/A'} | EC: ${diagData.ec_rango || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p style="color:var(--s); font-size:0.65rem; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">OPTIMIZACIÓN AMBIENTAL</p>
+                                <p style="font-size:0.85rem; color: #ccc;">${diagData.ambiente_detalles || 'Valores estándar Alquimia'}</p>
                             </div>
                         </div>
-                    `;
-                }
+
+                        <div style="background: rgba(57, 255, 20, 0.05); padding: 15px; border-radius: 8px; border-left: 4px solid var(--p);">
+                            <p style="color:var(--p); font-size: 0.75rem; font-weight: bold; margin-bottom: 5px;">SOLUCIÓN ALQUIMISTA:</p>
+                            <p style="font-size:1rem; color:#fff; line-height: 1.5; font-family: sans-serif;">${diagData.solucion_alquimista || 'Consultar con el Gran Alquimista inmediatamente.'}</p>
+                        </div>
+                        
+                        <div style="margin-top:20px; border-top:1px solid #222; padding-top:15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <span style="font-size:0.6rem; color:#444;">EVIDENCIA BIBLIOGRÁFICA:</span>
+                            ${fuentesHtml}
+                        </div>
+                    </div>
+                `;
             } catch (error) {
-                console.error("Error en el Oráculo:", error);
-                contenido.innerHTML = `<p style="color:red;">Error al consultar la base de datos.</p>`;
+                console.error("Error en consulta cruzada:", error);
+                contenido.innerHTML = `<p style="color:red;">Error de conexión con la Gran Biblioteca de Diagnósticos.</p>`;
             }
         };
 
