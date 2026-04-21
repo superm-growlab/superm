@@ -18,7 +18,10 @@ exports.consultarOraculo = onCall({
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        generationConfig: { responseMimeType: "application/json" }
+    });
 
     const prompt = `
         Eres el Agente Inteligente de Super M Lab, experto botánico en cultivo de cannabis.
@@ -42,10 +45,8 @@ exports.consultarOraculo = onCall({
         const response = await result.response;
         const text = response.text();
         
-        // Extracción robusta: Gemini a veces rodea el JSON con texto o markdown
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error("La IA no devolvió un formato técnico válido.");
-        return JSON.parse(jsonMatch[0]);
+        // Con responseMimeType, el texto ya es un JSON válido
+        return JSON.parse(text);
 
     } catch (error) {
         logger.error("Error en Gemini AI:", error);

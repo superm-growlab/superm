@@ -244,6 +244,7 @@
         const db = getFirestore(app);
         const functions = getFunctions(app);
         const authInstance = getAuth(app);
+        const consultarOraculoFn = httpsCallable(functions, 'consultarOraculo');
         let bibliotecaVisual = [];
 
         // 🌐 CONFIGURACIÓN DE FUENTES MAESTRAS (Filtro de autoridad)
@@ -370,7 +371,6 @@
             } else {
                 try {
                     // 🔵 FLUJO INTELIGENCIA (Cloud Function)
-                    const consultarOraculoFn = httpsCallable(functions, 'consultarOraculo');
                     const result = await consultarOraculoFn({
                         titulo: item.titulo,
                         tags: item.tags || []
@@ -381,10 +381,10 @@
                     // 💾 AUTO-GUARDADO EN FIRESTORE
                     if (!hallazgo.error) {
                         const diagId = item.id_diagnostico || (item.tags && item.tags[0]);
-                        if (diagId) {
+                        if (diagId && authInstance.currentUser) {
                             await setDoc(doc(db, "diagnosticos", diagId), {
                                 ...hallazgo,
-                                usuarioId: authInstance.currentUser?.uid || 'system',
+                                usuarioId: authInstance.currentUser.uid,
                                 es_nuevo: false, // Se guarda como verificado para la próxima
                                 timestamp: serverTimestamp()
                             });
