@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Oráculo Alquimista | Super M Lab</title>
+    <link rel="shortcut icon" type="image/png" href="https://i.postimg.cc/rF9GqwGS/favicon.png">
+
     <style>
         :root {
             --p: #39ff14; /* Verde Neón */
@@ -227,9 +229,30 @@
             border-radius: 8px;
         }
         .btn-seed:hover { border-color: var(--p); color: var(--p); background: rgba(57, 255, 20, 0.05); }
+
+        /* Feedback de Carga Global */
+        #loader-global {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 5, 0.9); display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 30000;
+            backdrop-filter: blur(10px);
+        }
+        .spinner {
+            width: 50px; height: 50px; border: 4px solid rgba(188, 19, 254, 0.1);
+            border-top-color: var(--p); border-radius: 50%;
+            animation: spin 1s linear infinite; filter: drop-shadow(0 0 10px var(--p));
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @keyframes neon-blink { 0% { opacity:1; } 50% { opacity:0; } 100% { opacity:1; } }
     </style>
 </head>
 <body>
+
+    <div id="loader-global">
+        <div class="spinner"></div>
+        <p style="color: var(--p); margin-top: 15px; font-family: 'Courier New', monospace; letter-spacing: 2px; font-size: 0.8rem;">TRANSMUTANDO DATOS...</p>
+    </div>
 
     <h1>🔬 ORÁCULO DETECTOR HÍBRIDO</h1>
 
@@ -328,7 +351,8 @@
                 celda.onclick = () => window.consultarOraculo(item.id, celda);
                 // Atributo técnico para el buscador
                 celda.setAttribute('data-adn', (item.tags || []).join(','));
-                const mainImg = (item.imageUrls && item.imageUrls.length > 0) ? item.imageUrls[0] : (item.img || '');
+                const fallbackIcon = "https://i.postimg.cc/rF9GqwGS/favicon.png";
+                const mainImg = (item.imageUrls && item.imageUrls.length > 0) ? item.imageUrls[0] : (item.img || fallbackIcon);
                 celda.innerHTML = `
                     <img src="${mainImg}" alt="${item.titulo}" 
                          onerror='window.handleImageError(this)'
@@ -381,6 +405,8 @@
             document.querySelectorAll('.celda-sintoma').forEach(el => el.classList.remove('seleccionada'));
             if (elemento) elemento.classList.add('seleccionada');
 
+            window.mostrarLoader();
+
             const panel = document.getElementById('panel-resultados');
             const contenido = document.getElementById('contenido-resultado');
             
@@ -412,13 +438,16 @@
             } catch (error) {
                 console.error("Error en consulta cruzada:", error);
                 contenido.innerHTML = `<p style="color:red;">Error de conexión con la Gran Biblioteca de Diagnósticos.</p>`;
+            } finally {
+                window.ocultarLoader();
             }
         };
 
         // 🤖 AGENTE DE CONSULTA DINÁMICA
         window.ejecutarAgenteConsultor = async (item, diagExistente) => {
             const contenido = document.getElementById('contenido-resultado');
-            const initialImg = (item.imageUrls?.[0]) || item.img || 'https://placehold.co/400x300?text=SIN+IMAGEN';
+            const fallbackIcon = "https://i.postimg.cc/rF9GqwGS/favicon.png";
+            const initialImg = (item.imageUrls?.[0]) || item.img || fallbackIcon;
             
             // 1. RENDERIZADO INMEDIATO (Muestra la tarjeta vacía mientras carga la IA)
             contenido.innerHTML = `
@@ -532,6 +561,7 @@
 
         // 📸 LÓGICA DE PROCESAMIENTO DE IMAGEN USUARIO
         window.procesarImagenUsuario = (event) => {
+            window.mostrarLoader();
             const file = event.target.files[0];
             if (!file) return;
 
@@ -559,6 +589,7 @@
                     // Simulación: La IA detecta que tu foto se parece a "calcio_carencia"
                     // En un sistema real, pasaríamos el base64 a Gemini Vision.
                     window.consultarOraculo("calcio_carencia");
+                    window.ocultarLoader();
                 }, 2500);
             };
             reader.readAsDataURL(file);
@@ -571,6 +602,10 @@
             window.renderizarGaleria(bibliotecaVisual);
             window.scrollTo(0, 0);
         };
+
+        // Loader Helpers
+        window.mostrarLoader = () => { document.getElementById('loader-global').style.display = 'flex'; };
+        window.ocultarLoader = () => { document.getElementById('loader-global').style.display = 'none'; };
 
         // Inicio
         cargarBiblioteca();

@@ -41,7 +41,7 @@ exports.consultarOraculo = onCall({
           "solucion_alquimista": "instrucciones técnicas paso a paso para corregir el problema",
           "fuente": "fuente técnica principal consultada"
         }
-        No incluyas explicaciones fuera del JSON ni bloques de código markdown. No devuelvas ningún enlace web o URL estática en los campos del JSON.
+        No incluyas explicaciones fuera del JSON ni bloques de código markdown (como ```json ... ```). No devuelvas ningún enlace web o URL estática en los campos del JSON.
     `;
 
     try {
@@ -53,9 +53,11 @@ exports.consultarOraculo = onCall({
         const response = await result.response;
         const text = response.text();
         
+        // Limpieza de posibles bloques de código markdown que Gemini suele añadir
+        const cleanJson = text.replace(/```json/g, "").replace(/```/g, "").trim();
         let diagnosis;
         try {
-            diagnosis = JSON.parse(text);
+            diagnosis = JSON.parse(cleanJson);
         } catch (e) {
             throw new Error("El Oráculo devolvió un formato de datos ilegible.");
         }
@@ -74,18 +76,13 @@ exports.consultarOraculo = onCall({
                 throw new Error("Faltan credenciales de búsqueda (Key o CX).");
             }
 
-            // Refinamos la búsqueda: Quitamos términos que puedan confundir y usamos un formato más global
-            const queryLimpia = titulo.replace(/Carencia de /gi, "").replace(/Exceso de /gi, "");
-            
             const searchRes = await customsearch.cse.list({
                 auth: process.env.GOOGLE_SEARCH_API_KEY,
                 cx: process.env.CUSTOM_SEARCH_ID,
-                q: `${queryLimpia} cannabis leaf deficiency symptoms technical guide`,
+                q: `${titulo} cannabis`,
                 searchType: "image",
                 num: 1,
                 safe: "active",
-                imgSize: "medium",
-                imgType: "photo"
             });
 
             if (searchRes.data.items && searchRes.data.items.length > 0) {
