@@ -1,5 +1,5 @@
 const { setGlobalOptions } = require("firebase-functions");
-const { onCall } = require("firebase-functions/v2/https");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { google } = require("googleapis");
 const logger = require("firebase-functions/logger");
@@ -17,13 +17,17 @@ exports.consultarOraculo = onCall({
 
     if (!titulo) {
         logger.error("Consulta fallida: Título ausente");
-        throw new Error("El título de la muestra es obligatorio.");
+        throw new HttpsError("invalid-argument", "El título de la muestra es obligatorio.");
+    }
+
+    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.length < 20) {
+        throw new HttpsError("unauthenticated", "La clave GEMINI_API_KEY no está configurada o es inválida.");
     }
 
     const tagsText = Array.isArray(tags) && tags.length > 0 ? tags.join(", ") : "sin etiquetas";
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-flash-latest",
+        model: "gemini-1.5-flash",
         generationConfig: { responseMimeType: "application/json" }
     });
 
@@ -41,26 +45,23 @@ exports.consultarOraculo = onCall({
           "solucion_alquimista": "instrucciones técnicas paso a paso para corregir el problema",
           "fuente": "fuente técnica principal consultada"
         }
-        No incluyas explicaciones fuera del JSON ni bloques de código markdown (como ```json ... ```). No devuelvas ningún enlace web o URL estática en los campos del JSON.
+        No incluyas explicaciones fuera del JSON ni bloques de código markdown (como \` \` \`json ... \` \` \`). No devuelvas ningún enlace web o URL estática en los campos del JSON.
     `;
 
     try {
-        if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.length < 10) {
-            throw new Error("La clave GEMINI_API_KEY no está configurada o es demasiado corta.");
-        }
-
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
         
-        // Limpieza de posibles bloques de código markdown que Gemini suele añadir
-        const cleanJson = text.replace(/```json/g, "").replace(/```/g, "").trim();
+        // Extracción robusta de JSON mediante Regex para evitar texto basura de la IA
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
         let diagnosis;
-        try {
-            diagnosis = JSON.parse(cleanJson);
-        } catch (e) {
-            throw new Error("El Oráculo devolvió un formato de datos ilegible.");
+
+        if (!jsonMatch) {
+            throw new HttpsError("internal", "El Oráculo devolvió un formato de datos ilegible. Intenta de nuevo.");
         }
+        
+        diagnosis = JSON.parse(jsonMatch[0]);
 
         // Limpieza de campos para evitar undefined en el cliente
         diagnosis.ph_rango = diagnosis.ph_rango || "6.0 - 6.5";
@@ -72,8 +73,8 @@ exports.consultarOraculo = onCall({
         // 🔎 BÚSQUEDA DINÁMICA DE IMÁGENES (Google Search API)
         let url_imagen = "https://i.postimg.cc/rF9GqwGS/favicon.png"; // Imagen genérica de respaldo
         try {
-            if (!process.env.GOOGLE_SEARCH_API_KEY || !process.env.CUSTOM_SEARCH_ID) {
-                throw new Error("Faltan credenciales de búsqueda (Key o CX).");
+            if (!process.env.GOOGLE_SEARCH_API_KEY || !process.env.CUSTOM_SEARCH_ID || process.env.GOOGLE_SEARCH_API_KEY.length < 20) {
+                throw new HttpsError("unauthenticated", "Faltan credenciales de búsqueda de Google (API Key o CX ID).");
             }
 
             const searchRes = await customsearch.cse.list({
@@ -98,9 +99,12 @@ exports.consultarOraculo = onCall({
         return { ...diagnosis, url_imagen };
 
     } catch (error) {
-        logger.error("Fallo crítico en el Oráculo:", error);
-        return {
-            error: `Error de transmutación: ${error.message}`
-        };
+        logger.error("Fallo crítico en el Oráculo:", error); // Log completo del error
+        if (error instanceof HttpsError) {
+            throw error; // Propagar HttpsError directamente al cliente
+        } else {
+            // Para errores inesperados, devolver un HttpsError genérico
+            throw new HttpsError("internal", `Un error inesperado ocurrió en el Oráculo: ${error.message}`);
+        }
     }
 });
