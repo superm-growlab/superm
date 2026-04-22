@@ -52,7 +52,13 @@ exports.consultarOraculo = onCall({
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
-        const diagnosis = JSON.parse(text);
+        
+        let diagnosis;
+        try {
+            diagnosis = JSON.parse(text);
+        } catch (e) {
+            throw new Error("El Oráculo devolvió un formato de datos ilegible.");
+        }
 
         // Limpieza de campos para evitar undefined en el cliente
         diagnosis.ph_rango = diagnosis.ph_rango || "6.0 - 6.5";
