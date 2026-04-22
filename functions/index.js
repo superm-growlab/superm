@@ -27,7 +27,7 @@ exports.consultarOraculo = onCall({
     const tagsText = Array.isArray(tags) && tags.length > 0 ? tags.join(", ") : "sin etiquetas";
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
+        model: "gemini-flash-latest",
         generationConfig: { responseMimeType: "application/json" }
     });
 
@@ -45,7 +45,7 @@ exports.consultarOraculo = onCall({
           "solucion_alquimista": "instrucciones técnicas paso a paso para corregir el problema",
           "fuente": "fuente técnica principal consultada"
         }
-        No incluyas explicaciones fuera del JSON ni bloques de código markdown (como \` \` \`json ... \` \` \`). No devuelvas ningún enlace web o URL estática en los campos del JSON.
+        IMPORTANTE: Devuelve ÚNICAMENTE el objeto JSON puro. No incluyas bloques de código markdown (como \` \` \`json). No devuelvas enlaces web en los campos de texto.
     `;
 
     try {
@@ -61,7 +61,12 @@ exports.consultarOraculo = onCall({
             throw new HttpsError("internal", "El Oráculo devolvió un formato de datos ilegible. Intenta de nuevo.");
         }
         
-        diagnosis = JSON.parse(jsonMatch[0]);
+        try {
+            diagnosis = JSON.parse(jsonMatch[0]);
+        } catch (parseError) {
+            logger.error("Error parseando JSON de la IA:", text);
+            throw new HttpsError("internal", "Error en la estructura de datos del Oráculo.");
+        }
 
         // Limpieza de campos para evitar undefined en el cliente
         diagnosis.ph_rango = diagnosis.ph_rango || "6.0 - 6.5";
@@ -80,10 +85,10 @@ exports.consultarOraculo = onCall({
             const searchRes = await customsearch.cse.list({
                 auth: process.env.GOOGLE_SEARCH_API_KEY,
                 cx: process.env.CUSTOM_SEARCH_ID,
-                q: `${titulo} cannabis`,
+                q: `${titulo} cannabis deficiency leaf symptom`,
                 searchType: "image",
                 num: 1,
-                safe: "active",
+                safe: "high",
             });
 
             if (searchRes.data.items && searchRes.data.items.length > 0) {

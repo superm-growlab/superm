@@ -352,7 +352,13 @@
                 // Atributo técnico para el buscador
                 celda.setAttribute('data-adn', (item.tags || []).join(','));
                 const fallbackIcon = "https://i.postimg.cc/rF9GqwGS/favicon.png";
-                const mainImg = (item.imageUrls && item.imageUrls.length > 0) ? item.imageUrls[0] : (item.img || fallbackIcon);
+                let mainImg = (item.imageUrls && item.imageUrls.length > 0) ? item.imageUrls[0] : (item.img || fallbackIcon);
+
+                // Filtrar URLs técnicas de Firestore que no son imágenes
+                if (typeof mainImg === 'string' && mainImg.includes("firestore.googleapis.com")) {
+                    mainImg = fallbackIcon;
+                }
+
                 celda.innerHTML = `
                     <img src="${mainImg}" alt="${item.titulo}" 
                          onerror='window.handleImageError(this)'
