@@ -154,16 +154,16 @@ function renderDiarioCard(container, data) {
     if (!plantCard) {
         plantCard = document.createElement('div');
         plantCard.id = safeId; plantCard.className = 'tarjeta-expediente';
-        plantCard.style.cssText = 'background: #0a0a0a; border: 2px solid var(--s); border-radius: 18px; padding: 20px; color: #fff; margin-bottom:20px;';
+        plantCard.style.cssText = 'background: #0a0a0a; border: 2px solid var(--s); border-radius: 18px; padding: 15px; color: #fff; margin-bottom:20px; max-width:100%; box-sizing:border-box;';
         plantCard.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--p); padding-bottom:10px; margin-bottom:15px;">
-                <h3 style="margin:0; color: var(--p); font-size:1.1rem;">🧪 SEGUIMIENTO: ${nombrePlanta.toUpperCase()}</h3>
+                <h3 style="margin:0; color: var(--p); font-size:1rem;">🧪 SEGUIMIENTO: ${nombrePlanta.toUpperCase()}</h3>
                 <div style="display:flex; gap:8px;">
                     <button class="btn btn-m" style="font-size:0.6rem; border-color:var(--p); color:var(--p);" onclick="window.cargarRegistroEnFormulario('${dataJson}')">AÑADIR SEMANA</button>
                     <button class="btn btn-m" style="font-size:0.6rem; border-color:#ff4444; color:#ff4444;" onclick="window.eliminarSeguimiento('${nombrePlanta.replace(/'/g, "\\'")}')">ELIMINAR TODO</button>
                 </div>
             </div>
-            <div style="overflow-x:auto;"><table class="tabla-historial-diario"><thead><tr><th>FECHA</th><th>SEM</th><th>ETAPA</th><th>PH</th><th>EC</th><th>TEMP</th><th>HUM</th><th>FOTO</th><th>ORÁCULO</th><th>OBSERVACIONES</th><th></th></tr></thead><tbody class="plant-history-body"></tbody></table></div>`;
+            <div style="overflow-x:auto; width:100%; border-radius:8px;"><table class="tabla-historial-diario"><thead><tr><th>FECHA</th><th>SEM</th><th>ETAPA</th><th>PH</th><th>EC</th><th>TEMP</th><th>HUM</th><th>FOTO</th><th>ORÁCULO</th><th>OBSERVACIONES</th><th></th></tr></thead><tbody class="plant-history-body"></tbody></table></div>`;
         container.prepend(plantCard);
     }
     const tbody = plantCard.querySelector('.plant-history-body');
@@ -171,7 +171,9 @@ function renderDiarioCard(container, data) {
     const imgHtml = data.imageUrls?.length > 0 ? `<img src="${data.imageUrls[0]}" style="width:35px; height:35px; object-fit:cover; border-radius:6px;" onclick="window.verImagenAmpliada('${data.imageUrls[0]}')">` : 'N/A';
     
     const notasEscaped = (data.notas || '').replace(/'/g, "\\'").replace(/\n/g, ' ');
-    row.innerHTML = `<td>${data.fecha?.split(',')[0] || '---'}</td><td>S${data.semana || '1'}</td><td><span class="badge-etapa">${data.etapa || 'VEGE'}</span></td><td>${data.ph || '--'}</td><td>${data.ec || '--'}</td><td>${data.temp || '--'}°</td><td>${data.humedad || '--'}%</td><td>${imgHtml}</td><td><button class="btn btn-m" style="font-size:0.6rem; padding:4px; border-color:var(--p); color:var(--p);" onclick="window.abrirReporteAlquimia('${encodeURIComponent(JSON.stringify(data))}')">🔮 REPORTE</button></td><td onclick="window.verNotasCompletas('${notasEscaped}', 'OBSERVACIONES - ${nombrePlanta.toUpperCase()}')" style="font-size:0.6rem; max-width:80px; overflow:hidden; text-overflow:ellipsis; cursor:pointer; color:var(--p); text-decoration:underline;">${data.notas || ''}</td><td><button onclick="window.eliminarRegistroDiario('${data.id}', this.closest('tr'))" style="background:none; border:none; color:#ff4444; cursor:pointer;">✕</button></td>`;
+    const imgUrlsJson = JSON.stringify(data.imageUrls || []).replace(/"/g, '&quot;');
+
+    row.innerHTML = `<td>${data.fecha?.split(',')[0] || '---'}</td><td>S${data.semana || '1'}</td><td><span class="badge-etapa">${data.etapa || 'VEGE'}</span></td><td>${data.ph || '--'}</td><td>${data.ec || '--'}</td><td>${data.temp || '--'}°</td><td>${data.humedad || '--'}%</td><td>${imgHtml}</td><td><button class="btn btn-m" style="font-size:0.6rem; padding:4px; border-color:var(--p); color:var(--p);" onclick="window.abrirReporteAlquimia('${encodeURIComponent(JSON.stringify(data))}')">🔮 REPORTE</button></td><td onclick="window.verNotasCompletas('${notasEscaped}', 'OBSERVACIONES - ${nombrePlanta.toUpperCase()}', ${imgUrlsJson})" style="font-size:0.6rem; max-width:80px; overflow:hidden; text-overflow:ellipsis; cursor:pointer; color:var(--p); text-decoration:underline;">${data.notas || ''}</td><td><button onclick="window.eliminarRegistroDiario('${data.id}', this.closest('tr'))" style="background:none; border:none; color:#ff4444; cursor:pointer;">✕</button></td>`;
     tbody.appendChild(row);
 }
 
@@ -181,7 +183,8 @@ function renderAnotacionCard(container, data) {
     card.style.borderLeft = '4px solid var(--s)';
     const isCalc = ['Nutrición', 'Energía', 'Sustrato', 'Clima (VPD)', 'Análisis pH/EC'].includes(data.nombre);
     const displayText = data.resultado?.length > 120 ? data.resultado.substring(0, 120) + "..." : data.resultado;
-    card.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:start;"><div><span style="color:var(--p); font-size:0.7rem; font-weight:bold;">${isCalc ? '📊 CÁLCULO' : '📝 NOTA'}</span><div style="color:var(--s); font-size:0.6rem; font-weight:bold; text-transform:uppercase;">${data.nombre}</div></div><button onclick="window.eliminarAnotacion('${data.id}')" style="background:none; border:none; color:#ff4444; cursor:pointer;">✕</button></div><div class="anotacion-content-wrapper" style="font-size:0.75rem; color:#eee; margin-top:10px;">${displayText}</div><button class="btn btn-m" style="width:100%; font-size:0.6rem; padding:4px; border-color:var(--p); color:var(--p); margin-top:auto;" onclick="window.verNotasCompletas(decodeURIComponent('${encodeURIComponent(data.resultado)}'))">🔍 VER COMPLETO</button>`;
+    const imgUrlsJson = JSON.stringify(data.imageUrls || []).replace(/"/g, '&quot;');
+    card.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:start;"><div><span style="color:var(--p); font-size:0.7rem; font-weight:bold;">${isCalc ? '📊 CÁLCULO' : '📝 NOTA'}</span><div style="color:var(--s); font-size:0.6rem; font-weight:bold; text-transform:uppercase;">${data.nombre}</div></div><button onclick="window.eliminarAnotacion('${data.id}')" style="background:none; border:none; color:#ff4444; cursor:pointer;">✕</button></div><div class="anotacion-content-wrapper" style="font-size:0.75rem; color:#eee; margin-top:10px;">${displayText}</div><button class="btn btn-m" style="width:100%; font-size:0.6rem; padding:4px; border-color:var(--p); color:var(--p); margin-top:auto;" onclick="window.verNotasCompletas(decodeURIComponent('${encodeURIComponent(data.resultado)}'), '${data.nombre}', ${imgUrlsJson})">🔍 VER COMPLETO</button>`;
     container.appendChild(card);
 }
 

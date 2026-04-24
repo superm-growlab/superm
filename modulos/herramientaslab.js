@@ -194,13 +194,16 @@ export function toggleZoom() {
     }
 }
 
-export function verNotasCompletas(texto, titulo) {
+export function verNotasCompletas(texto, titulo, imagenes = []) {
     const modal = document.getElementById('modal-visor-texto');
     const display = document.getElementById('texto-completo-visor');
     const head = document.getElementById('visor-texto-titulo');
+    const imgCont = document.getElementById('visor-imagenes-contenedor');
+
     if (modal && display) {
         if (head && titulo) head.innerText = titulo;
         display.innerText = texto;
+        if (imgCont) imgCont.innerHTML = (imagenes && imagenes.length > 0) ? window.renderGalería(imagenes) : "";
         modal.style.display = 'flex';
     }
 }
