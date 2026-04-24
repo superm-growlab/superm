@@ -186,8 +186,7 @@ function renderDiarioCard(container, data) {
         <td data-label="OBSERVACIONES" onclick="window.verNotasCompletas('${notasEscaped}', 'OBSERVACIONES - ${nombrePlanta.toUpperCase()}', ${imgUrlsJson})" style="font-size:0.6rem; cursor:pointer; color:var(--p); text-decoration:underline;">${data.notas || 'VER'}</td>
         <td data-label="ACCION"><button onclick="window.eliminarRegistroDiario('${data.id}', this.closest('tr'))" style="background:none; border:none; color:#ff4444; cursor:pointer;">✕ ELIMINAR</button></td>
     `;
-    tbody.appendChild(row);
-}
+    tbody.
 
 function renderAnotacionCard(container, data) {
     const card = document.createElement('div');
