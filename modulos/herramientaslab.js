@@ -34,6 +34,9 @@ let lastKwhCalculated = 0; // Para calculadora de luz
 window.lastSustratoTipo = null; // Para calculadora de sustrato
 window.bibliotecaVisual = [];
 
+// Configuración de Rutas para el Detector (Oráculo)
+const ORACULO_IMG_FALLBACK = "https://i.postimg.cc/rF9GqwGS/favicon.png";
+
 // Estado del visor de imágenes para panning
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
@@ -865,10 +868,10 @@ export function renderizarGaleriaOraculo(items = []) {
     items.forEach(item => {
         const celda = document.createElement('div');
         celda.className = 'celda-sintoma';
-        celda.style.border = "1px solid #222";
+        celda.style.border = "1px solid #222"; // Asegura aislamiento visual
         celda.onclick = () => window.consultarMuestraOraculo(item.id, celda);
         // Mostrar la última imagen (la más reciente de Google) o el favicon de respaldo
-        const mainImg = (item.imageUrls && item.imageUrls.length > 0) ? item.imageUrls[item.imageUrls.length - 1] : "https://i.postimg.cc/rF9GqwGS/favicon.png";
+        const mainImg = (item.imageUrls && item.imageUrls.length > 0) ? item.imageUrls[item.imageUrls.length - 1] : ORACULO_IMG_FALLBACK;
         celda.innerHTML = `
             <img src="${mainImg}" alt="${item.titulo}" style="width:100%; height:80px; object-fit:cover; border-radius:4px; display:block; filter: grayscale(0);" onerror='window.handleImageErrorOraculo(this)' loading="lazy">
             <p>${item.titulo}</p>`;
@@ -924,7 +927,7 @@ export async function consultarMuestraOraculo(idDoc, elemento = null) {
 
 export async function ejecutarAgenteConsultor(item, diagExistente) {
     const contenido = document.getElementById('contenido-resultado-oraculo');
-    const initialImg = (item.imageUrls?.[0]) || item.img || "https://i.postimg.cc/rF9GqwGS/favicon.png";
+    const initialImg = (item.imageUrls?.[0]) || item.img || ORACULO_IMG_FALLBACK;
     
     contenido.innerHTML = `
         <div class="split-diagnostico">
@@ -955,7 +958,7 @@ export async function ejecutarAgenteConsultor(item, diagExistente) {
         if (diagExistente) {
             hallazgo = { ...diagExistente };
         } else {
-            const consultarOraculoFn = httpsCallable(functions, 'consultarOraculo');
+            const consultarOraculoFn = httpsCallable(window.functions, 'consultarOraculo');
             const result = await consultarOraculoFn({ titulo: item.titulo, tags: item.tags || [] });
             hallazgo = result.data;
             if (!hallazgo) throw new Error("El Oráculo no devolvió datos válidos.");
@@ -965,7 +968,11 @@ export async function ejecutarAgenteConsultor(item, diagExistente) {
                 await setDoc(doc(db, "diagnosticos", diagId), { ...hallazgo, timestamp: serverTimestamp() });
             }
         }
-        document.getElementById('diag-img-principal-oraculo').src = hallazgo.url_imagen || initialImg;
+        
+        // Verificación de existencia antes de asignar (Evita errores si el usuario cambió de pestaña)
+        const imgPrincipal = document.getElementById('diag-img-principal-oraculo');
+        if(imgPrincipal) imgPrincipal.src = hallazgo.url_imagen || initialImg;
+        
         document.getElementById('ai-solucion-text-oraculo').innerText = hallazgo.solucion_alquimista;
         document.getElementById('ai-ph-val-oraculo').innerText = hallazgo.ph_rango || "N/A";
         document.getElementById('ai-ec-val-oraculo').innerText = hallazgo.ec_rango || "N/A";

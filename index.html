@@ -980,13 +980,13 @@
                 </div>
                 <div style="grid-column: span 2;">
                     <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Fotos</label>
-                    <input type="file" id="diario-imagenes" class="input-lab" accept="image/*" multiple style="width:100%; border-color: var(--s); color:#fff; background: transparent; padding: 6px 12px;" onchange="mostrarPrevisualizacionDiario()" />
+                    <input type="file" id="diario-imagenes" class="input-lab" accept="image/*" multiple style="width:100%; border-color: var(--s); color:#fff; background: transparent; padding: 6px 12px;" onchange="window.mostrarPrevisualizacionDiario()" />
                     <div id="diario-imagenes-preview" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;"></div>
                 </div>
             </div>
             <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
-                <button class="btn btn-v" style="flex:1; min-width:160px;" onclick="guardarRegistroDiario()">💾 Guardar registro</button>
-                <button class="btn btn-m" style="flex:1; min-width:160px;" onclick="ocultarFormularioDiario()">Cancelar</button>
+                <button class="btn btn-v" style="flex:1; min-width:160px;" onclick="window.guardarRegistroDiario()">💾 Guardar registro</button>
+                <button class="btn btn-m" style="flex:1; min-width:160px;" onclick="window.ocultarFormularioDiario()">Cancelar</button>
             </div>
         </div>
     </div>
@@ -1279,9 +1279,9 @@
                     </table>
                 </div>
                 <div style="margin-top:20px; display:flex; gap:10px; flex-wrap: wrap;">
-                    <button class="btn btn-v" onclick="nuevaFila()">+ Fila</button>
-                    <button class="btn btn-m" onclick="descargarImagen()">📸 descargar</button>
-                    <button class="btn btn-m" style="border-color:#ff4444; color:#ff4444;" onclick="borrarTablas()">Reset</button>
+                    <button class="btn btn-v" onclick="window.nuevaFila()">+ Fila</button>
+                    <button class="btn btn-m" onclick="window.descargarImagen()">📸 descargar</button>
+                    <button class="btn btn-m" style="border-color:#ff4444; color:#ff4444;" onclick="window.borrarTablas()">Reset</button>
                 </div>
             </div>
 
@@ -1304,27 +1304,27 @@
                     <h3 style="color:var(--p); font-size: 1rem; margin: 5px 0;">Mezcla Nutrientes</h3>
                     <p style="font-size: 0.7rem; color: #888; margin: 0;">Calcula los ml exactos para tu tanque de riego.</p>
                 </div>
-                <div class="tarjeta nota-card" onclick="verCalc('c-luz')">
+                <div class="tarjeta nota-card" onclick="window.verCalc('c-luz')">
                     <div class="nota-icon">⚡</div>
                     <h3 style="color:var(--p); font-size: 1rem; margin: 5px 0;">Gasto Eléctrico</h3>
                     <p style="font-size: 0.7rem; color: #888; margin: 0;">Estima el consumo mensual de tus equipos.</p>
                 </div>
-                <div class="tarjeta nota-card" onclick="verCalc('c-sustrato')">
+                <div class="tarjeta nota-card" onclick="window.verCalc('c-sustrato')">
                     <div class="nota-icon">📦</div>
                     <h3 style="color:var(--p); font-size: 1rem; margin: 5px 0;">Armado Sustrato</h3>
                     <p style="font-size: 0.7rem; color: #888; margin: 0;">Mezclas ideales según volumen de maceta.</p>
                 </div>
-                <div class="tarjeta nota-card" onclick="verCalc('vpd-container')">
+                <div class="tarjeta nota-card" onclick="window.verCalc('vpd-container')">
                     <div class="nota-icon">🌡️</div>
                     <h3 style="color:var(--p); font-size: 1rem; margin: 5px 0;">Equilibrio VPD</h3>
                     <p style="font-size: 0.7rem; color: #888; margin: 0;">Sincroniza clima para máxima absorción.</p>
                 </div>
-                <div class="tarjeta nota-card" onclick="verCalc('c-diagnostico')">
+                <div class="tarjeta nota-card" onclick="window.verCalc('c-diagnostico')">
                     <div class="nota-icon">👁️</div>
                     <h3 style="color:var(--p); font-size: 1rem; margin: 5px 0;">Análisis pH/EC</h3>
                     <p style="font-size: 0.7rem; color: #888; margin: 0;">Detecta bloqueos y excesos de nutrientes.</p>
                 </div>
-                <div class="tarjeta nota-card" onclick="verCalc('c-oraculo')">
+                <div class="tarjeta nota-card" onclick="window.verCalc('c-oraculo')">
                     <div class="nota-icon">🔮</div>
                     <h3 style="color:var(--p); font-size: 1rem; margin: 5px 0;">Detector de Carencias y Excesos</h3>
                     <p style="font-size: 0.7rem; color: #888; margin: 0;">Diagnóstico botánico avanzado por visión.</p>
@@ -1345,16 +1345,16 @@
                                     <div style="display: flex; gap: 15px; margin-top: 8px; margin-bottom: 15px; align-items: center;">
                                         <!-- Botones de presets apilados verticalmente -->
                                         <div style="display: flex; flex-direction: column; gap: 4px;">
-                                            <button class="btn btn-m quick-selector-btn" style="padding: 2px 10px; font-size: 0.6rem; min-width: 55px;" onclick="setMezclaLitros(4)">4L</button>
-                                            <button class="btn btn-m quick-selector-btn" style="padding: 2px 10px; font-size: 0.6rem; min-width: 55px;" onclick="setMezclaLitros(10)">10L</button>
-                                            <button class="btn btn-m quick-selector-btn" style="padding: 2px 10px; font-size: 0.6rem; min-width: 55px;" onclick="setMezclaLitros(20)">20L</button>
+                                            <button class="btn btn-m quick-selector-btn" style="padding: 2px 10px; font-size: 0.6rem; min-width: 55px;" onclick="window.setMezclaLitros(4)">4L</button>
+                                            <button class="btn btn-m quick-selector-btn" style="padding: 2px 10px; font-size: 0.6rem; min-width: 55px;" onclick="window.setMezclaLitros(10)">10L</button>
+                                            <button class="btn btn-m quick-selector-btn" style="padding: 2px 10px; font-size: 0.6rem; min-width: 55px;" onclick="window.setMezclaLitros(20)">20L</button>
                                         </div>
 
                                         <!-- Cuadro de entrada manual compacto -->
                                         <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
                                             <span style="font-size: 0.5rem; color: var(--s); font-weight: 900; letter-spacing: 1px; opacity: 0.7;">OTRO</span>
                                             <div style="display: flex; align-items: center; gap: 4px;">
-                                                <input type="number" id="m-litros-tacho" class="input-lab" value="10" style="width: 50px; height: 30px; border-color: var(--s); text-align: center; font-size: 0.9rem; padding: 0;" oninput="updateMezclaVolume()">
+                                                <input type="number" id="m-litros-tacho" class="input-lab" value="10" style="width: 50px; height: 30px; border-color: var(--s); text-align: center; font-size: 0.9rem; padding: 0;" oninput="window.updateMezclaVolume()">
                                                 <span style="font-size: 0.7rem; color: var(--p); font-weight: bold;">L</span>
                                             </div>
                                         </div>
@@ -1362,9 +1362,9 @@
                                     
                                     <label style="font-size:0.6rem; color:var(--s); letter-spacing: 1px; font-weight: bold; margin-bottom: 5px;">CANTIDAD DE TACHOS</label>
                                     <div class="qty-selector" style="height: 32px; width: 120px; margin-bottom: 0; display: flex; align-items: center; justify-content: center; overflow: visible;">
-                                        <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="changeQtyValue('m-tachos', -1); updateMezclaVolume()">-</button>
-                                        <input type="number" id="m-tachos" class="qty-input" value="1" min="1" style="width: 60px; flex: none; text-align: center; padding: 0; border-left: 1px solid #222; border-right: 1px solid #222; height: 100%;" oninput="updateMezclaVolume()">
-                                        <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="changeQtyValue('m-tachos', 1); updateMezclaVolume()">+</button>
+                                        <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="window.changeQtyValue('m-tachos', -1); window.updateMezclaVolume()">-</button>
+                                        <input type="number" id="m-tachos" class="qty-input" value="1" min="1" style="width: 60px; flex: none; text-align: center; padding: 0; border-left: 1px solid #222; border-right: 1px solid #222; height: 100%;" oninput="window.updateMezclaVolume()">
+                                        <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="window.changeQtyValue('m-tachos', 1); window.updateMezclaVolume()">+</button>
                                     </div>
                                 </div>
                                 <div id="display-volumen-total" style="width: 110px; height: 110px; border: 3px dashed var(--p); border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 0 15px rgba(57, 255, 20, 0.2); background: rgba(0,0,0,0.3); text-align: center;">
@@ -1388,15 +1388,15 @@
                                 <div style="width: 120px;">
                                     <label style="font-size:0.6rem; color:var(--s); letter-spacing: 1px; font-weight: bold; display: block; margin-bottom: 5px; text-align: center;">DOSIS (ml/L)</label>
                                     <div class="qty-selector" style="height: 32px; width: 120px; display: flex; align-items: center; justify-content: center; overflow: visible; margin: 0;">
-                                        <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="changeQtyValue('m-dosis', -1)">-</button>
+                                        <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="window.changeQtyValue('m-dosis', -1)">-</button>
                                         <input type="number" id="m-dosis" class="qty-input" value="2" step="0.5" style="width: 60px; flex: none; text-align: center; padding: 0; border-left: 1px solid #222; border-right: 1px solid #222; height: 100%;">
-                                        <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="changeQtyValue('m-dosis', 1)">+</button>
+                                        <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="window.changeQtyValue('m-dosis', 1)">+</button>
                                     </div>
                                 </div>
 
                                 <!-- Botón Añadir (Mismo tamaño que el selector) -->
                                 <div style="width: 120px;">
-                                    <button class="btn btn-m" style="width: 100%; height: 32px; border-color: var(--s); color: var(--s); font-size: 0.6rem; padding: 0; line-height: 1.1; font-weight: 900;" onclick="agregarAMezclaActual()">[ + AÑADIR ]</button>
+                                    <button class="btn btn-m" style="width: 100%; height: 32px; border-color: var(--s); color: var(--s); font-size: 0.6rem; padding: 0; line-height: 1.1; font-weight: 900;" onclick="window.agregarAMezclaActual()">[ + AÑADIR ]</button>
                                 </div>
                             </div>
                         </div>
@@ -1417,7 +1417,7 @@
                     <p style="font-size: 0.8rem; color: #888; text-align: center; margin-bottom: 20px;">Auditoría de consumo y eficiencia lumínica</p>
                     
                     <label style="font-size:0.7rem; color:#888; display: block; margin-bottom: 5px;">TECNOLOGÍA DE ILUMINACIÓN</label>
-                    <select id="l-tech" class="input-lab" style="width:100%; margin-bottom:12px; border-color:var(--p); height: 41px; padding: 0 10px;" onchange="calcLuz()">
+                    <select id="l-tech" class="input-lab" style="width:100%; margin-bottom:12px; border-color:var(--p); height: 41px; padding: 0 10px;" onchange="window.calcLuz()">
                         <option value="1.0">LED Alta Eficiencia / Quantum (1.0x)</option>
                         <option value="1.05">LED Modulares (Drivers Ext.) (1.05x)</option>
                         <option value="1.15">Galponeras / Driver Integrado (1.15x)</option>
@@ -1426,39 +1426,39 @@
 
                     <label style="font-size:0.7rem; color:#888; display: block; margin-bottom: 5px;">FASE DE CULTIVO (HORAS)</label>
                     <div class="selector-etapa" style="margin-bottom:12px;">
-                        <button class="etapa-btn active" id="fase-vege" style="font-size: 0.65rem;" onclick="setFaseLuz(18, this)">VEGETATIVO (18h)</button>
-                        <button class="etapa-btn" id="fase-flora" style="font-size: 0.65rem;" onclick="setFaseLuz(12, this)">FLORACIÓN (12h)</button>
+                        <button class="etapa-btn active" id="fase-vege" style="font-size: 0.65rem;" onclick="window.setFaseLuz(18, this)">VEGETATIVO (18h)</button>
+                        <button class="etapa-btn" id="fase-flora" style="font-size: 0.65rem;" onclick="window.setFaseLuz(12, this)">FLORACIÓN (12h)</button>
                     </div>
                     <input type="hidden" id="l-horas-fija" value="18">
 
                     <label style="font-size:0.7rem; color:#888; display: block; margin-bottom: 5px;">WATTS REALES DE LUMINARIA</label>
                     <div class="qty-selector" style="height: 41px; margin-bottom: 15px;">
-                        <button class="qty-btn" onclick="changeQtyValue('l-watts', -1); calcLuz()">-</button>
-                        <input type="number" id="l-watts" class="qty-input" value="200" min="0" step="50" oninput="calcLuz()">
-                        <button class="qty-btn" onclick="changeQtyValue('l-watts', 1); calcLuz()">+</button>
+                        <button class="qty-btn" onclick="window.changeQtyValue('l-watts', -1); window.calcLuz()">-</button>
+                        <input type="number" id="l-watts" class="qty-input" value="200" min="0" step="50" oninput="window.calcLuz()">
+                        <button class="qty-btn" onclick="window.changeQtyValue('l-watts', 1); window.calcLuz()">+</button>
                     </div>
 
                     <div style="margin-top:10px; border-top:1px solid #222; padding-top:12px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                             <label style="font-size:0.65rem; color:var(--s); font-weight:bold; letter-spacing: 1px;">OTROS CONSUMOS</label>
-                            <button class="btn btn-m" style="font-size:0.55rem; padding:4px 10px; border-color:var(--p); color:var(--p);" onclick="addComponenteConsumo()">+ AGREGAR APARATO</button>
+                            <button class="btn btn-m" style="font-size:0.55rem; padding:4px 10px; border-color:var(--p); color:var(--p);" onclick="window.addComponenteConsumo()">+ AGREGAR APARATO</button>
                         </div>
                         <div id="container-otros-consumos" style="display:flex; flex-direction:column; gap:10px;"></div>
                     </div>
 
                     <label style="font-size:0.7rem; color:#888; display:block; margin-top:15px; margin-bottom: 5px;">DURACIÓN DEL CÁLCULO (MESES)</label>
                     <div class="qty-selector" style="height: 41px;">
-                        <button class="qty-btn" onclick="changeQtyValue('l-meses', -1); calcLuz()">-</button>
-                        <input type="number" id="l-meses" class="qty-input" value="1" min="1" oninput="calcLuz()">
-                        <button class="qty-btn" onclick="changeQtyValue('l-meses', 1); calcLuz()">+</button>
+                        <button class="qty-btn" onclick="window.changeQtyValue('l-meses', -1); window.calcLuz()">-</button>
+                        <input type="number" id="l-meses" class="qty-input" value="1" min="1" oninput="window.calcLuz()">
+                        <button class="qty-btn" onclick="window.changeQtyValue('l-meses', 1); window.calcLuz()">+</button>
                     </div>
 
                     <div id="res-luz" class="lab-data-box" style="display:none; margin-top: 20px; border-left-color: var(--p);"></div>
                     
                     <!-- CONTENEDOR DE COMPARATIVA LIBRE -->
                     <div style="display: flex; gap: 10px; margin-top: 15px;">
-                        <button class="btn btn-v" style="flex: 1; font-size: 0.6rem; padding: 10px 5px; background: var(--s); color: #000;" onclick="fijarEscenarioA()">💾 GUARDAR Y COMPARAR</button>
-                        <button class="btn btn-m" style="flex: 1; font-size: 0.6rem; padding: 10px 5px; border-color: #ff3131; color: #ff3131; background: transparent;" onclick="reiniciarComparativa()">🔄 REINICIAR</button>
+                        <button class="btn btn-v" style="flex: 1; font-size: 0.6rem; padding: 10px 5px; background: var(--s); color: #000;" onclick="window.fijarEscenarioA()">💾 GUARDAR Y COMPARAR</button>
+                        <button class="btn btn-m" style="flex: 1; font-size: 0.6rem; padding: 10px 5px; border-color: #ff3131; color: #ff3131; background: transparent;" onclick="window.reiniciarComparativa()">🔄 REINICIAR</button>
                     </div>
                     <button id="btn-save-luz" class="btn btn-v" style="display:none; width:100%; margin-top:15px; font-size: 0.7rem;" onclick="window.prepararGuardadoCalculo('Energía')">💾 Guardar Auditoría en el Diario</button>
 
@@ -1492,14 +1492,14 @@
                                     <label style="font-size:0.6rem; color:var(--s); letter-spacing: 1px; font-weight: bold; margin-bottom: 5px;">LITROS POR MACETA</label>
                                     <div style="display: flex; gap: 15px; margin-top: 8px; margin-bottom: 15px; align-items: center;">
                                         <div style="display: flex; flex-direction: column; gap: 4px;">
-                                            <button class="btn btn-m quick-selector-btn-s" style="padding: 2px 10px; font-size: 0.6rem; min-width: 55px;" onclick="setSustratoLitros(3)">3L</button>
-                                            <button class="btn btn-m quick-selector-btn-s" style="padding: 2px 10px; font-size: 0.6rem; min-width: 55px;" onclick="setSustratoLitros(7)">7L</button>
-                                            <button class="btn btn-m quick-selector-btn-s" style="padding: 2px 10px; font-size: 0.6rem; min-width: 55px;" onclick="setSustratoLitros(10)">10L</button>
+                                            <button class="btn btn-m quick-selector-btn-s" style="padding: 2px 10px; font-size: 0.6rem; min-width: 55px;" onclick="window.setSustratoLitros(3)">3L</button>
+                                            <button class="btn btn-m quick-selector-btn-s" style="padding: 2px 10px; font-size: 0.6rem; min-width: 55px;" onclick="window.setSustratoLitros(7)">7L</button>
+                                            <button class="btn btn-m quick-selector-btn-s" style="padding: 2px 10px; font-size: 0.6rem; min-width: 55px;" onclick="window.setSustratoLitros(10)">10L</button>
                                         </div>
                                         <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
                                             <span style="font-size: 0.5rem; color: var(--s); font-weight: 900; letter-spacing: 1px; opacity: 0.7;">OTRO</span>
                                             <div style="display: flex; align-items: center; gap: 4px;">
-                                                <input type="number" id="s-capacidad" class="input-lab" value="10" style="width: 50px; height: 30px; border-color: var(--s); text-align: center; font-size: 0.9rem; padding: 0;" oninput="updateSustratoVolume()">
+                                                <input type="number" id="s-capacidad" class="input-lab" value="10" style="width: 50px; height: 30px; border-color: var(--s); text-align: center; font-size: 0.9rem; padding: 0;" oninput="window.updateSustratoVolume()">
                                                 <span style="font-size: 0.7rem; color: var(--p); font-weight: bold;">L</span>
                                             </div>
                                         </div>
@@ -1507,9 +1507,9 @@
                                     
                                     <label style="font-size:0.6rem; color:var(--s); letter-spacing: 1px; font-weight: bold; margin-bottom: 5px;">CANTIDAD DE MACETAS</label>
                                     <div class="qty-selector" style="height: 32px; width: 120px; margin-bottom: 0; display: flex; align-items: center; overflow: visible; box-sizing: border-box;">
-                                        <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem; box-sizing: border-box;" onclick="changeQtyValue('s-cantidad', -1); updateSustratoVolume()">-</button>
-                                        <input type="number" id="s-cantidad" class="qty-input" value="1" min="1" step="1" style="width: 60px; flex: none; text-align: center; padding: 0; border-left: 1px solid #222; border-right: 1px solid #222; height: 100%; box-sizing: border-box;" oninput="updateSustratoVolume()">
-                                        <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem; box-sizing: border-box;" onclick="changeQtyValue('s-cantidad', 1); updateSustratoVolume()">+</button>
+                                        <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem; box-sizing: border-box;" onclick="window.changeQtyValue('s-cantidad', -1); window.updateSustratoVolume()">-</button>
+                                        <input type="number" id="s-cantidad" class="qty-input" value="1" min="1" step="1" style="width: 60px; flex: none; text-align: center; padding: 0; border-left: 1px solid #222; border-right: 1px solid #222; height: 100%; box-sizing: border-box;" oninput="window.updateSustratoVolume()">
+                                        <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem; box-sizing: border-box;" onclick="window.changeQtyValue('s-cantidad', 1); window.updateSustratoVolume()">+</button>
                                     </div>
                                 </div>
                                 <div style="width: 110px; height: 110px; border: 3px dashed var(--p); border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 0 15px rgba(57, 255, 20, 0.2); background: rgba(0,0,0,0.3); text-align: center;">
@@ -1523,9 +1523,9 @@
                         <div class="panel-mezcla">
                             <span class="panel-title">ESTILO DE MEZCLA</span>
                             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                                <button class="btn btn-m" style="font-size: 0.65rem; padding: 10px 2px; border-color: var(--p); color: var(--p);" onclick="calcSustratoReceta('estandar')">⚖️ ESTÁNDAR</button>
-                                <button class="btn btn-m" style="font-size: 0.65rem; padding: 10px 2px; border-color: var(--s); color: var(--s);" onclick="calcSustratoReceta('auto')">🚀 AUTO</button>
-                                <button class="btn btn-m" style="font-size: 0.65rem; padding: 10px 2px; border-color: var(--p); color: var(--p);" onclick="calcSustratoReceta('organico')">🌿 BIO +</button>
+                                <button class="btn btn-m" style="font-size: 0.65rem; padding: 10px 2px; border-color: var(--p); color: var(--p);" onclick="window.calcSustratoReceta('estandar')">⚖️ ESTÁNDAR</button>
+                                <button class="btn btn-m" style="font-size: 0.65rem; padding: 10px 2px; border-color: var(--s); color: var(--s);" onclick="window.calcSustratoReceta('auto')">🚀 AUTO</button>
+                                <button class="btn btn-m" style="font-size: 0.65rem; padding: 10px 2px; border-color: var(--p); color: var(--p);" onclick="window.calcSustratoReceta('organico')">🌿 BIO +</button>
                             </div>
                         </div>
 
@@ -1540,7 +1540,7 @@
                     
                     <div style="margin-bottom: 15px;">
                         <label style="font-size:0.7rem; color:#888; display: block; margin-bottom: 5px;">ETAPA DE DESARROLLO</label>
-                        <select id="semana-vpd" class="input-tabla" onchange="actualizarVPD()" style="width:100%; background:#000; color:var(--p); border: 1px solid var(--p); padding: 10px; border-radius: 8px; font-weight: bold; height: 41px; box-sizing: border-box; outline: none; font-size: 0.8rem;">
+                        <select id="semana-vpd" class="input-tabla" onchange="window.actualizarVPD()" style="width:100%; background:#000; color:var(--p); border: 1px solid var(--p); padding: 10px; border-radius: 8px; font-weight: bold; height: 41px; box-sizing: border-box; outline: none; font-size: 0.8rem;">
                             <option value="1">Semana 1-2 (Plántula/Esqueje)</option>
                             <option value="3">Semana 3-4 (Vegetativo)</option>
                             <option value="5">Semana 5-7 (Flora Temprana)</option>
@@ -1552,17 +1552,17 @@
                         <div>
                             <label style="font-size:0.6rem; color:#888; display: block; margin-bottom: 5px; text-align: center; letter-spacing: 1px; font-weight: bold;">TEMP. AIRE °C</label>
                             <div class="qty-selector" style="height: 32px; width: 120px; margin: 0 auto; display: flex; align-items: center; justify-content: center; overflow: visible;">
-                                <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="changeQtyValue('temp-input', -1); actualizarVPD()">-</button>
-                                <input type="number" id="temp-input" class="qty-input" value="24" style="width: 60px; flex: none; text-align: center; padding: 0; border-left: 1px solid #222; border-right: 1px solid #222; height: 100%;" oninput="actualizarVPD();">
-                                <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="changeQtyValue('temp-input', 1); actualizarVPD()">+</button>
+                                <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="window.changeQtyValue('temp-input', -1); window.actualizarVPD()">-</button>
+                                <input type="number" id="temp-input" class="qty-input" value="24" style="width: 60px; flex: none; text-align: center; padding: 0; border-left: 1px solid #222; border-right: 1px solid #222; height: 100%;" oninput="window.actualizarVPD();">
+                                <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="window.changeQtyValue('temp-input', 1); window.actualizarVPD()">+</button>
                             </div>
                         </div>
                         <div>
                             <label style="font-size:0.6rem; color:#888; display: block; margin-bottom: 5px; text-align: center; letter-spacing: 1px; font-weight: bold;">HUMEDAD %</label>
                             <div class="qty-selector" style="height: 32px; width: 120px; margin: 0 auto; display: flex; align-items: center; justify-content: center; overflow: visible;">
-                                <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="changeQtyValue('hum-input', -1); actualizarVPD()">-</button>
-                                <input type="number" id="hum-input" class="qty-input" value="60" min="0" max="100" style="width: 60px; flex: none; text-align: center; padding: 0; border-left: 1px solid #222; border-right: 1px solid #222; height: 100%;" oninput="actualizarVPD();">
-                                <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="changeQtyValue('hum-input', 1); actualizarVPD()">+</button>
+                                <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="window.changeQtyValue('hum-input', -1); window.actualizarVPD()">-</button>
+                                <input type="number" id="hum-input" class="qty-input" value="60" min="0" max="100" style="width: 60px; flex: none; text-align: center; padding: 0; border-left: 1px solid #222; border-right: 1px solid #222; height: 100%;" oninput="window.actualizarVPD();">
+                                <button class="qty-btn" style="width: 30px; height: 100%; flex: none; font-size: 1rem;" onclick="window.changeQtyValue('hum-input', 1); window.actualizarVPD()">+</button>
                             </div>
                         </div>
                     </div>
@@ -1582,7 +1582,7 @@
 
                 <div style="margin-bottom: 20px;">
                     <label style="font-size:0.7rem; color:#888; display: block; margin-bottom: 5px;">SEMANA DE CULTIVO</label>
-                    <select id="semana-nutrientes" class="input-tabla" onchange="actualizarNutrientes()" style="width:100%; background:#000; color:var(--p); border: 1px solid var(--p); padding: 10px; border-radius: 8px; font-weight: bold; height: 41px; box-sizing: border-box; outline: none;">
+                    <select id="semana-nutrientes" class="input-tabla" onchange="window.actualizarNutrientes()" style="width:100%; background:#000; color:var(--p); border: 1px solid var(--p); padding: 10px; border-radius: 8px; font-weight: bold; height: 41px; box-sizing: border-box; outline: none;">
                         <option value="1">Semana 1 (Plántula)</option>
                         <option value="2">Semana 2 (Vegetativo Inicial)</option>
                         <option value="3">Semana 3 (Vegetativo)</option>
@@ -1609,7 +1609,7 @@
                             </div>
                             <div style="display: flex; align-items: center; background: #000; border: 1px solid var(--p); border-radius: 8px; overflow: hidden; height: 41px;">
                                 <button onclick="window.ajustarValorManual('diag-ec-val', -1)" type="button" style="background:transparent; color:var(--p); border:none; padding:0 15px; font-weight:bold; cursor:pointer; font-size:1.2rem;">-</button>
-                                <input type="number" id="diag-ec-val" value="1.2" step="0.1" oninput="actualizarNutrientes()" style="width:100%; background: transparent; border: none; color: var(--p); text-align: center; font-weight: bold; outline: none; appearance: none; margin:0;">
+                                <input type="number" id="diag-ec-val" value="1.2" step="0.1" oninput="window.actualizarNutrientes()" style="width:100%; background: transparent; border: none; color: var(--p); text-align: center; font-weight: bold; outline: none; appearance: none; margin:0;">
                                 <button onclick="window.ajustarValorManual('diag-ec-val', 1)" type="button" style="background:transparent; color:var(--p); border:none; padding:0 15px; font-weight:bold; cursor:pointer; font-size:1.2rem;">+</button>
                             </div>
                         </div>
@@ -1618,7 +1618,7 @@
                             <label style="font-size:0.7rem; color:#888; display: block; margin-bottom: 5px;">pH DEL RIEGO (0-14)</label>
                             <div style="display: flex; align-items: center; background: #000; border: 1px solid var(--p); border-radius: 8px; overflow: hidden; height: 41px;">
                                 <button onclick="window.ajustarValorManual('diag-ph', -1)" type="button" style="background:transparent; color:var(--p); border:none; padding:0 15px; font-weight:bold; cursor:pointer; font-size:1.2rem;">-</button>
-                                <input type="number" id="diag-ph" value="6.0" step="0.1" min="0" max="14" oninput="actualizarNutrientes()" style="width:100%; background: transparent; border: none; color: var(--p); text-align: center; font-weight: bold; outline: none; appearance: none; margin:0;">
+                                <input type="number" id="diag-ph" value="6.0" step="0.1" min="0" max="14" oninput="window.actualizarNutrientes()" style="width:100%; background: transparent; border: none; color: var(--p); text-align: center; font-weight: bold; outline: none; appearance: none; margin:0;">
                                 <button onclick="window.ajustarValorManual('diag-ph', 1)" type="button" style="background:transparent; color:var(--p); border:none; padding:0 15px; font-weight:bold; cursor:pointer; font-size:1.2rem;">+</button>
                             </div>
                         </div>
