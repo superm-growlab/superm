@@ -10,7 +10,7 @@
  * 3. Limpieza: Entregamos datos listos para mostrar ("Nombre" en lugar de "product_full_title_v2").
  */
 
-import { functions } from './modulos/firebase-config.js';
+import { functions } from '../modulos/firebase-config.js';
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 
 class AgenteCentral {
@@ -186,6 +186,6 @@ export const Agente = new AgenteCentral();
 /**
  * NOTA PARA EL USUARIO:
  * Para usar el Agente en tus otros archivos (.js), impórtalo así:
- * import { Agente } from './api/agente_central.js';
+ * import { Agente } from '../api/agente_central.js';
  * const productos = await Agente.tienda.obtenerProductos();
  */

@@ -25,7 +25,7 @@ import {
     deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { crearNotificacion } from './comunidad.js';
-import { Agente } from '../agente_central.js';
+import { Agente } from '../api/agente_central.js';
 
 const URL_SHEET_PRODUCTOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=0&single=true&output=tsv"; // Hoja 1: inventario (TSV)
 const URL_GAS_CHANGUITO = "https://script.google.com/macros/s/AKfycbzk6fUHwGdI4wCgL_ZPBuV_pXFuWiLsSRo3TxPKs_KCWRBzaU4-Aw8B0emmy7OBg9A/exec";
