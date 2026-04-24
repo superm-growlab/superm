@@ -26,8 +26,14 @@ exports.consultarOraculo = onCall({
 
     const tagsText = Array.isArray(tags) && tags.length > 0 ? tags.join(", ") : "sin etiquetas";
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+    // Log de seguridad para depuración (solo muestra los primeros 4 caracteres)
+    const keyPrefix = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(0, 4) : "null";
+    logger.info(`Invocando Oráculo. Prefijo de Key: ${keyPrefix}`);
+
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash-001", // Actualizado a un modelo flash específico y estable
+        model: "gemini-1.5-flash", 
+        model: "gemini-1.5-flash-latest", 
         generationConfig: { responseMimeType: "application/json" }
     });
 
@@ -52,7 +58,8 @@ exports.consultarOraculo = onCall({
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
-        
+        logger.info("Respuesta bruta del Oráculo:", text);
+
         // Extracción robusta de JSON mediante Regex para evitar texto basura de la IA
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         let diagnosis;
@@ -105,6 +112,11 @@ exports.consultarOraculo = onCall({
 
     } catch (error) {
         logger.error("Fallo crítico en el Oráculo:", error); // Log completo del error
+        
+        if (error.message && (error.message.includes("404") || error.message.includes("not found"))) {
+            throw new HttpsError("not-found", `El Oráculo no encontró el modelo. Verifica que la clave GEMINI_API_KEY sea correcta (debe empezar con 'AIza') y que la 'Generative Language API' esté habilitada.`);
+        }
+
         if (error instanceof HttpsError) {
             throw error; // Propagar HttpsError directamente al cliente
         } else {
