@@ -929,9 +929,15 @@ export async function ejecutarAgenteConsultor(item, diagExistente) {
                 <div style="background:rgba(57, 255, 20, 0.03); padding:12px; border-radius:8px; border-left: 3px solid var(--p); margin:15px 0;">
                     <p id="ai-solucion-text-oraculo" style="font-size:0.85rem; color:#ccc; line-height:1.4; margin:0;">Sincronizando dimensiones...</p>
                 </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:0.7rem;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:0.7rem; margin-bottom:15px;">
                     <div><p style="color:var(--s); font-weight:bold; margin:0;">pH TARGET</p><p id="ai-ph-val-oraculo">--</p></div>
                     <div><p style="color:var(--s); font-weight:bold; margin:0;">EC TARGET</p><p id="ai-ec-val-oraculo">--</p></div>
+                </div>
+                <div id="extra-info-oraculo" style="font-size: 0.65rem; border-top: 1px solid #222; padding-top: 10px;">
+                    <p style="color:var(--p); font-weight:bold; margin-bottom:5px;">Ajustes de Ambiente:</p>
+                    <p id="ai-ambiente-oraculo" style="color:#888; margin-bottom:10px;">--</p>
+                    <p style="color:var(--s); font-weight:bold; margin-bottom:2px;">Fuente Técnica:</p>
+                    <p id="ai-fuente-oraculo" style="font-style:italic; color:#555;">--</p>
                 </div>
             </div>
         </div>`;
@@ -944,6 +950,8 @@ export async function ejecutarAgenteConsultor(item, diagExistente) {
             const consultarOraculoFn = httpsCallable(functions, 'consultarOraculo');
             const result = await consultarOraculoFn({ titulo: item.titulo, tags: item.tags || [] });
             hallazgo = result.data;
+            if (!hallazgo) throw new Error("El Oráculo no devolvió datos válidos.");
+            
             if (auth.currentUser) {
                 let diagId = item.id_diagnostico || (item.tags?.[0]) || item.id;
                 await setDoc(doc(db, "diagnosticos", diagId), { ...hallazgo, timestamp: serverTimestamp() });
@@ -953,9 +961,12 @@ export async function ejecutarAgenteConsultor(item, diagExistente) {
         document.getElementById('ai-solucion-text-oraculo').innerText = hallazgo.solucion_alquimista;
         document.getElementById('ai-ph-val-oraculo').innerText = hallazgo.ph_rango || "N/A";
         document.getElementById('ai-ec-val-oraculo').innerText = hallazgo.ec_rango || "N/A";
+        document.getElementById('ai-ambiente-oraculo').innerText = hallazgo.ambiente_detalles || "Ajustar según VPD";
+        document.getElementById('ai-fuente-oraculo').innerText = hallazgo.fuente || "GrowWeedEasy / RQS Library";
         window.notify("🔮 El Oráculo ha respondido.", "success");
     } catch (e) {
-        document.getElementById('ai-solucion-text-oraculo').innerHTML = `<span style="color:red;">Fallo en la conexión astral.</span>`;
+        console.error("Error en el Oráculo:", e);
+        document.getElementById('ai-solucion-text-oraculo').innerHTML = `<span style="color:red;">Fallo en la conexión astral: ${e.message}</span>`;
     }
 }
 
