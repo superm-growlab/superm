@@ -1,7 +1,11 @@
 import { db, functions } from './firebase-config.js';
+import { 
+    doc, 
+    setDoc 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { notify } from './herramientaslab.js';
 import { obtenerImagenHTML } from './tienda.js'; // Reutilizamos la función de tienda.js
-import { Agente } from './agente_central.js'; // Importamos el Agente Central
+import { Agente } from '../agente_central.js'; // Importamos el Agente Central
 
 // Variable global para guardar los datos temporales mientras editas
 let productoTemporal = null;
@@ -103,7 +107,7 @@ export async function botTransmutar() {
         actualizarMesaInspeccion();
 
         editor.style.display = 'block';
-        editor.scrollIntoIntoView({ behavior: 'smooth' });
+        editor.scrollIntoView({ behavior: 'smooth' });
     } catch (e) {
         console.error("Error completo en Alchemist Bot:", e);
         const code = e.code || "unknown";
@@ -134,7 +138,7 @@ export async function cargarAFirebase() {
     try {
         status.innerText = "🚀 SUBIENDO A LA NUBE...";
         // IMPORTANTE: Sincronizado con la colección que usa index.html
-        await db.collection("productos_tienda").doc(dataFinal.id).set(dataFinal);
+        await setDoc(doc(db, "productos_tienda", dataFinal.id), dataFinal);
         
         renderizar(dataFinal);
         
