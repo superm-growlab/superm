@@ -485,6 +485,15 @@
 
         @media (max-width: 600px) {
             nav { padding: 10px 3%; }
+
+            /* Ajuste para centrar el encabezado del expediente en móviles */
+            .expediente-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 12px;
+            }
+            .tarjeta-expediente { padding: 12px; }
+
             .nav-links { gap: 5px; margin-top: 5px; width: 100%; justify-content: space-around; }
             .nav-links span { margin-left: 0; font-size: 0.75rem; padding: 8px 4px; }
             #btn-login-header { font-size: 0.65rem !important; margin-right: 5px !important; }
@@ -582,14 +591,8 @@
                 text-shadow: 0 0 5px var(--p);
             }
             .tabla-historial-diario td[data-label="SEMANA"]::before {
-                content: "📋 " !important;
+                content: "📋 SEMANA " !important;
                 margin-right: 5px;
-            }
-            .tabla-historial-diario td[data-label="SEMANA"]::after {
-                content: "SEMANA" !important;
-                margin-left: 5px;
-                font-size: 0.7rem;
-                opacity: 0.7;
             }
         }
 
