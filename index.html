@@ -536,12 +536,14 @@
                 flex-direction: column;
                 flex: 0 0 88%; /* Cada semana ocupa el 88% del ancho para dejar ver un poco de la siguiente */
                 scroll-snap-align: center;
-                border: 2px solid var(--p); 
+                border: 1px solid var(--s); 
                 border-radius: 15px; 
-                padding: 15px; 
-                background: #000;
-                box-shadow: 0 0 15px rgba(57, 255, 20, 0.1);
+                padding: 0; /* Quitamos padding para que el header llegue a los bordes */
+                background: #0a0a0a;
+                box-shadow: 0 10px 20px rgba(0,0,0,0.5);
                 box-sizing: border-box;
+                overflow: hidden;
+                margin-bottom: 20px;
             }
 
             .tabla-historial-diario td { 
@@ -550,22 +552,24 @@
                 align-items: center; 
                 text-align: right; 
                 border-bottom: 1px solid #222; 
-                padding: 12px 5px !important; 
+                padding: 12px 15px !important; 
                 font-size: 0.85rem !important;
                 max-width: none !important;
             }
 
             /* --- TRANSFORMACIÓN DE SEMANA EN TÍTULO --- */
-            .tabla-historial-diario td[data-label="SEM"] {
+            .tabla-historial-diario td[data-label="SEMANA"] {
                 order: -1; /* Lo mueve al principio de la lista */
-                background: var(--p);
-                color: #000;
+                background: #161616;
+                color: var(--p);
                 font-weight: 900;
-                font-size: 1.1rem !important;
-                justify-content: center !important;
-                border-radius: 8px;
-                margin-bottom: 15px;
-                padding: 12px !important;
+                font-size: 0.9rem !important;
+                justify-content: flex-start !important;
+                border-radius: 0;
+                margin-bottom: 10px;
+                padding: 15px !important;
+                border-bottom: 1px solid #333;
+                border-left: 4px solid var(--p);
                 text-shadow: none;
                 letter-spacing: 1px;
             }
@@ -577,9 +581,15 @@
                 font-size: 0.65rem; 
                 text-shadow: 0 0 5px var(--p);
             }
-            .tabla-historial-diario td[data-label="SEM"]::before {
-                content: "📋 SEMANA " !important;
+            .tabla-historial-diario td[data-label="SEMANA"]::before {
+                content: "📋 " !important;
                 margin-right: 5px;
+            }
+            .tabla-historial-diario td[data-label="SEMANA"]::after {
+                content: "SEMANA" !important;
+                margin-left: 5px;
+                font-size: 0.7rem;
+                opacity: 0.7;
             }
         }
 

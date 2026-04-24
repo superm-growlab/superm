@@ -162,7 +162,7 @@ function renderDiarioCard(container, data) {
                     <button class="btn btn-m" style="font-size:0.6rem; border-color:#ff4444; color:#ff4444;" onclick="window.eliminarSeguimiento('${nombrePlanta.replace(/'/g, "\\'")}')">ELIMINAR TODO</button>
                 </div>
             </div>
-            <div style="overflow-x:auto; width:100%; border-radius:8px;"><table class="tabla-historial-diario"><thead><tr><th>FECHA</th><th>SEM</th><th>ETAPA</th><th>PH</th><th>EC</th><th>TEMP</th><th>HUM</th><th>FOTO</th><th>ORÁCULO</th><th>OBSERVACIONES</th><th></th></tr></thead><tbody class="plant-history-body"></tbody></table></div>`;
+            <div style="overflow-x:auto; width:100%; border-radius:8px;"><table class="tabla-historial-diario"><thead><tr><th>FECHA</th><th>SEMANA</th><th>ETAPA</th><th>PH</th><th>EC</th><th>TEMP</th><th>HUM</th><th>FOTO</th><th>ORÁCULO</th><th>OBSERVACIONES</th><th></th></tr></thead><tbody class="plant-history-body"></tbody></table></div>`;
         container.prepend(plantCard);
     }
     const tbody = plantCard.querySelector('.plant-history-body');
@@ -174,7 +174,7 @@ function renderDiarioCard(container, data) {
 
     row.innerHTML = `
         <td data-label="FECHA">${data.fecha?.split(',')[0] || '---'}</td>
-        <td data-label="SEM">${data.semana || '1'}</td>
+        <td data-label="SEMANA">${data.semana || '1'}</td>
         <td data-label="ETAPA"><span class="badge-etapa">${data.etapa || 'VEGE'}</span></td>
         <td data-label="PH">${data.ph || '--'}</td>
         <td data-label="EC">${data.ec || '--'}</td>
