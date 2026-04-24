@@ -1,7 +1,7 @@
 import { app, db, auth, functions, ADMIN_UID } from './firebase-config.js';
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
-import { 
-    collection, addDoc, serverTimestamp, query, where, orderBy, 
+import {
+    collection, addDoc, serverTimestamp, query, where, orderBy,
     onSnapshot, getDocs, deleteDoc, doc, getDoc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, limit 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 // 1. Matrices de datos (Sincronizadas con el conocimiento botánico de Super M)
@@ -835,19 +835,21 @@ export function descargarImagen() {
 
 // --- LÓGICA DEL DETECTOR HÍBRIDO (ORÁCULO v2) ---
 
-export async function cargarBibliotecaOraculo() {
+export function cargarBibliotecaOraculo() {
     const grilla = document.getElementById('grilla-sintomas-oraculo');
     if (!grilla) return;
-    grilla.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:var(--s); font-size:0.7rem;">Sincronizando con la base de datos de ADN...</p>`;
+    grilla.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:var(--s); font-size:0.8rem; font-family:monospace;">📡 Sincronizando Frecuencias de ADN...</p>`;
     
-    try {
-        const querySnapshot = await getDocs(collection(db, "biblioteca_visual"));
-        window.bibliotecaVisual = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const q = query(collection(db, "biblioteca_visual"), orderBy("timestamp", "desc"), limit(50));
+    
+    // Usamos onSnapshot para que las imágenes aparezcan apenas se guarden en Firebase
+    onSnapshot(q, (snapshot) => {
+        window.bibliotecaVisual = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderizarGaleriaOraculo(window.bibliotecaVisual);
-    } catch (error) {
-        console.error(error);
-        grilla.innerHTML = `<p style='grid-column: 1/-1; text-align:center; color:red;'>Error de conexión.</p>`;
-    }
+    }, (error) => {
+        console.error("Error Oráculo:", error);
+        grilla.innerHTML = `<p style='grid-column: 1/-1; text-align:center; color:red;'>Error de frecuencia astral.</p>`;
+    });
 }
 
 export function renderizarGaleriaOraculo(items = []) {
@@ -863,10 +865,11 @@ export function renderizarGaleriaOraculo(items = []) {
     items.forEach(item => {
         const celda = document.createElement('div');
         celda.className = 'celda-sintoma';
+        celda.style.border = "1px solid #222";
         celda.onclick = () => window.consultarMuestraOraculo(item.id, celda);
         const mainImg = (item.imageUrls?.length > 0) ? item.imageUrls[0] : (item.img || "https://i.postimg.cc/rF9GqwGS/favicon.png");
         celda.innerHTML = `
-            <img src="${mainImg}" alt="${item.titulo}" onerror='window.handleImageErrorOraculo(this)' loading="lazy">
+            <img src="${mainImg}" alt="${item.titulo}" style="width:100%; height:80px; object-fit:cover; border-radius:4px; display:block; filter: grayscale(0);" onerror='window.handleImageErrorOraculo(this)' loading="lazy">
             <p>${item.titulo}</p>`;
         grilla.appendChild(celda);
     });
@@ -895,6 +898,10 @@ export async function consultarMuestraOraculo(idDoc, elemento = null) {
 
     const visualData = window.bibliotecaVisual.find(item => item.id === idDoc);
     if (!visualData) return;
+
+    // Si el documento ya tiene el diagnóstico vinculado, lo usamos
+    const panelRes = document.getElementById('panel-resultados-oraculo');
+    if (panelRes) panelRes.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     window.mostrarLoader();
     const panel = document.getElementById('panel-resultados-oraculo');
@@ -999,17 +1006,58 @@ export function procesarImagenUsuario(event) {
 }
 
 export async function sembrarBiblioteca() {
-    if (auth.currentUser?.uid !== ADMIN_UID) return window.notify("Acceso denegado.", "error");
-    if (!confirm("¿Sembrar muestras de prueba?")) return;
-    const muestras = [
-        { id: "nitrógeno_carencia", titulo: "Carencia de Nitrógeno", tags: ["nitrógeno", "amarilleo"] },
-        { id: "calcio_carencia", titulo: "Carencia de Calcio", tags: ["calcio", "puntos marrones"] },
-        { id: "araña_roja", titulo: "Araña Roja", tags: ["plaga", "puntos blancos"] },
-        { id: "moho_blanco", titulo: "Oídio / Moho Blanco", tags: ["hongo", "polvo blanco"] }
+    if (auth.currentUser?.uid !== ADMIN_UID) return notify("Acceso denegado.", "error");
+    if (!confirm("¿Iniciar siembra de muestras? Se consultará al Oráculo y Google para poblar la biblioteca.")) return;
+
+    notify("🌱 Sembrando biblioteca...", "info");
+    window.mostrarLoader();
+
+    const muestrasBase = [
+        { id: "nitrogeno_carencia", titulo: "Carencia de Nitrógeno", tags: ["nitrógeno", "amarilleo", "hojas"] },
+        { id: "calcio_carencia", titulo: "Carencia de Calcio", tags: ["calcio", "puntos marrones", "necrosis"] },
+        { id: "araña_roja", titulo: "Araña Roja", tags: ["plaga", "puntos", "telaraña"] },
+        { id: "moho_blanco", titulo: "Oídio / Moho Blanco", tags: ["hongo", "polvo blanco", "humedad"] },
+        { id: "fosforo_carencia", titulo: "Carencia de Fósforo", tags: ["fósforo", "morado"] },
+        { id: "potasio_carencia", titulo: "Carencia de Potasio", tags: ["potasio", "quemado"] }
     ];
-    for (const m of muestras) await setDoc(doc(db, "biblioteca_visual", m.id), m);
-    window.notify("🌱 Biblioteca sembrada.", "success");
-    cargarBibliotecaOraculo();
+
+    const consultarOraculoFn = httpsCallable(functions, 'consultarOraculo');
+
+    try {
+        for (const m of muestrasBase) {
+            // 1. Consultar al Oráculo (IA + Google)
+            const result = await consultarOraculoFn({ titulo: m.titulo, tags: m.tags });
+            const hallazgo = result.data;
+
+            if (hallazgo && hallazgo.url_imagen) {
+                // 2. Guardar el Diagnóstico Técnico (Sabiduría)
+                await setDoc(doc(db, "diagnosticos", m.id), {
+                    ...hallazgo,
+                    titulo: m.titulo,
+                    timestamp: serverTimestamp()
+                });
+
+                // 3. Guardar/Actualizar la Muestra Visual (La que se ve en la grilla)
+                const docRef = doc(db, "biblioteca_visual", m.id);
+                await setDoc(docRef, {
+                    id: m.id,
+                    titulo: m.titulo,
+                    tags: m.tags,
+                    imageUrls: arrayUnion(hallazgo.url_imagen),
+                    id_diagnostico: m.id, // Enlace al diagnóstico
+                    timestamp: serverTimestamp()
+                }, { merge: true });
+                
+                notify(`✅ "${m.titulo}" sincronizada.`, "success");
+            }
+        }
+        notify("🌱 Biblioteca de ADN actualizada.", "success");
+    } catch (err) {
+        console.error("Error sembrando:", err);
+        notify("❌ Error en la siembra.", "error");
+    } finally {
+        window.ocultarLoader();
+    }
 }
 
 // --- PUENTE GLOBAL ---
