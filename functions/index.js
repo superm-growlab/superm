@@ -32,8 +32,7 @@ exports.consultarOraculo = onCall({
     logger.info(`Invocando Oráculo. Prefijo de Key: ${keyPrefix}`);
 
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash", 
-        model: "gemini-1.5-flash-latest", 
+        model: "gemini-1.5-flash",
         generationConfig: { responseMimeType: "application/json" }
     });
 
@@ -51,21 +50,21 @@ exports.consultarOraculo = onCall({
           "solucion_alquimista": "instrucciones técnicas paso a paso para corregir el problema",
           "fuente": "fuente técnica principal consultada"
         }
-        IMPORTANTE: Devuelve ÚNICAMENTE el objeto JSON puro. No incluyas bloques de código markdown (como \` \` \`json). No devuelvas enlaces web en los campos de texto.
+        IMPORTANTE: Devuelve ÚNICAMENTE el objeto JSON puro. No incluyas bloques de código markdown.
     `;
 
     try {
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
-        logger.info("Respuesta bruta del Oráculo:", text);
+        logger.info(`Respuesta del Oráculo para ${titulo}:`, text);
 
         // Extracción robusta de JSON mediante Regex para evitar texto basura de la IA
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         let diagnosis;
 
         if (!jsonMatch) {
-            throw new HttpsError("internal", "El Oráculo devolvió un formato de datos ilegible. Intenta de nuevo.");
+            throw new HttpsError("internal", "Formato de datos ilegible.");
         }
         
         try {
@@ -111,9 +110,13 @@ exports.consultarOraculo = onCall({
         return { ...diagnosis, url_imagen };
 
     } catch (error) {
-        logger.error("Fallo crítico en el Oráculo:", error); // Log completo del error
+        logger.error("Fallo detallado del Oráculo:", {
+            message: error.message,
+            status: error.status,
+            stack: error.stack
+        });
         
-        if (error.message && (error.message.includes("404") || error.message.includes("not found"))) {
+        if (error.status === 404 || error.message?.includes("404") || error.message?.includes("not found")) {
             throw new HttpsError("not-found", `El Oráculo no encontró el modelo. Verifica que la clave GEMINI_API_KEY sea correcta (debe empezar con 'AIza') y que la 'Generative Language API' esté habilitada.`);
         }
 

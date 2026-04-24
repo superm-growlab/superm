@@ -867,7 +867,8 @@ export function renderizarGaleriaOraculo(items = []) {
         celda.className = 'celda-sintoma';
         celda.style.border = "1px solid #222";
         celda.onclick = () => window.consultarMuestraOraculo(item.id, celda);
-        const mainImg = (item.imageUrls?.length > 0) ? item.imageUrls[0] : (item.img || "https://i.postimg.cc/rF9GqwGS/favicon.png");
+        // Mostrar la última imagen (la más reciente de Google) o el favicon de respaldo
+        const mainImg = (item.imageUrls && item.imageUrls.length > 0) ? item.imageUrls[item.imageUrls.length - 1] : "https://i.postimg.cc/rF9GqwGS/favicon.png";
         celda.innerHTML = `
             <img src="${mainImg}" alt="${item.titulo}" style="width:100%; height:80px; object-fit:cover; border-radius:4px; display:block; filter: grayscale(0);" onerror='window.handleImageErrorOraculo(this)' loading="lazy">
             <p>${item.titulo}</p>`;
@@ -1044,7 +1045,7 @@ export async function sembrarBiblioteca() {
                     id: m.id,
                     titulo: m.titulo,
                     tags: m.tags,
-                    imageUrls: arrayUnion(hallazgo.url_imagen),
+                    imageUrls: [hallazgo.url_imagen],
                     id_diagnostico: m.id, // Enlace al diagnóstico
                     timestamp: serverTimestamp()
                 }, { merge: true });
