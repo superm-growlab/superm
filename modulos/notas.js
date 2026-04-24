@@ -31,8 +31,12 @@ const decodificarHTML = (str) => {
 export async function cargarNotasDesdeSheet() {
     // Si ya estamos cargando o ya cargamos, no hacemos nada
     if (window.cargandoNotasLock) return;
-    if (window.notasDinamicas && window.notasDinamicas.length > 0) return;
-
+    
+    // Si ya tenemos las notas del Sheet, solo intentamos sincronizar votos de Firebase y salimos
+    if (window.notasDinamicas && window.notasDinamicas.length > 0) {
+        return await sincronizarVotosNotas();
+    }
+    
     window.cargandoNotasLock = true;
 
     try {
@@ -76,30 +80,8 @@ export async function cargarNotasDesdeSheet() {
         renderMenuNotas('todas');
         
         // --- CONEXIÓN A FIREBASE (VOTOS) ---
-        if (!db) throw new Error("Firebase DB no disponible");
+        await sincronizarVotosNotas();
 
-        try {
-            const q = query(collection(db, 'stats_notas'));
-            const snap = await getDocs(q);
-            if (!snap.empty) {
-                const statsMap = {};
-                snap.forEach(d => {
-                    statsMap[d.id] = { 
-                        up: d.data().upvotes || 0, 
-                        down: d.data().downvotes || 0 
-                    };
-                });
-                window.notasDinamicas.forEach(n => {
-                    if (statsMap[n.id]) {
-                        n.upvotes = statsMap[n.id].up;
-                        n.downvotes = statsMap[n.id].down;
-                    }
-                });
-                // Re-renderizamos solo para actualizar los numeritos de los votos
-                renderMenuNotas('todas');
-            }
-        } catch (err) { console.warn("⚠️ Sincronización de votos (Firebase) no disponible o vacía:", err.message); }
-        
         if (window.notasDinamicas.length === 0) {
             console.warn("❌ El Sheet de Notas se leyó pero no se encontraron filas válidas.");
             notify("⚠️ La biblioteca parece estar vacía.", "info");
@@ -112,6 +94,36 @@ export async function cargarNotasDesdeSheet() {
         window.cargandoNotasLock = false;
         renderFiltrosNotas(); // Siempre renderizamos filtros
         renderMenuNotas('todas'); // Siempre renderizamos el menú para reflejar el estado final
+    }
+}
+
+export async function sincronizarVotosNotas() {
+    if (!db || !window.notasDinamicas || window.notasDinamicas.length === 0) return;
+    try {
+        const q = query(collection(db, 'stats_notas'));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+            const statsMap = {};
+            snap.forEach(d => {
+                statsMap[d.id] = { 
+                    up: d.data().upvotes || 0, 
+                    down: d.data().downvotes || 0 
+                };
+            });
+            window.notasDinamicas.forEach(n => {
+                if (statsMap[n.id]) {
+                    n.upvotes = statsMap[n.id].up;
+                    n.downvotes = statsMap[n.id].down;
+                }
+            });
+            renderMenuNotas('todas');
+        }
+    } catch (err) {
+        if (err.code === 'permission-denied') {
+            console.log("ℹ️ Notas: Modo lectura (votos no sincronizados por falta de sesión).");
+        } else {
+            console.warn("⚠️ Error en sincronización de votos:", err.message);
+        }
     }
 }
 
@@ -427,6 +439,7 @@ window.renderFiltrosNotas = renderFiltrosNotas;
 window.renderMenuNotas = renderMenuNotas;
 window.getNotaCardHTML = getNotaCardHTML;
 window.verNotaDinamica = verNotaDinamica;
+window.sincronizarVotosNotas = sincronizarVotosNotas;
 window.cerrarNota = cerrarNota;
 window.votarNota = votarNota;
 window.aprobarPropuestaNota = aprobarPropuestaNota;
