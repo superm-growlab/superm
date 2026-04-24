@@ -760,8 +760,9 @@ export function volverAlMenuCalc() {
 }
 
 export function nuevaFila(datos = ["", "", "", "", "", "", "", ""]) {
+    const labels = ["PLANTA", "SEMANA", "PH", "EC", "TEMP °C", "HUM %", "RIEGO", "OBSERVACIONES"];
     const tr = document.createElement('tr');
-    tr.innerHTML = datos.map(d => `<td><input type="text" class="input-tabla" value="${d}" oninput="window.guardarTablas()"></td>`).join('');
+    tr.innerHTML = datos.map((d, i) => `<td data-label="${labels[i]}"><input type="text" class="input-tabla" value="${d}" oninput="window.guardarTablas()"></td>`).join('');
     const tbody = document.getElementById('cuerpo-tabla');
     if(tbody) tbody.appendChild(tr);
 }

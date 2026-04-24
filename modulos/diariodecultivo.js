@@ -173,7 +173,19 @@ function renderDiarioCard(container, data) {
     const notasEscaped = (data.notas || '').replace(/'/g, "\\'").replace(/\n/g, ' ');
     const imgUrlsJson = JSON.stringify(data.imageUrls || []).replace(/"/g, '&quot;');
 
-    row.innerHTML = `<td>${data.fecha?.split(',')[0] || '---'}</td><td>S${data.semana || '1'}</td><td><span class="badge-etapa">${data.etapa || 'VEGE'}</span></td><td>${data.ph || '--'}</td><td>${data.ec || '--'}</td><td>${data.temp || '--'}°</td><td>${data.humedad || '--'}%</td><td>${imgHtml}</td><td><button class="btn btn-m" style="font-size:0.6rem; padding:4px; border-color:var(--p); color:var(--p);" onclick="window.abrirReporteAlquimia('${encodeURIComponent(JSON.stringify(data))}')">🔮 REPORTE</button></td><td onclick="window.verNotasCompletas('${notasEscaped}', 'OBSERVACIONES - ${nombrePlanta.toUpperCase()}', ${imgUrlsJson})" style="font-size:0.6rem; max-width:80px; overflow:hidden; text-overflow:ellipsis; cursor:pointer; color:var(--p); text-decoration:underline;">${data.notas || ''}</td><td><button onclick="window.eliminarRegistroDiario('${data.id}', this.closest('tr'))" style="background:none; border:none; color:#ff4444; cursor:pointer;">✕</button></td>`;
+    row.innerHTML = `
+        <td data-label="FECHA">${data.fecha?.split(',')[0] || '---'}</td>
+        <td data-label="SEM">S${data.semana || '1'}</td>
+        <td data-label="ETAPA"><span class="badge-etapa">${data.etapa || 'VEGE'}</span></td>
+        <td data-label="PH">${data.ph || '--'}</td>
+        <td data-label="EC">${data.ec || '--'}</td>
+        <td data-label="TEMP">${data.temp || '--'}°</td>
+        <td data-label="HUM">${data.humedad || '--'}%</td>
+        <td data-label="FOTO">${imgHtml}</td>
+        <td data-label="ORÁCULO"><button class="btn btn-m" style="font-size:0.6rem; padding:4px; border-color:var(--p); color:var(--p);" onclick="window.abrirReporteAlquimia('${encodeURIComponent(JSON.stringify(data))}')">🔮 REPORTE</button></td>
+        <td data-label="OBSERVACIONES" onclick="window.verNotasCompletas('${notasEscaped}', 'OBSERVACIONES - ${nombrePlanta.toUpperCase()}', ${imgUrlsJson})" style="font-size:0.6rem; cursor:pointer; color:var(--p); text-decoration:underline;">${data.notas || 'VER'}</td>
+        <td data-label="ACCION"><button onclick="window.eliminarRegistroDiario('${data.id}', this.closest('tr'))" style="background:none; border:none; color:#ff4444; cursor:pointer;">✕ ELIMINAR</button></td>
+    `;
     tbody.appendChild(row);
 }
 
