@@ -167,10 +167,10 @@ function renderDiarioCard(container, data) {
     }
     const tbody = plantCard.querySelector('.plant-history-body');
     const row = document.createElement('tr');
-    const imgHtml = data.imageUrls?.length > 0 ? `<img src="${data.imageUrls[0]}" style="width:35px; height:35px; object-fit:cover; border-radius:6px;" onclick="window.verImagenAmpliada('${data.imageUrls[0]}')">` : 'N/A';
-    
     const notasEscaped = (data.notas || '').replace(/'/g, "\\'").replace(/\n/g, ' ');
     const imgUrlsJson = JSON.stringify(data.imageUrls || []).replace(/"/g, '&quot;');
+
+    const imgHtml = data.imageUrls?.length > 0 ? `<img src="${data.imageUrls[0]}" style="width:35px; height:35px; object-fit:cover; border-radius:6px; cursor:pointer;" onclick="window.verImagenAmpliada('${data.imageUrls[0]}', ${imgUrlsJson})">` : 'N/A';
 
     row.innerHTML = `
         <td data-label="FECHA">${data.fecha?.split(',')[0] || '---'}</td>

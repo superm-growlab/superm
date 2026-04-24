@@ -233,6 +233,14 @@
         }
         .qty-input::-webkit-outer-spin-button, .qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
+        /* Animación para el contador del carrito */
+        @keyframes cart-bump {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.5); background: var(--p); color: #000; box-shadow: 0 0 10px var(--p); }
+            100% { transform: scale(1); }
+        }
+        .cart-bump { animation: cart-bump 0.4s ease-out; display: inline-block; }
+
         .contenedor-tabla { 
             overflow-x: auto; background: #000; padding: 20px; border-radius: 12px; 
             border: 1px solid var(--s); box-shadow: 0 0 15px rgba(188, 19, 254, 0.1); 
@@ -996,7 +1004,6 @@
             <button id="btn-next-visor" onclick="window.navVisor(1)" style="position:absolute; right:-60px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--p); font-size:3.5rem; cursor:pointer; display:none; text-shadow: 0 0 10px var(--p);">❯</button>
 
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn btn-m" style="border-color: var(--p); color: var(--p); background: rgba(0,0,0,0.5);" onclick="window.toggleZoom()">🔍 LUPA</button>
                 <button class="btn btn-m" style="border-color: var(--p); color: var(--p); background: rgba(0,0,0,0.5);" onclick="document.getElementById('modal-visor-imagen').style.display='none'">CERRAR VISOR</button>
             </div>
         </div>
@@ -1765,15 +1772,15 @@
     </section>
 
     <section id="view-carrito" class="seccion">
-        <h2 style="color:var(--s)">Tu Pedido</h2>
+        <h2 style="color:var(--s)">Mi Selección de Productos</h2>
+        <p style="font-size: 0.8rem; color: #888; margin-bottom: 20px;">Super M selecciona lo mejor. Al presionar el botón, se abrirán los enlaces de compra oficial en Mercado Libre.</p>
         <div id="lista-carrito" style="background:#111; padding:20px; border-radius:12px;">Tu Carrito está vacío.</div>
-        <div style="text-align:right; font-size:1.5rem; margin-top:20px;">
-            <div style="font-size:0.8rem; color:var(--s); font-weight:bold; margin-bottom:5px;">📦 LOGÍSTICA: ENVÍO A CONVENIR</div>
-            <span style="font-size: 1rem; color: #888;">Total: </span>
-            <span id="total-carrito" style="color:var(--p); font-weight: 900;">$0</span>
+        <div style="text-align:right; font-size:1.5rem; margin-top:20px; display: none;">
+            <span id="total-carrito"></span>
         </div>
         
-        <button class="btn btn-v" id="btn-finalizar-carrito" style="width:100%; margin-top:20px" onclick="abrirModalEnvio('carrito')">Confirmar y Enviar Pedido</button>
+        <button class="btn btn-v" id="btn-finalizar-carrito" style="width:100%; margin-top:20px" onclick="window.abrirEnlacesML()">🛍️ IR A COMPRAR TODO A MERCADO LIBRE</button>
+        <p style="font-size: 0.6rem; color: #555; text-align: center; margin-top: 10px;">(Asegúrate de permitir las ventanas emergentes en tu navegador)</p>
     </section>
 
     <section id="view-busqueda" class="seccion">

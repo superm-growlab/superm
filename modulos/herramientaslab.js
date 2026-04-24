@@ -34,6 +34,12 @@ let lastKwhCalculated = 0; // Para calculadora de luz
 window.lastSustratoTipo = null; // Para calculadora de sustrato
 window.bibliotecaVisual = [];
 
+// Estado del visor de imágenes para panning
+let isPanning = false;
+let panStart = { x: 0, y: 0 };
+let panOffset = { x: 0, y: 0 };
+let wasDragged = false;
+
 window.app = app;
 window.db = db;
 window.auth = auth;
@@ -163,7 +169,9 @@ export function verImagenAmpliada(url, lista = []) {
     const modal = document.getElementById('modal-visor-imagen');
     const img = document.getElementById('imagen-ampliada');
     if (modal && img) {
-        img.style.transform = 'scale(1)';
+        panOffset = { x: 0, y: 0 };
+        wasDragged = false;
+        img.style.transform = 'translate(0px, 0px) scale(1)';
         img.classList.remove('zoomed');
         img.style.cursor = 'zoom-in';
         img.src = url;
@@ -181,16 +189,34 @@ export function verImagenAmpliada(url, lista = []) {
     }
 }
 
+export function navVisor(delta) {
+    if (!window.currentVisorImages || window.currentVisorImages.length <= 1) return;
+    
+    window.currentVisorIndex = (window.currentVisorIndex + delta + window.currentVisorImages.length) % window.currentVisorImages.length;
+    
+    const img = document.getElementById('imagen-ampliada');
+    if (img) {
+        panOffset = { x: 0, y: 0 };
+        img.src = window.currentVisorImages[window.currentVisorIndex];
+        // Reset de zoom al cambiar de imagen
+        img.classList.remove('zoomed');
+        img.style.transform = 'translate(0px, 0px) scale(1)';
+        img.style.cursor = 'zoom-in';
+    }
+}
+
 export function toggleZoom() {
+    if (wasDragged) return; // Si el usuario estaba arrastrando, no toggles el zoom
     const img = document.getElementById('imagen-ampliada');
     if (img.classList.contains('zoomed')) {
         img.classList.remove('zoomed');
-        img.style.transform = 'scale(1)';
+        panOffset = { x: 0, y: 0 };
+        img.style.transform = 'translate(0px, 0px) scale(1)';
         img.style.cursor = 'zoom-in';
     } else {
         img.classList.add('zoomed');
-        img.style.transform = 'scale(2)';
-        img.style.cursor = 'zoom-out';
+        img.style.transform = 'translate(0px, 0px) scale(2)';
+        img.style.cursor = 'grab';
     }
 }
 
@@ -1009,6 +1035,7 @@ window.descargarImagen = descargarImagen;
 window.comprimirImagen = comprimirImagen;
 window.renderAcumulado = renderAcumulado;
 window.verImagenAmpliada = verImagenAmpliada;
+window.navVisor = navVisor;
 window.toggleZoom = toggleZoom;
 window.verNotasCompletas = verNotasCompletas;
 window.cargarTablasPersistentes = cargarTablasPersistentes;
@@ -1023,4 +1050,43 @@ window.procesarImagenUsuario = procesarImagenUsuario;
 window.sembrarBiblioteca = sembrarBiblioteca;
 
 // Carga inicial
-document.addEventListener('DOMContentLoaded', () => { window.cargarBibliotecaOraculo(); });
+document.addEventListener('DOMContentLoaded', () => { 
+    window.cargarBibliotecaOraculo(); 
+    
+    // Setup de panning para el visor
+    const img = document.getElementById('imagen-ampliada');
+    if (img) {
+        const startDrag = (e) => {
+            if (!img.classList.contains('zoomed')) return;
+            isPanning = true;
+            wasDragged = false;
+            img.style.cursor = 'grabbing';
+            const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+            const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+            panStart = { x: clientX - panOffset.x, y: clientY - panOffset.y };
+        };
+        const doDrag = (e) => {
+            if (!isPanning) return;
+            e.preventDefault();
+            const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+            const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+            const newX = clientX - panStart.x;
+            const newY = clientY - panStart.y;
+            if (Math.abs(newX - panOffset.x) > 5 || Math.abs(newY - panOffset.y) > 5) wasDragged = true;
+            panOffset.x = newX;
+            panOffset.y = newY;
+            img.style.transform = `translate(${panOffset.x}px, ${panOffset.y}px) scale(2)`;
+        };
+        const endDrag = () => {
+            isPanning = false;
+            if (img.classList.contains('zoomed')) img.style.cursor = 'grab';
+            setTimeout(() => { wasDragged = false; }, 200); // Reset para permitir clicks normales
+        };
+        img.addEventListener('mousedown', startDrag);
+        img.addEventListener('touchstart', startDrag);
+        window.addEventListener('mousemove', doDrag);
+        window.addEventListener('touchmove', doDrag, { passive: false });
+        window.addEventListener('mouseup', endDrag);
+        window.addEventListener('touchend', endDrag);
+    }
+});

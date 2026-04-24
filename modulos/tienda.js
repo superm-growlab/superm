@@ -193,19 +193,20 @@ export function comprarDirecto(id) {
 export function addToCart(id) {
     const p = window.productos.find(x => x.id === id);
     if (!p) return;
-    const q = parseInt(document.getElementById('qty-det').value) || 1;
     
     // Accedemos al carrito global
     let carrito = JSON.parse(localStorage.getItem('superm_cart')) || [];
     const ex = carrito.find(i => i.id === id);
-    if(ex) {
-        ex.q += q;
+    
+    if(!ex) {
+        // Guardamos el permalink para que el carrito sepa a dónde redirigir
+        carrito.push({id: p.id, title: p.title, price: p.price, link: p.permalink});
+        localStorage.setItem('superm_cart', JSON.stringify(carrito));
+        updateCartUI();
+        notify(`🧪 Añadido ${p.title} a tu selección`, 'success');
     } else {
-        carrito.push({id: p.id, title: p.title, price: p.price, q: q});
+        notify(`ℹ️ El producto ya está en tu lista.`, 'info');
     }
-    localStorage.setItem('superm_cart', JSON.stringify(carrito));
-    updateCartUI();
-    window.notify(`Añadido: ${p.title}`, 'success');
 }
 
 // --- SISTEMA DE GALERÍA DE PRODUCTOS (Nivel Superior para evitar ReferenceError) ---
@@ -299,7 +300,7 @@ export function verProducto(id, guardar = true) {
     window.currentProductImageIndex = 0;
     window.currentProductImages = [];
 
-    const btnMP = `<button class="btn btn-mp" style="width:100%; margin-top:10px" onclick="window.comprarDirecto('${p.id}')">Comprar</button>`;
+    const btnMP = `<button class="btn btn-mp" style="width:100%; margin-top:10px" onclick="window.comprarDirecto('${p.id}')">VER EN MERCADO LIBRE 🔗</button>`;
     const btnFicha = (p.description) ? `<button class="btn btn-m" style="width:100%; margin-top:10px; border-color:var(--s); color:var(--s);" onclick="event.stopPropagation(); verNotasCompletas(decodeURIComponent('${encodeURIComponent(p.description)}'), '📖 FICHA TÉCNICA')">📄 FICHA TÉCNICA</button>` : '';
     
     document.getElementById('detalle-p').innerHTML = `
@@ -333,13 +334,7 @@ export function verProducto(id, guardar = true) {
                 <div class="det-precio">$${p.price.toLocaleString()}</div>
                 
                 <div style="display:flex; gap:15px; flex-direction:column; margin-top:10px;">
-                    <div class="qty-selector" style="width:100%; display:flex; justify-content:space-between; align-items:center;">
-                        <button class="qty-btn" onclick="window.changeQtyDet(-1)" style="flex:1;">-</button>
-                        <input type="number" class="qty-input" id="qty-det" value="1" min="1" style="flex:1; text-align:center; background:transparent; border:none; color:var(--p); font-weight:bold;">
-                        <button class="qty-btn" onclick="window.changeQtyDet(1)" style="flex:1;">+</button>
-                    </div>
-                    
-                    <button class="btn btn-v" style="width:100%; height:45px;" onclick="window.addToCart('${p.id}')">Añadir al Carrito</button>
+                    <button class="btn btn-v" style="width:100%; height:45px;" onclick="window.addToCart('${p.id}')">Añadir a mi selección</button>
 
                     ${btnMP} 
                     ${btnFicha}
@@ -366,19 +361,19 @@ export function verProducto(id, guardar = true) {
     }
 }
 
-export function changeQtyDet(d) { 
-    let i = document.getElementById('qty-det'); 
-    let val = parseInt(i.value) || 1; 
-    if(val + d > 0) i.value = val + d; 
-}
-
 // --- SISTEMA DE CARRITO Y PEDIDOS ---
 
 export function updateCartUI() {
     const carrito = JSON.parse(localStorage.getItem('superm_cart')) || [];
-    const totalItems = carrito.reduce((acc, item) => acc + item.q, 0);
+    const totalItems = carrito.length; // Ahora contamos items únicos, no cantidades
     const cartCount = document.getElementById('cart-count');
-    if (cartCount) cartCount.innerText = totalItems;
+    if (cartCount) {
+        cartCount.innerText = totalItems;
+        // Disparar animación de feedback
+        cartCount.classList.remove('cart-bump');
+        void cartCount.offsetWidth; // Forzar reflow para reiniciar animación
+        cartCount.classList.add('cart-bump');
+    }
 }
 
 export function renderCarrito() {
@@ -390,31 +385,21 @@ export function renderCarrito() {
 
     if (carrito.length === 0) {
         lista.innerHTML = `<p style="text-align:center; color:#555; padding: 20px;">Tu laboratorio de compras está vacío.</p>`;
-        if (totalTxt) totalTxt.innerText = "$0";
         return;
     }
 
-    let total = 0;
     lista.innerHTML = carrito.map(item => {
-        total += item.price * item.q;
         return `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #222; padding-bottom:10px;">
             <div style="flex:1;">
-                <div style="font-weight:bold; color:var(--p); font-size:0.9rem;">${item.title}</div>
-                <div style="color:var(--s); font-size:0.8rem;">$${item.price.toLocaleString()}</div>
+                <div style="font-weight:bold; color:var(--p); font-size:0.9rem; margin-bottom:5px;">${item.title}</div>
+                <a href="${item.link}" target="_blank" style="color:var(--s); font-size:0.7rem; text-decoration:none; border:1px solid var(--s); padding:2px 8px; border-radius:4px;">VER EN MERCADO LIBRE 🔗</a>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
-                <div class="qty-selector" style="height:30px; width:100px; margin-bottom:0;">
-                    <button class="qty-btn" onclick="window.ajustarCarrito('${item.id}', -1)">-</button>
-                    <input type="number" class="qty-input" value="${item.q}" onchange="window.inputCarrito('${item.id}', this.value)" style="font-size:0.8rem;">
-                    <button class="qty-btn" onclick="window.ajustarCarrito('${item.id}', 1)">+</button>
-                </div>
                 <button onclick="window.quitar('${item.id}')" style="background:none; border:none; color:#ff3131; cursor:pointer; font-size:1.2rem;">&times;</button>
             </div>
         </div>`;
     }).join('');
-
-    if (totalTxt) totalTxt.innerText = `$${total.toLocaleString()}`;
 }
 
 export function ajustarCarrito(id, d) {
@@ -450,41 +435,20 @@ export function quitar(id) {
     notify("Producto removido.", "info");
 }
 
-export function abrirModalEnvio(origen) {
-    contextoEnvio = origen;
-    document.getElementById('modal-envio').style.display = 'flex';
-}
-
-export function cerrarModalEnvio() {
-    document.getElementById('modal-envio').style.display = 'none';
-}
-
-export async function confirmarEnvio() {
-    const nombre = document.getElementById('f-nombre').value;
-    const tel = document.getElementById('f-tel').value;
-    const dire = document.getElementById('f-direccion').value;
-    const loc = document.getElementById('f-localidad').value;
-
-    if (!nombre || !tel || !dire) return notify("Por favor, completa los campos de contacto.", "info");
-
+export function abrirEnlacesML() {
     const carrito = JSON.parse(localStorage.getItem('superm_cart')) || [];
-    let msg = `*NUEVO PEDIDO - SUPER M LAB*\n\n`;
-    msg += `👤 *Cliente:* ${nombre}\n📞 *Tel:* ${tel}\n📍 *Dirección:* ${dire}, ${loc}\n\n`;
-    msg += `📦 *DETALLE DEL PEDIDO:*\n`;
-    
-    let total = 0;
-    carrito.forEach(i => {
-        msg += `- ${i.title} (x${i.q}) : $${(i.price * i.q).toLocaleString()}\n`;
-        total += i.price * i.q;
-    });
-    msg += `\n*TOTAL: $${total.toLocaleString()}*`;
+    if (carrito.length === 0) return;
 
-    const link = `https://wa.me/${MI_NUMERO}?text=${encodeURIComponent(msg)}`;
-    window.open(link, '_blank');
+    notify("🚀 Abriendo enlaces en Mercado Libre...", "success");
     
-    // Notificar al Admin del nuevo pedido
-    crearNotificacion(ADMIN_UID, `🛒 NUEVO PEDIDO de ${nombre}`, 'view-admin');
-    cerrarModalEnvio();
+    carrito.forEach((item, index) => {
+        if (item.link) {
+            // Usamos un pequeño delay para intentar engañar a los bloqueadores de popups
+            setTimeout(() => {
+                window.open(item.link, '_blank');
+            }, index * 300);
+        }
+    });
 }
 
 export function vaciarCarrito() {
@@ -929,7 +893,6 @@ window.mostrarCategorias = mostrarCategorias;
 window.filtrarProductos = filtrarProductos;
 window.comprarDirecto = comprarDirecto;
 window.verProducto = verProducto;
-window.changeQtyDet = changeQtyDet;
 window.addToCart = addToCart;
 window.obtenerImagenHTML = obtenerImagenHTML;
 window.renderProductGallery = renderProductGallery;
@@ -937,18 +900,9 @@ window.changeMainProductImage = changeMainProductImage;
 window.navGallery = navGallery;
 window.updateCartUI = updateCartUI;
 window.renderCarrito = renderCarrito;
-window.ajustarCarrito = ajustarCarrito;
-window.inputCarrito = inputCarrito;
 window.quitar = quitar;
-window.abrirModalEnvio = abrirModalEnvio;
-window.cerrarModalEnvio = cerrarModalEnvio;
-window.confirmarEnvio = confirmarEnvio;
+window.abrirEnlacesML = abrirEnlacesML;
 window.vaciarCarrito = vaciarCarrito;
-
-document.addEventListener('DOMContentLoaded', () => {
-    const btn = document.getElementById('btn-confirmar-envio');
-    if (btn) btn.onclick = confirmarEnvio;
-});
 
 window.initReseñasProducto = initReseñasProducto;
 window.previsualizarReseña = previsualizarReseña;

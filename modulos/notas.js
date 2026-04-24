@@ -194,22 +194,51 @@ export function verNotaDinamica(id, guardar = true) {
     document.getElementById('visor-notas').style.display = 'flex'; // Mostrar como modal
     
     let cuerpo = n.contenido;
-    n.imageUrls.forEach((url, i) => {
+    const urls = n.imageUrls || [];
+    let indicesUsados = new Set();
+
+    // Reemplazar tags numerados [FOTO1], [FOTO2], etc. (Insensible a mayúsculas)
+    urls.forEach((url, i) => {
         const tag = `[FOTO${i+1}]`;
-        const imgHtml = `<img src="${url}" class="img-real" style="margin:20px 0; border-radius:12px; border:1px solid var(--s);" onclick="window.verImagenAmpliada('${url}')">`;
-        cuerpo = cuerpo.split(tag).join(imgHtml);
+        const regex = new RegExp(tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        const imgHtml = `<img src="${url}" class="img-real" style="margin:20px 0; border-radius:12px; border:1px solid var(--s); cursor:pointer;">`;
+        const nuevoCuerpo = cuerpo.replace(regex, imgHtml);
+        if (nuevoCuerpo !== cuerpo) {
+            cuerpo = nuevoCuerpo;
+            indicesUsados.add(i);
+        }
     });
     
-    // Fallback para [FOTO] genérico
-    if (cuerpo.includes('[FOTO]') && n.imageUrls[0]) {
-        cuerpo = cuerpo.split('[FOTO]').join(`<img src="${n.imageUrls[0]}" class="img-real" style="margin:20px 0; border-radius:12px; border:1px solid var(--s);" onclick="window.verImagenAmpliada('${n.imageUrls[0]}')">`);
+    // Fallback para [FOTO] genérico (Insensible a mayúsculas)
+    const regexGen = /\[FOTO\]/gi;
+    if (regexGen.test(cuerpo) && urls[0]) {
+        const imgHtml = `<img src="${urls[0]}" class="img-real" style="margin:20px 0; border-radius:12px; border:1px solid var(--s); cursor:pointer;">`;
+        regexGen.lastIndex = 0; // Reset para el replace
+        cuerpo = cuerpo.replace(regexGen, imgHtml);
+        indicesUsados.add(0);
     }
 
-    document.getElementById('contenido-nota').innerHTML = `
+    // Anexar imágenes restantes no ubicadas en el texto
+    urls.forEach((url, i) => {
+        if (!indicesUsados.has(i)) {
+            cuerpo += `\n<img src="${url}" class="img-real" style="margin:20px 0; border-radius:12px; border:1px solid var(--s); cursor:pointer;">`;
+        }
+    });
+
+    const contentEl = document.getElementById('contenido-nota');
+    contentEl.innerHTML = `
         <h2 style="color:var(--p); font-size:2rem; margin-bottom:10px;">${n.titulo}</h2>
         <div style="color:var(--s); font-size:0.7rem; font-weight:bold; text-transform:uppercase; margin-bottom:20px; letter-spacing:1px;">Categoría: ${n.cat}</div>
         <div class="lab-data-box" style="line-height:1.8; font-family:'Segoe UI', sans-serif;">${cuerpo}</div>
     `;
+
+    // Vincular todas las imágenes encontradas en el contenido con el visor global
+    const imgs = Array.from(contentEl.querySelectorAll('img'));
+    const srcs = imgs.map(img => img.src);
+    imgs.forEach(img => {
+        img.onclick = () => window.verImagenAmpliada(img.src, srcs);
+    });
+
     window.scrollTo(0,0);
 }
 
@@ -344,21 +373,22 @@ export function leerPropuestaAdmin(id) {
     const urls = data.imageUrls || (data.imageUrl ? [data.imageUrl] : []);
     let indicesUsados = new Set();
 
-    // Reemplazar tags numerados [FOTO1], [FOTO2], etc.
+    // Reemplazar tags numerados [FOTO1], [FOTO2], etc. (Insensible a mayúsculas)
     urls.forEach((url, i) => {
         const tag = `[FOTO${i + 1}]`;
-        if (cuerpo.toLowerCase().includes(tag.toLowerCase())) {
-            const imgHtml = `<img src="${url}" style="max-width:100%; height:auto; border-radius:8px; margin:15px auto; display:block; border:1px solid var(--s); cursor:pointer;" onclick="window.verImagenAmpliada('${url}')">`;
-            const regex = new RegExp(tag.replace('[', '\\[').replace(']', '\\]'), 'gi');
-            cuerpo = cuerpo.replace(regex, imgHtml);
+        const regex = new RegExp(tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        const imgHtml = `<img src="${url}" style="max-width:100%; height:auto; border-radius:8px; margin:15px auto; display:block; border:1px solid var(--s); cursor:pointer;">`;
+        const nuevoCuerpo = cuerpo.replace(regex, imgHtml);
+        if (nuevoCuerpo !== cuerpo) {
+            cuerpo = nuevoCuerpo;
             indicesUsados.add(i);
         }
     });
 
-    // Fallback para imágenes no ubicadas
+    // Anexar imágenes restantes no ubicadas
     urls.forEach((url, i) => {
         if (!indicesUsados.has(i)) {
-            cuerpo += `\n<img src="${url}" style="max-width:100%; height:auto; border-radius:8px; margin:15px auto; display:block; border:1px solid var(--s); cursor:pointer;" onclick="window.verImagenAmpliada('${url}')">`;
+            cuerpo += `\n<img src="${url}" style="max-width:100%; height:auto; border-radius:8px; margin:15px auto; display:block; border:1px solid var(--s); cursor:pointer;">`;
         }
     });
 
@@ -370,7 +400,7 @@ export function leerPropuestaAdmin(id) {
                     <span>CATEGORÍA: ${(data.cat || 'General').toUpperCase()}</span>
                     <span>AUTOR: ${data.usuarioNombre || 'Anónimo'}</span>
                 </div>
-                <div class="lab-data-box" style="background: #000; padding: 20px; border-radius: 10px; border-left: 4px solid var(--p); line-height: 1.6; color: #eee; font-family: 'Courier New', monospace; white-space: pre-wrap;">${cuerpo}</div>
+                <div class="lab-data-box" id="admin-propuesta-content" style="background: #000; padding: 20px; border-radius: 10px; border-left: 4px solid var(--p); line-height: 1.6; color: #eee; font-family: 'Courier New', monospace; white-space: pre-wrap;">${cuerpo}</div>
                 <div style="display: flex; gap: 10px; margin-top: 25px;">
                     <button class="btn btn-m" style="flex: 1;" onclick="document.getElementById('modal-leer-admin').remove()">CERRAR</button>
                     ${data.status === 'pendiente' ? `<button class="btn btn-v" style="flex: 1;" onclick="document.getElementById('modal-leer-admin').remove(); window.aprobarPropuestaNota('${id}')">APROBAR AHORA</button>` : ''}
@@ -379,6 +409,16 @@ export function leerPropuestaAdmin(id) {
         </div>
     `;
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Vincular imágenes en el visor admin para permitir vista previa con visor
+    const container = document.getElementById('admin-propuesta-content');
+    if (container) {
+        const imgs = Array.from(container.querySelectorAll('img'));
+        const srcs = imgs.map(img => img.src);
+        imgs.forEach(img => {
+            img.onclick = () => window.verImagenAmpliada(img.src, srcs);
+        });
+    }
 }
 
 // Exponer a window para compatibilidad con HTML
