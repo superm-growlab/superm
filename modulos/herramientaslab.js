@@ -1006,10 +1006,11 @@ export function procesarImagenUsuario(event) {
 }
 
 export async function sembrarBiblioteca() {
+    // Usamos notify directamente ya que está en el mismo ámbito del módulo
     if (auth.currentUser?.uid !== ADMIN_UID) return notify("Acceso denegado.", "error");
     if (!confirm("¿Iniciar siembra de muestras? Se consultará al Oráculo y Google para poblar la biblioteca.")) return;
 
-    notify("🌱 Sembrando biblioteca...", "info");
+    notify("🌱 Iniciando siembra tecnológica...", "info");
     window.mostrarLoader();
 
     const muestrasBase = [
@@ -1107,6 +1108,7 @@ window.ejecutarAgenteConsultor = ejecutarAgenteConsultor;
 window.resetOraculo = resetOraculo;
 window.procesarImagenUsuario = procesarImagenUsuario;
 window.sembrarBiblioteca = sembrarBiblioteca;
+window.notify = notify;
 
 // Carga inicial
 document.addEventListener('DOMContentLoaded', () => { 
