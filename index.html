@@ -518,20 +518,6 @@
             #btn-prev-visor { left: 10px !important; font-size: 2.5rem !important; }
             #btn-next-visor { right: 10px !important; font-size: 2.5rem !important; }
 
-            /* --- TABLA TÉCNICA: VISTA VERTICAL --- */
-            #tabla-lab { min-width: 100% !important; display: block; }
-            #tabla-lab thead { display: none; }
-            #tabla-lab tr { 
-                display: block; margin-bottom: 20px; border: 1px solid var(--s); 
-                border-radius: 12px; padding: 10px; background: rgba(188, 19, 254, 0.03); 
-            }
-            #tabla-lab td { 
-                display: flex !important; justify-content: space-between; align-items: center; 
-                text-align: right; border-bottom: 1px solid #222; padding: 12px 5px !important; 
-                font-size: 0.8rem !important; max-width: none !important;
-            }
-            #tabla-lab td::before { content: attr(data-label); font-weight: 900; color: var(--p); font-size: 0.65rem; text-shadow: 0 0 5px var(--p); }
-
             /* --- DIARIO DE CULTIVO: VISTA DE LIBRO / SLIDER HORIZONTAL --- */
             .tabla-historial-diario { min-width: 100% !important; display: block; }
             .tabla-historial-diario thead { display: none; }
@@ -1901,7 +1887,7 @@
                 }
             }
             if (id === 'tablas' && !skipReset) { 
-                if(window.verSubSeccionLab) window.verSubSeccionLab('calculadora', false); 
+                if(window.verSubSeccionLab) window.verSubSeccionLab('seguimiento', false); 
                 if(window.cargarTablasPersistentes) window.cargarTablasPersistentes(); 
             }
             if (id === 'view-carrito') { if(window.renderCarrito) window.renderCarrito(); }

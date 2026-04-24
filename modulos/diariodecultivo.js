@@ -186,7 +186,8 @@ function renderDiarioCard(container, data) {
         <td data-label="OBSERVACIONES" onclick="window.verNotasCompletas('${notasEscaped}', 'OBSERVACIONES - ${nombrePlanta.toUpperCase()}', ${imgUrlsJson})" style="font-size:0.6rem; cursor:pointer; color:var(--p); text-decoration:underline;">${data.notas || 'VER'}</td>
         <td data-label="ACCION"><button onclick="window.eliminarRegistroDiario('${data.id}', this.closest('tr'))" style="background:none; border:none; color:#ff4444; cursor:pointer;">✕ ELIMINAR</button></td>
     `;
-    tbody.
+    tbody.prepend(row); // Insertamos al inicio para que la semana más nueva sea la primera página
+}
 
 function renderAnotacionCard(container, data) {
     const card = document.createElement('div');
@@ -221,12 +222,23 @@ export function cambiarVistaDiario(vista) {
 
 // Función auxiliar interna para no repetir lógica de CSS
 function sincronizarUIVistaDiario(vista) {
-    document.getElementById('vista-seguimiento-tabla').style.display = (vista === 'tabla') ? 'block' : 'none';
-    document.getElementById('vista-diario-cultivo').style.display = (vista !== 'tabla') ? 'block' : 'none';
+    const tableVista = document.getElementById('vista-seguimiento-tabla');
+    const diaryVista = document.getElementById('vista-diario-cultivo');
+
+    if (tableVista && diaryVista) {
+        if (vista === 'tabla') {
+            tableVista.style.setProperty('display', 'block', 'important');
+            diaryVista.style.setProperty('display', 'none', 'important');
+        } else {
+            tableVista.style.setProperty('display', 'none', 'important');
+            diaryVista.style.setProperty('display', 'block', 'important');
+        }
+    }
     
     const menu = document.getElementById('diario-menu-desplegable');
     if (menu) menu.classList.remove('active');
-    document.getElementById('label-vista-activa').innerText = vista === 'tabla' ? "📊 TABLA TÉCNICA" : (vista === 'seguimiento' ? "📂 SEGUIMIENTOS" : "📝 NOTAS");
+    const label = document.getElementById('label-vista-activa');
+    if (label) label.innerText = vista === 'tabla' ? "📊 TABLA TÉCNICA" : (vista === 'seguimiento' ? "📂 SEGUIMIENTOS" : "📝 NOTAS");
 }
 
 export function toggleMenuDiario(e) {
