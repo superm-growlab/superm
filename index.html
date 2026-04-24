@@ -41,6 +41,18 @@
             -ms-user-select: none;
         }
 
+        /* Scrollbar Alquimista Global */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { 
+            background: #1a1a1a; 
+            border-radius: 10px; 
+            border: 2px solid var(--bg);
+            box-shadow: inset 0 0 6px var(--s);
+        }
+        ::-webkit-scrollbar-thumb:hover { background: var(--s); }
+        ::selection { background: var(--p); color: #000; }
+
         /* Input & UI Components */
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -64,7 +76,7 @@
             outline: none;
             font-family: 'Courier New', monospace;
         }
-        .input-lab:focus { box-shadow: 0 0 10px var(--p); border-color: var(--p); }
+        .input-lab:focus { box-shadow: 0 0 15px rgba(57, 255, 20, 0.3), inset 0 0 5px rgba(57, 255, 20, 0.1); border-color: var(--p); }
 
         @keyframes alchemist-pulse {
             0% { box-shadow: 0 0 5px var(--p); }
@@ -105,7 +117,8 @@
         }
         .nav-links { display: flex; align-items: center; flex-wrap: wrap; justify-content: center; }
         .nav-links span { cursor: pointer; margin-left: 20px; transition: 0.3s; font-weight: bold; }
-        .nav-links span:hover { color: var(--p); }
+        .nav-links span:hover { color: var(--p); text-shadow: 0 0 10px var(--p); }
+        .nav-links span.nav-active { color: var(--p); border-bottom: 2px solid var(--p); padding-bottom: 4px; }
 
         #landing {
             height: 100vh; display: flex; flex-direction: column; justify-content: center;
@@ -245,7 +258,7 @@
 
         /* Ajuste de tarjetas de notas para que sean más bajas */
         .nota-card {
-            padding: 20px; /* Mantener padding para espacio interno */
+            padding: 15px; /* Padding reducido para compactar */
             display: flex;
             flex-direction: column;
             text-align: left; /* Mejorar legibilidad del texto */
@@ -257,20 +270,20 @@
             margin-bottom: 10px;
         }
         .nota-card .nota-icon {
-            font-size: 1.8rem; /* Un poco más pequeño */
-            margin-right: 10px;
+            font-size: 1.5rem; /* Icono más discreto */
+            margin-right: 8px;
             flex-shrink: 0; /* Evitar que el icono se encoja */
         }
         .nota-card .nota-title {
             margin: 0;
-            font-size: 1.2rem; /* Un poco más grande para el título */
+            font-size: 1rem; /* Título más estilizado */
             line-height: 1.2;
             color: var(--p);
         }
         .nota-card .card-meta {
             display: flex;
             justify-content: space-between;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: #888;
             margin-bottom: 10px;
         }
@@ -280,8 +293,8 @@
             color: var(--s);
         }
         .nota-card .nota-summary {
-            margin: 0 0 15px 0;
-            font-size: 0.85rem; /* Un poco más grande para el resumen */
+            margin: 0 0 10px 0;
+            font-size: 0.75rem; /* Resumen más pequeño */
             line-height: 1.4;
             color: #aaa;
             flex-grow: 1; /* Permitir que el resumen ocupe espacio */
@@ -310,7 +323,7 @@
         .info-layout { display: flex; gap: 20px; align-items: flex-start; margin-top: 30px; }
         .info-sidebar { width: 160px; flex-shrink: 0; position: sticky; top: 90px; }
         .info-main { flex: 1; }
-        #menu-notas.grid-notas { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        #menu-notas.grid-notas { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
 
         .lab-data-box { background: #000; border-left: 4px solid var(--p); padding: 20px; margin: 20px 0; border-radius: 0 10px 10px 0; }
         
@@ -468,12 +481,9 @@
 
             .input-lab, .form-box input, .qty-input { font-size: 16px !important; }
             
-            .diario-grid {
-                grid-template-columns: 1fr !important;
-            }
-            .diario-grid > div {
-                grid-column: span 1 !important;
-            }
+            /* Optimizamos el scroll del formulario en móvil */
+            #formulario-diario > div { padding: 15px; width: 98%; }
+            .diario-grid { gap: 8px !important; }
 
             .seccion { padding: 40px 3% 20px 3%; }
             .tarjeta { padding: 15px; }
@@ -842,7 +852,10 @@
                     <input type="number" id="diario-hum" class="input-lab" step="1" min="0" max="100" value="60" style="width:100%; border-color: var(--s); color:#fff;" />
                 </div>
                 <div style="grid-column: span 2;">
-                    <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Observaciones</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label style="font-size:0.75rem; color:#888;">Observaciones</label>
+                        <span onclick="window.verNotasCompletas(document.getElementById('diario-notas').value, 'VISTA PREVIA: NOTAS')" style="color: var(--p); cursor: pointer; font-size: 0.7rem; font-weight: bold; text-shadow: 0 0 5px var(--p);">[ 🔍 AMPLIAR ]</span>
+                    </div>
                     <textarea id="diario-notas" class="input-lab" rows="3" style="width:100%; border-color: var(--s); color:#fff; resize: vertical;"></textarea>
                 </div>
                 <div style="grid-column: span 2;">
@@ -1006,7 +1019,7 @@
         <input type="text" class="buscador" id="mainSearch" placeholder="¿Qué buscas, Alquimista?" onkeyup="if(event.key==='Enter') realizarBusqueda()">
         
         <div style="display:flex; gap:15px; flex-wrap:wrap; justify-content:center; margin-bottom: 15px;">
-            <button class="btn btn-v" onclick="ver('tienda')">🛒 Tienda</button>
+            <button class="btn btn-m" onclick="ver('tienda')">🛒 Tienda</button>
             <button class="btn btn-m" onclick="ver('tablas')">⚙️ Herramientas</button>
             <button class="btn btn-m" onclick="ver('info')">📜 Notas</button>
         </div>
@@ -1039,11 +1052,11 @@
         <div style="color:var(--p); font-weight:900; letter-spacing:2px; cursor:pointer;" onclick="irAlInicio()">🧪 SUPER M</div>
     <div class="nav-links">
         <span id="btn-admin-nav" onclick="ver('view-admin')" style="display:none; color: var(--s);">⚙️ ADMIN</span>
-        <span onclick="ver('tienda')">TIENDA</span>
-        <span onclick="ver('tablas')">HERRAMIENTAS</span>
-        <span onclick="ver('info')">NOTAS</span>
-        <span onclick="ver('view-comunidad')">COMUNIDAD</span>
-        <span onclick="ver('view-carrito')">🛒 <small id="cart-count">0</small></span>
+        <span id="nav-tienda" onclick="ver('tienda')">TIENDA</span>
+        <span id="nav-tablas" onclick="ver('tablas')">HERRAMIENTAS</span>
+        <span id="nav-info" onclick="ver('info')">NOTAS</span>
+        <span id="nav-comunidad" onclick="ver('view-comunidad')">COMUNIDAD</span>
+        <span id="nav-carrito" onclick="ver('view-carrito')">🛒 <small id="cart-count">0</small></span>
     </div>
 </nav>
 
@@ -1784,6 +1797,22 @@
             document.querySelectorAll('.seccion').forEach(s => s.classList.remove('activa'));
             sec.classList.add('activa');
             
+            // Actualizar indicador de sección activa en la navegación
+            document.querySelectorAll('.nav-links span').forEach(link => link.classList.remove('nav-active'));
+            const navMap = {
+                'tienda': 'nav-tienda',
+                'tablas': 'nav-tablas',
+                'info': 'nav-info',
+                'view-comunidad': 'nav-comunidad',
+                'view-carrito': 'nav-carrito',
+                'view-admin': 'btn-admin-nav'
+            };
+            const activeNavId = navMap[id];
+            if (activeNavId) {
+                const navEl = document.getElementById(activeNavId);
+                if (navEl) navEl.classList.add('nav-active');
+            }
+
             // 3. Reset de visores globales
             const visor = document.getElementById('visor-notas');
             if (visor) visor.style.display = 'none';

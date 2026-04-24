@@ -36,8 +36,6 @@ export async function cargarNotasDesdeSheet() {
     window.cargandoNotasLock = true;
 
     try {
-        notify("📡 Conectando con biblioteca...", "info");
-        
         const r = await fetch(URL_SHEET_NOTAS);
         if (!r.ok) throw new Error(`Error HTTP: ${r.status}`);
         
@@ -71,7 +69,6 @@ export async function cargarNotasDesdeSheet() {
         });
 
         window.notasDinamicas = notasMapeadas;
-        notify("✅ Datos de Sheets recibidos.", "success");
 
         // Liberamos la interfaz inmediatamente con los datos de Sheets
         window.notasCargadasInicialmente = true;
