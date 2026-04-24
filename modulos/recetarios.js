@@ -1,6 +1,7 @@
-import { db, auth } from './firebase-config.js';
+import { db, auth, ADMIN_UID } from './firebase-config.js';
 import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { notify } from './herramientaslab.js';
+import { crearNotificacion } from './comunidad.js';
 
 const URL_SHEET_RECETARIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=654571090&single=true&output=tsv";
 
@@ -105,6 +106,10 @@ export async function enviarSolicitudTabla() {
     const marca = document.getElementById('sol-marca').value.trim();
     if (!marca) return notify("⚠️ Ingresa la marca.", "info");
     await addDoc(collection(db, 'solicitudes_tablas'), { marca, usuarioId: auth.currentUser.uid, status: 'pendiente', timestamp: serverTimestamp() });
+    
+    // Notificar al Admin de la solicitud
+    crearNotificacion(ADMIN_UID, `📑 Nueva solicitud de tabla: ${marca}`, 'view-admin');
+    
     document.getElementById('modal-solicitar-tabla').style.display = 'none';
     notify("📑 Solicitud enviada.", "success");
 }

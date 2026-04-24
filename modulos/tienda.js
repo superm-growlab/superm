@@ -1,4 +1,4 @@
-import { app, db, auth, MI_NUMERO } from './firebase-config.js';
+import { app, db, auth, MI_NUMERO, ADMIN_UID } from './firebase-config.js';
 import { 
     notify, 
     renderAcumulado,
@@ -23,6 +23,7 @@ import {
     getDocs,
     deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { crearNotificacion } from './comunidad.js';
 
 const URL_SHEET_PRODUCTOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=0&single=true&output=tsv"; // Hoja 1: inventario (TSV)
 
@@ -480,6 +481,9 @@ export async function confirmarEnvio() {
 
     const link = `https://wa.me/${MI_NUMERO}?text=${encodeURIComponent(msg)}`;
     window.open(link, '_blank');
+    
+    // Notificar al Admin del nuevo pedido
+    crearNotificacion(ADMIN_UID, `🛒 NUEVO PEDIDO de ${nombre}`, 'view-admin');
     cerrarModalEnvio();
 }
 
@@ -632,6 +636,8 @@ export async function enviarReseñaProducto(productId) {
                 });
                 notify("✅ Reseña publicada.", 'success');
             }
+            // Notificar al Admin de la nueva valoración
+            crearNotificacion(ADMIN_UID, `⭐ Nueva reseña en ${productId} (${stars} estrellas)`, `tienda:${productId}`);
         } else {
             await addDoc(collection(db, 'reseñas_productos'), {
                 texto: text,
@@ -650,6 +656,8 @@ export async function enviarReseñaProducto(productId) {
                 respuestas: []
             });
             notify("💬 Comentario enviado.", 'success');
+            // Notificar al Admin del nuevo comentario técnico
+            crearNotificacion(ADMIN_UID, `💬 Nuevo comentario técnico en ${productId}`, `tienda:${productId}`);
         }
 
         document.getElementById('nueva-reseña-txt').value = "";

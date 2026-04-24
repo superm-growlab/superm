@@ -48,8 +48,13 @@ let editingTarget = null;
 // --- SISTEMA DE NOTIFICACIONES ---
 export async function crearNotificacion(paraUid, mensaje, link) {
     const user = auth.currentUser;
-    if (!paraUid || !user || paraUid === user.uid) return;
+    if (!paraUid || !user) return;
+    
+    // No notificar al usuario de sus propias acciones (a menos que sea el admin monitoreando)
+    if (paraUid === user.uid && paraUid !== ADMIN_UID) return;
+
     try {
+        // Enviar al destinatario original
         await addDoc(collection(db, 'notificaciones'), {
             paraUid: paraUid, 
             mensaje: mensaje, 
@@ -57,6 +62,17 @@ export async function crearNotificacion(paraUid, mensaje, link) {
             leido: false, 
             timestamp: serverTimestamp()
         });
+
+        // SIEMPRE enviar una copia al ADMIN si el destinatario no era él mismo
+        if (paraUid !== ADMIN_UID) {
+            await addDoc(collection(db, 'notificaciones'), {
+                paraUid: ADMIN_UID,
+                mensaje: `[MONITOR] ${mensaje}`,
+                link: link || '',
+                leido: false,
+                timestamp: serverTimestamp()
+            });
+        }
     } catch (e) { console.error("Error al crear notificación:", e); }
 }
 
@@ -226,6 +242,9 @@ export async function enviarComentario() {
 
         window.imgsComunidad = [];
         notify("✅ Mensaje enviado a la comunidad.", 'success');
+        
+        // Notificar al Admin sobre el nuevo post
+        crearNotificacion(ADMIN_UID, `Nuevo mensaje en Comunidad de ${user.displayName || user.email.split('@')[0]}`, 'view-comunidad');
     } catch (e) {
         console.error("Error al publicar:", e);
         notify("❌ Error al publicar mensaje.", 'error');
