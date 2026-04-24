@@ -35,10 +35,6 @@
             color: var(--txt);
             margin: 0;
             line-height: 1.6;
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
         }
 
         /* Scrollbar Alquimista Global */
@@ -1950,7 +1946,9 @@
                 }
             }
             if (id === 'tablas' && !skipReset) { 
-                if(window.verSubSeccionLab) window.verSubSeccionLab('seguimiento', false); 
+                if(window.verSubSeccionLab) {
+                    window.verSubSeccionLab('calculadora', false); // Aseguramos que entre a calculadoras por defecto
+                }
                 if(window.cargarTablasPersistentes) window.cargarTablasPersistentes(); 
             }
             if (id === 'view-carrito') { if(window.renderCarrito) window.renderCarrito(); }
@@ -2211,20 +2209,6 @@ window.togglePasswordVisibilityRegister = () => {
     input.type = type;
     if (inputConfirm) inputConfirm.type = type;
 };
-    // Bloqueo de click derecho
-    document.addEventListener('contextmenu', (e) => e.preventDefault());
-
-    // Bloqueo de teclas de inspección (F12, Ctrl+Shift+I, J, C y Ctrl+U)
-    document.addEventListener('keydown', (e) => {
-        if (
-            e.key === 'F12' || 
-            (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) ||
-            (e.ctrlKey && e.key.toUpperCase() === 'U')
-        ) {
-            e.preventDefault();
-            return false;
-        }
-    });
 </script>
 </body>
 </html>
