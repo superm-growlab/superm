@@ -120,7 +120,7 @@ export async function sincronizarVotosNotas() {
         }
     } catch (err) {
         if (err.code === 'permission-denied') {
-            console.log("ℹ️ Notas: Modo lectura (votos no sincronizados por falta de sesión).");
+            console.log("ℹ️ Notas: Los votos no se sincronizaron. Verifica que las reglas de Firestore permitan la lectura pública de 'stats_notas'.");
         } else {
             console.warn("⚠️ Error en sincronización de votos:", err.message);
         }
