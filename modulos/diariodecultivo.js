@@ -154,9 +154,8 @@ function renderDiarioCard(container, data) {
     if (!plantCard) {
         plantCard = document.createElement('div');
         plantCard.id = safeId; plantCard.className = 'tarjeta-expediente';
-        plantCard.style.cssText = 'background: #0a0a0a; border: 2px solid var(--s); border-radius: 18px; padding: 15px; color: #fff; margin-bottom:20px; max-width:100%; box-sizing:border-box;';
         plantCard.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--p); padding-bottom:10px; margin-bottom:15px;">
+            <div class="expediente-header">
                 <h3 style="margin:0; color: var(--p); font-size:1rem;">🧪 SEGUIMIENTO: ${nombrePlanta.toUpperCase()}</h3>
                 <div style="display:flex; gap:8px;">
                     <button class="btn btn-m" style="font-size:0.6rem; border-color:var(--p); color:var(--p);" onclick="window.cargarRegistroEnFormulario('${dataJson}')">AÑADIR SEMANA</button>
@@ -175,7 +174,7 @@ function renderDiarioCard(container, data) {
 
     row.innerHTML = `
         <td data-label="FECHA">${data.fecha?.split(',')[0] || '---'}</td>
-        <td data-label="SEM">S${data.semana || '1'}</td>
+        <td data-label="SEM">${data.semana || '1'}</td>
         <td data-label="ETAPA"><span class="badge-etapa">${data.etapa || 'VEGE'}</span></td>
         <td data-label="PH">${data.ph || '--'}</td>
         <td data-label="EC">${data.ec || '--'}</td>
