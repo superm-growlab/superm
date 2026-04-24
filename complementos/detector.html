@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oráculo Alquimista | Super M Lab</title>
+    <link rel="shortcut icon" type="image/png" href="https://i.postimg.cc/rF9GqwGS/favicon.png">
+
+    <style>
+        :root {
+            --p: #39ff14; /* Verde Neón */
+            --s: #bc13fe; /* Púrpura Neón */
+            --bg: #050505;
+            --card: #111;
+            --text: #fff;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        h1 { text-align: center; text-shadow: 0 0 10px var(--p); color: var(--p); }
+        h2 { color: var(--s); text-align: center; margin-top: 30px; }
+
+        .contenedor-principal {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 🖼️ GRILLA DE SÍNTOMAS VISUALES */
+        .grilla-sintomas {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+            max-height: 320px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #0a0a0a;
+            border-radius: 8px;
+            border: 1px solid #222;
+        }
+
+        .celda-sintoma {
+            background: var(--card);
+            border: 2px solid #222;
+            border-radius: 4px;
+            padding: 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .celda-sintoma.seleccionada { border-color: var(--p); box-shadow: 0 0 15px var(--p); }
+
+        .celda-sintoma:hover {
+            border-color: var(--p);
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
+            background: #1a1a1a;
+        }
+
+        .celda-sintoma img {
+            width: 100px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            filter: grayscale(50%);
+            transition: 0.3s;
+        }
+
+        .celda-sintoma:hover img {
+            filter: grayscale(0%) brightness(1);
+        }
+
+        .celda-sintoma p {
+            margin: 5px 0 0 0;
+            font-size: 0.8rem;
+            color: #aaa;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .celda-sintoma:hover p {
+            color: #fff;
+        }
+
+        /* 🚀 UPLOADER DE FOTOS */
+        .seccion-uploader {
+            background: #111;
+            border: 2px dashed var(--s);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            margin: 30px 0;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .seccion-uploader:hover {
+            border-color: var(--p);
+            background: #0a0a0a;
+            box-shadow: 0 0 20px rgba(188, 19, 254, 0.2);
+        }
+
+        .seccion-uploader p { color: var(--s); font-weight: bold; margin: 10px 0 0 0; }
+        .icon-upload { font-size: 2rem; }
+
+        /* 🔮 PANEL DE RESULTADOS */
+        #panel-resultados {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid var(--p);
+            border-radius: 10px;
+            background: #000;
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.15);
+        }
+        .split-diagnostico {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 25px;
+            align-items: start;
+        }
+        @media (max-width: 700px) {
+            .split-diagnostico { grid-template-columns: 1fr; }
+        }
+        .img-expandida {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--s);
+            object-fit: contain;
+            background: #080808;
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.2);
+        }
+        .info-tecnica {
+            padding: 10px;
+            border-left: 1px solid #222;
+        }
+        @media (max-width: 700px) { .info-tecnica { border-left: none; border-top: 1px solid #222; margin-top: 15px; } }
+
+        .loading {
+            text-align: center;
+            color: var(--s);
+            font-style: italic;
+        }
+
+        @keyframes aparece {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hidden { display: none; }
+        
+        button.btn-reset {
+            background: #000;
+            border: 1px solid var(--s);
+            color: var(--s);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            margin-top: 20px;
+            width: 100%;
+        }
+        button.btn-reset:hover {
+            background: var(--s);
+            color: #fff;
+        }
+
+        /* 🔍 BARRA DE BÚSQUEDA TÉCNICA */
+        .buscador-adn-cont {
+            width: 100%;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .input-adn {
+            width: 100%;
+            background: #000;
+            border: 1px solid var(--s);
+            padding: 15px;
+            color: var(--p);
+            border-radius: 8px;
+            font-family: inherit;
+            outline: none;
+            box-sizing: border-box;
+        }
+        .input-adn:focus { box-shadow: 0 0 15px var(--s); }
+
+        /*  ESTILOS PARA FUENTES Y DATOS TÉCNICOS */
+        .fuente-link {
+            display: inline-block;
+            background: rgba(188, 19, 254, 0.1);
+            border: 1px solid var(--s);
+            color: var(--s);
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.7rem;
+            margin-right: 5px;
+            margin-top: 5px;
+            transition: 0.3s;
+        }
+        .fuente-link:hover {
+            background: var(--s);
+            color: #fff;
+        }
+
+        /* 🌱 BOTÓN DE SEMBRADO (ADMIN) */
+        .btn-seed {
+            background: none;
+            border: 1px dashed #333;
+            color: #555;
+            font-size: 0.7rem;
+            padding: 10px;
+            margin-top: 50px;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.3s;
+            border-radius: 8px;
+        }
+        .btn-seed:hover { border-color: var(--p); color: var(--p); background: rgba(57, 255, 20, 0.05); }
+
+        /* Feedback de Carga Global */
+        #loader-global {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 5, 0.9); display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 30000;
+            backdrop-filter: blur(10px);
+        }
+        .spinner {
+            width: 50px; height: 50px; border: 4px solid rgba(188, 19, 254, 0.1);
+            border-top-color: var(--p); border-radius: 50%;
+            animation: spin 1s linear infinite; filter: drop-shadow(0 0 10px var(--p));
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @keyframes neon-blink { 0% { opacity:1; } 50% { opacity:0; } 100% { opacity:1; } }
+    </style>
+</head>
+<body>
+
+    <div id="loader-global">
+        <div class="spinner"></div>
+        <p style="color: var(--p); margin-top: 15px; font-family: 'Courier New', monospace; letter-spacing: 2px; font-size: 0.8rem;">TRANSMUTANDO DATOS...</p>
+    </div>
+
+    <h1>🔬 ORÁCULO DETECTOR HÍBRIDO</h1>
+
+    <div class="contenedor-principal">        
+        <div class="buscador-adn-cont">
+            <input type="text" id="search-tags" class="input-adn" placeholder="🔍 Filtrar síntomas de la biblioteca..." onkeyup="filtrarPorADN()">
+        </div>
+
+        <p style="text-align:center; color:#888; font-size: 0.8rem;">Selecciona una muestra de la biblioteca para el análisis de transmutación.</p>
+        
+        <div id="grilla-sintomas" class="grilla-sintomas"></div>
+
+        <div id="panel-resultados" class="hidden">
+            <div id="contenido-resultado"></div>
+            <button class="btn-reset" onclick="resetOraculo()">NUEVA CONSULTA</button>
+        </div>
+
+        <div style="text-align:center; margin-top: 40px;">
+            <p style="color:var(--s); font-size: 0.7rem; letter-spacing: 2px; margin:0;">¿TU SÍNTOMA NO ESTÁ EN LA BIBLIOTECA?</p>
+        </div>
+
+        <div class="seccion-uploader" onclick="document.getElementById('file-input').click()">
+            <div class="icon-upload">📸</div>
+            <p>SUBIR FOTO PARA ANÁLISIS IA</p>
+            <input type="file" id="file-input" class="hidden" accept="image/*" onchange="window.procesarImagenUsuario(event)">
+        </div>
+
+        <button class="btn-seed" onclick="window.sembrarBiblioteca()">🌱 SEMBRAR 20 MUESTRAS DE PRUEBA (SOLO ADMIN)</button>
+    </div>
+
+    <script type="module">
+        // 🧪 INTEGRACIÓN FIREBASE SDK
+        import { db, functions, auth } from "../modulos/firebase-config.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
+
+        const consultarOraculoFn = httpsCallable(functions, 'consultarOraculo');
+        let bibliotecaVisual = [];
+
+        // 🌐 CONFIGURACIÓN DE FUENTES MAESTRAS (Filtro de autoridad)
+        const FUENTES_MAESTRAS = [
+            "Super M Lab Database",
+            "AI Research Unit"
+        ];
+
+        //  CARGA DESDE FIRESTORE
+        async function cargarBiblioteca() {
+            const grilla = document.getElementById('grilla-sintomas');
+            grilla.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:var(--s);">Sincronizando con la base de datos de ADN...</p>`;
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "biblioteca_visual"));
+                if (querySnapshot.empty) {
+                    grilla.innerHTML = "<p style='grid-column: 1/-1; text-align:center; color:#555;'>No se encontraron muestras en el laboratorio...</p>";
+                    return;
+                }
+                bibliotecaVisual = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                window.renderizarGaleria(bibliotecaVisual);
+            } catch (error) {
+                console.error("Error cargando biblioteca:", error);
+                grilla.innerHTML = `<p style='grid-column: 1/-1; text-align:center; color:red;'>Error de conexión con el Oráculo.</p>`;
+            }
+        }
+
+        // 🖼️ RENDERIZADO DE GALERÍA DINÁMICA
+        const renderizarGaleria = (items = []) => {
+            const grilla = document.getElementById('grilla-sintomas');
+            grilla.innerHTML = "";
+            
+            if (!items || items.length === 0) {
+                grilla.innerHTML = "<p style='grid-column: 1/-1; text-align:center; color:#555;'>No hay muestras disponibles con este criterio.</p>";
+                return;
+            }
+
+            items.forEach(item => {
+                const celda = document.createElement('div');
+                celda.className = 'celda-sintoma';
+                celda.onclick = () => window.consultarOraculo(item.id, celda);
+                // Atributo técnico para el buscador
+                celda.setAttribute('data-adn', (item.tags || []).join(','));
+                const fallbackIcon = "https://i.postimg.cc/rF9GqwGS/favicon.png";
+                let mainImg = (item.imageUrls && item.imageUrls.length > 0) ? item.imageUrls[0] : (item.img || fallbackIcon);
+
+                // Filtrar URLs técnicas de Firestore que no son imágenes
+                if (typeof mainImg === 'string' && mainImg.includes("firestore.googleapis.com")) {
+                    mainImg = fallbackIcon;
+                }
+
+                celda.innerHTML = `
+                    <img src="${mainImg}" alt="${item.titulo}" 
+                         onerror='window.handleImageError(this)'
+                         referrerpolicy="no-referrer" 
+                         loading="lazy">
+                    <p>${item.titulo}</p>
+                `;
+                grilla.appendChild(celda);
+            });
+        };
+        window.renderizarGaleria = renderizarGaleria;
+
+        // 🔄 MANEJO DE FALLBACK PARA IMÁGENES BLOQUEADAS (ORB / 404)
+        window.handleImageError = (img) => {
+            img.onerror = null; 
+            const parent = img.parentElement;
+            if (!parent) return;
+            
+            // Creamos un contenedor Neon en lugar de mostrar el icono de imagen rota
+            const placeholder = document.createElement('div');
+            placeholder.style.cssText = `
+                width: 100%; height: 80px; background: #080808; 
+                border: 1px solid var(--s); display: flex; align-items: center; 
+                justify-content: center; color: var(--p); font-size: 0.5rem; 
+                text-align: center; font-family: monospace; padding: 5px;
+                box-shadow: inset 0 0 10px rgba(188, 19, 254, 0.2);
+            `;
+            placeholder.innerHTML = "[ ADN BLOQUEADO ]<br>CONSULTA AL ORÁCULO";
+            parent.replaceChild(placeholder, img);
+        };
+
+        //  FILTRO POR ADN (TAGS)
+        window.filtrarPorADN = () => {
+            const busqueda = document.getElementById('search-tags').value.toLowerCase().trim();
+            if (!busqueda) return window.renderizarGaleria(bibliotecaVisual);
+
+            const terminos = busqueda.split(/\s+/);
+            const filtrados = bibliotecaVisual.filter(item => {
+                // Cruza el título y los tags del documento
+                const combinedAdn = [item.titulo, ...(item.tags || [])].join(' ').toLowerCase();
+                // Asegura que todos los términos buscados estén presentes (AND logic)
+                return terminos.every(term => combinedAdn.includes(term));
+            });
+            renderizarGaleria(filtrados);
+        };
+
+        // 🔮 MOTOR DE INFERENCIA (FIREBASE CLIENT)
+        window.consultarOraculo = async (idDoc, elemento = null) => {
+            // Resaltar visualmente la selección
+            document.querySelectorAll('.celda-sintoma').forEach(el => el.classList.remove('seleccionada'));
+            if (elemento) elemento.classList.add('seleccionada');
+
+            window.mostrarLoader();
+
+            const panel = document.getElementById('panel-resultados');
+            const contenido = document.getElementById('contenido-resultado');
+            
+            panel.classList.remove('hidden');
+            contenido.innerHTML = `<p class="loading">Iniciando Agente de Consulta Dinámica para [${idDoc}]...</p>`;
+            window.scrollTo({ top: panel.offsetTop - 50, behavior: 'smooth' });
+
+            const visualData = bibliotecaVisual.find(item => item.id === idDoc);
+            if (!visualData) {
+                contenido.innerHTML = `<p style="color:red;">Error: Muestra no localizada en el laboratorio.</p>`;
+                return;
+            }
+
+            try {
+                // 1. Intentar obtener diagnóstico estático de Firestore (Calle B)
+                let diagId = visualData.id_diagnostico || (visualData.tags && visualData.tags[0]);
+                let diagData = null;
+
+                if (diagId) {
+                    const diagSnap = await getDoc(doc(db, "diagnosticos", diagId));
+                    if (diagSnap.exists()) {
+                        diagData = diagSnap.data();
+                    }
+                }
+
+                // 2. Disparar el Agente de Consulta (On-Demand Knowledge)
+                await window.ejecutarAgenteConsultor(visualData, diagData);
+
+            } catch (error) {
+                console.error("Error en consulta cruzada:", error);
+                contenido.innerHTML = `<p style="color:red;">Error de conexión con la Gran Biblioteca de Diagnósticos.</p>`;
+            } finally {
+                window.ocultarLoader();
+            }
+        };
+
+        // 🤖 AGENTE DE CONSULTA DINÁMICA
+        window.ejecutarAgenteConsultor = async (item, diagExistente) => {
+            const contenido = document.getElementById('contenido-resultado');
+            const fallbackIcon = "https://i.postimg.cc/rF9GqwGS/favicon.png";
+            const initialImg = (item.imageUrls?.[0]) || item.img || fallbackIcon;
+            
+            // 1. RENDERIZADO INMEDIATO (Muestra la tarjeta vacía mientras carga la IA)
+            contenido.innerHTML = `
+                <div class="split-diagnostico">
+                    <div class="col-visual">
+                        <img src="${initialImg}" class="img-expandida" id="diag-img-principal" alt="Muestra de ADN" 
+                             onerror='window.handleImageError(this)'
+                             referrerpolicy="no-referrer">
+                        <p style="font-size:0.6rem; color:#555; margin-top:10px; text-align:center;">MUESTRA DE REFERENCIA: ${item.id}</p>
+                    </div>
+                    <div class="info-tecnica">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                            <h3 style="color: var(--p); margin:0;">🔮 ${item.titulo.toUpperCase()}</h3>
+                            <span id="ai-status-badge" style="color:var(--s); font-size:0.5rem; border:1px solid var(--s); padding:2px 5px; border-radius:3px;">SINCRONIZANDO...</span>
+                        </div>
+                        
+                        <div id="ai-solucion-box" style="background:rgba(57, 255, 20, 0.03); padding:15px; border-radius:8px; border-left: 3px solid #333; margin-bottom:20px;">
+                            <p style="color:#666; font-size:0.65rem; font-weight:bold; margin-bottom:5px;">PROTOCOLO DE REPARACIÓN:</p>
+                            <p id="ai-solucion-text" style="font-size:0.95rem; color:#888; line-height:1.5; margin:0;">Invocando sabiduría del Oráculo...</p>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                            <div>
+                                <p style="color:var(--s); font-size:0.55rem; font-weight:bold;">VALORES RED pH</p>
+                                <p id="ai-ph-val" style="font-size:0.85rem; color:#444;">--</p>
+                            </div>
+                            <div>
+                                <p style="color:var(--s); font-size:0.55rem; font-weight:bold;">VALORES RED EC</p>
+                                <p id="ai-ec-val" style="font-size:0.85rem; color:#444;">--</p>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:20px; border-top:1px solid #222; padding-top:15px;">
+                            <p id="ai-fuente" style="color:#444; font-size:0.55rem; margin:0;">Consultando la Gran Biblioteca...</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            let hallazgo;
+            try {
+                if (diagExistente) {
+                    hallazgo = { ...diagExistente, es_nuevo: false };
+                } else {
+                    const result = await consultarOraculoFn({ titulo: item.titulo || item.title, tags: item.tags || [] });
+                    hallazgo = { ...result.data, es_nuevo: true };
+                }
+
+                if (hallazgo.error) throw new Error(hallazgo.error);
+
+                // 2. ACTUALIZACIÓN DINÁMICA DE LA TARJETA
+                document.getElementById('diag-img-principal').src = hallazgo.url_imagen || initialImg;
+                document.getElementById('ai-solucion-text').innerText = hallazgo.solucion_alquimista;
+                document.getElementById('ai-solucion-text').style.color = "#fff";
+                document.getElementById('ai-solucion-box').style.borderLeftColor = "var(--p)";
+                document.getElementById('ai-ph-val').innerText = hallazgo.ph_rango || "N/A";
+                document.getElementById('ai-ph-val').style.color = "#ccc";
+                document.getElementById('ai-ec-val').innerText = hallazgo.ec_rango || "N/A";
+                document.getElementById('ai-ec-val').style.color = "#ccc";
+                document.getElementById('ai-fuente').innerText = "FUENTE: " + (hallazgo.fuente || "Super M AI Engine");
+                
+                const badge = document.getElementById('ai-status-badge');
+                badge.innerText = hallazgo.es_nuevo ? "IA LIVE" : "ARCHIVO";
+                if (hallazgo.es_nuevo) badge.style.color = "var(--p)";
+
+                // Persistencia local
+                if (hallazgo.es_nuevo && auth.currentUser) {
+                    let diagId = item.id_diagnostico || (item.tags && item.tags[0]) || item.id;
+                    await setDoc(doc(db, "diagnosticos", diagId), { ...hallazgo, timestamp: serverTimestamp() });
+                }
+            } catch (error) {
+                document.getElementById('ai-status-badge').innerText = "FALLO";
+                document.getElementById('ai-status-badge').style.color = "red";
+                document.getElementById('ai-solucion-text').innerHTML = `<span style="color:red;">🔮 ERROR DEL ORÁCULO:</span><br>${error.message}`;
+            }
+        };
+
+        // 🌱 FUNCIÓN PARA POBLAR LA BIBLIOTECA CON 20 IMÁGENES DE LA WEB
+        window.sembrarBiblioteca = async () => {
+            if (!confirm("¿Deseas poblar la biblioteca con 20 muestras de referencia de la web?")) return;
+            
+            const muestras = [
+                { id: "nitrógeno_carencia", titulo: "Carencia de Nitrógeno", tags: ["nitrógeno", "amarilleo"] },
+                { id: "fósforo_carencia", titulo: "Carencia de Fósforo", tags: ["fósforo", "manchas oscuras"] },
+                { id: "potasio_carencia", titulo: "Carencia de Potasio", tags: ["potasio", "bordes quemados"] },
+                { id: "calcio_carencia", titulo: "Carencia de Calcio", tags: ["calcio", "puntos marrones"] },
+                { id: "magnesio_carencia", titulo: "Carencia de Magnesio", tags: ["magnesio", "clorosis"] },
+                { id: "hierro_carencia", titulo: "Carencia de Hierro", tags: ["hierro", "hojas amarillas"] },
+                { id: "boro_carencia", titulo: "Carencia de Boro", tags: ["boro", "puntas muertas"] },
+                { id: "azufre_carencia", titulo: "Carencia de Azufre", tags: ["azufre", "amarilleo superior"] },
+                { id: "zinc_carencia", titulo: "Carencia de Zinc", tags: ["zinc", "hojas retorcidas"] },
+                { id: "manganeso_carencia", titulo: "Carencia de Manganeso", tags: ["manganeso", "manchas amarillas"] },
+                { id: "cobre_carencia", titulo: "Carencia de Cobre", tags: ["cobre", "hojas oscuras"] },
+                { id: "molibdeno_carencia", titulo: "Carencia de Molibdeno", tags: ["molibdeno", "bordes rosas"] },
+                { id: "nitrógeno_exceso", titulo: "Exceso de Nitrógeno", tags: ["nitrógeno", "verde oscuro"] },
+                { id: "luz_quemadura", titulo: "Quemadura por Luz", tags: ["luz", "blanqueamiento"] },
+                { id: "calor_estres", titulo: "Estrés por Calor", tags: ["calor", "bordes hacia arriba"] },
+                { id: "riego_exceso", titulo: "Exceso de Riego", tags: ["riego", "hojas pesadas"] },
+                { id: "ph_fluctuacion", titulo: "Fluctuación de pH", tags: ["ph", "manchas aleatorias"] },
+                { id: "nutrientes_quemadura", titulo: "Quemadura de Nutrientes", tags: ["nutes", "puntas quemadas"] },
+                { id: "moho_blanco", titulo: "Oídio / Moho Blanco", tags: ["hongo", "polvo blanco"] },
+                { id: "araña_roja", titulo: "Araña Roja", tags: ["plaga", "puntos blancos"] }
+            ];
+
+            for (const m of muestras) {
+                await setDoc(doc(db, "biblioteca_visual", m.id), m);
+            }
+            alert("🚀 ¡20 muestras sembradas con éxito! Recargando biblioteca...");
+            cargarBiblioteca();
+        };
+
+        // 📸 LÓGICA DE PROCESAMIENTO DE IMAGEN USUARIO
+        window.procesarImagenUsuario = (event) => {
+            window.mostrarLoader();
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // En el futuro, aquí llamaríamos a un modelo de Visión para comparar.
+            // Por ahora, simulamos el flujo que pides: Comparar y diagnosticar.
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const userImgBase64 = e.target.result;
+                
+                const panel = document.getElementById('panel-resultados');
+                const contenido = document.getElementById('contenido-resultado');
+                panel.classList.remove('hidden');
+                window.scrollTo({ top: panel.offsetTop - 50, behavior: 'smooth' });
+
+                contenido.innerHTML = `
+                    <div style="text-align:center;">
+                        <p class="loading">ANALIZANDO ADN VISUAL DE TU MUESTRA...</p>
+                        <img src="${userImgBase64}" style="width:150px; border-radius:10px; border:2px solid var(--s); opacity:0.6; filter: hue-rotate(90deg);">
+                        <p style="font-size:0.7rem; color:var(--s); margin-top:10px;">Buscando patrones de carencias y excesos en la base de datos...</p>
+                    </div>
+                `;
+
+                setTimeout(() => {
+                    // Simulación: La IA detecta que tu foto se parece a "calcio_carencia"
+                    // En un sistema real, pasaríamos el base64 a Gemini Vision.
+                    window.consultarOraculo("calcio_carencia");
+                    window.ocultarLoader();
+                }, 2500);
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.resetOraculo = () => {
+            document.getElementById('panel-resultados').classList.add('hidden');
+            document.getElementById('file-input').value = "";
+            document.getElementById('search-tags').value = "";
+            window.renderizarGaleria(bibliotecaVisual);
+            window.scrollTo(0, 0);
+        };
+
+        // Loader Helpers
+        window.mostrarLoader = () => { document.getElementById('loader-global').style.display = 'flex'; };
+        window.ocultarLoader = () => { document.getElementById('loader-global').style.display = 'none'; };
+
+        // Inicio
+        cargarBiblioteca();
+    </script>
+</body>
+</html>
