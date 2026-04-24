@@ -27,7 +27,7 @@ exports.consultarOraculo = onCall({
     const tagsText = Array.isArray(tags) && tags.length > 0 ? tags.join(", ") : "sin etiquetas";
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-flash-latest",
+        model: "gemini-1.5-flash-001", // Actualizado a un modelo flash específico y estable
         generationConfig: { responseMimeType: "application/json" }
     });
 
