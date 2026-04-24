@@ -163,13 +163,15 @@ function renderDiarioCard(container, data) {
                     <button class="btn btn-m" style="font-size:0.6rem; border-color:#ff4444; color:#ff4444;" onclick="window.eliminarSeguimiento('${nombrePlanta.replace(/'/g, "\\'")}')">ELIMINAR TODO</button>
                 </div>
             </div>
-            <div style="overflow-x:auto;"><table class="tabla-historial-diario"><thead><tr><th>FECHA</th><th>SEM</th><th>ETAPA</th><th>PH</th><th>EC</th><th>TEMP</th><th>HUM</th><th>FOTO</th><th>ORÁCULO</th><th>NOTAS</th><th></th></tr></thead><tbody class="plant-history-body"></tbody></table></div>`;
+            <div style="overflow-x:auto;"><table class="tabla-historial-diario"><thead><tr><th>FECHA</th><th>SEM</th><th>ETAPA</th><th>PH</th><th>EC</th><th>TEMP</th><th>HUM</th><th>FOTO</th><th>ORÁCULO</th><th>OBSERVACIONES</th><th></th></tr></thead><tbody class="plant-history-body"></tbody></table></div>`;
         container.prepend(plantCard);
     }
     const tbody = plantCard.querySelector('.plant-history-body');
     const row = document.createElement('tr');
     const imgHtml = data.imageUrls?.length > 0 ? `<img src="${data.imageUrls[0]}" style="width:35px; height:35px; object-fit:cover; border-radius:6px;" onclick="window.verImagenAmpliada('${data.imageUrls[0]}')">` : 'N/A';
-    row.innerHTML = `<td>${data.fecha?.split(',')[0] || '---'}</td><td>S${data.semana || '1'}</td><td><span class="badge-etapa">${data.etapa || 'VEGE'}</span></td><td>${data.ph || '--'}</td><td>${data.ec || '--'}</td><td>${data.temp || '--'}°</td><td>${data.humedad || '--'}%</td><td>${imgHtml}</td><td><button class="btn btn-m" style="font-size:0.6rem; padding:4px; border-color:var(--p); color:var(--p);" onclick="window.abrirReporteAlquimia('${encodeURIComponent(JSON.stringify(data))}')">🔮 REPORTE</button></td><td style="font-size:0.6rem; max-width:80px; overflow:hidden; text-overflow:ellipsis;">${data.notas || ''}</td><td><button onclick="window.eliminarRegistroDiario('${data.id}', this.closest('tr'))" style="background:none; border:none; color:#ff4444; cursor:pointer;">✕</button></td>`;
+    
+    const notasEscaped = (data.notas || '').replace(/'/g, "\\'").replace(/\n/g, ' ');
+    row.innerHTML = `<td>${data.fecha?.split(',')[0] || '---'}</td><td>S${data.semana || '1'}</td><td><span class="badge-etapa">${data.etapa || 'VEGE'}</span></td><td>${data.ph || '--'}</td><td>${data.ec || '--'}</td><td>${data.temp || '--'}°</td><td>${data.humedad || '--'}%</td><td>${imgHtml}</td><td><button class="btn btn-m" style="font-size:0.6rem; padding:4px; border-color:var(--p); color:var(--p);" onclick="window.abrirReporteAlquimia('${encodeURIComponent(JSON.stringify(data))}')">🔮 REPORTE</button></td><td onclick="window.verNotasCompletas('${notasEscaped}', 'OBSERVACIONES - ${nombrePlanta.toUpperCase()}')" style="font-size:0.6rem; max-width:80px; overflow:hidden; text-overflow:ellipsis; cursor:pointer; color:var(--p); text-decoration:underline;">${data.notas || ''}</td><td><button onclick="window.eliminarRegistroDiario('${data.id}', this.closest('tr'))" style="background:none; border:none; color:#ff4444; cursor:pointer;">✕</button></td>`;
     tbody.appendChild(row);
 }
 

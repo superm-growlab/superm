@@ -74,6 +74,7 @@
             padding: 12px;
             border-radius: 5px;
             outline: none;
+            box-sizing: border-box; /* Crucial para evitar que el padding desborde el ancho */
             font-family: 'Courier New', monospace;
         }
         .input-lab:focus { box-shadow: 0 0 15px rgba(57, 255, 20, 0.3), inset 0 0 5px rgba(57, 255, 20, 0.1); border-color: var(--p); }
@@ -259,10 +260,15 @@
         /* Ajuste de tarjetas de notas para que sean más bajas */
         .nota-card {
             padding: 15px; /* Padding reducido para compactar */
-            display: flex;
-            flex-direction: column;
+            display: flex; /* Mantener flex para la estructura interna */
+            flex-direction: column; /* Mantener columna para la estructura interna */
             text-align: left; /* Mejorar legibilidad del texto */
-            /* Eliminar min-height, justify-content, align-items para que se adapte al contenido */
+            
+            /* Nuevas propiedades para altura uniforme */
+            height: 210px; /* Altura fija para todas las tarjetas de notas */
+            min-height: 210px; /* Asegura que no se encoja */
+            max-height: 210px; /* Asegura que no crezca */
+            overflow: hidden; /* Oculta cualquier contenido que se desborde de la tarjeta */
         }
         .nota-card .card-header {
             display: flex;
@@ -297,7 +303,14 @@
             font-size: 0.75rem; /* Resumen más pequeño */
             line-height: 1.4;
             color: #aaa;
-            flex-grow: 1; /* Permitir que el resumen ocupe espacio */
+            flex-grow: 1; /* Permitir que el resumen ocupe espacio restante */
+
+            /* Truncar texto si excede el espacio */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 4; /* Limita el resumen a 4 líneas */
+            -webkit-box-orient: vertical;
         }
         .nota-card .card-actions {
             display: flex;
@@ -482,8 +495,9 @@
             .input-lab, .form-box input, .qty-input { font-size: 16px !important; }
             
             /* Optimizamos el scroll del formulario en móvil */
-            #formulario-diario > div { padding: 15px; width: 98%; }
-            .diario-grid { gap: 8px !important; }
+            #formulario-diario { padding: 10px !important; } /* Menos margen exterior en móvil */
+            #formulario-diario > div { padding: 15px; width: 100%; max-width: 100%; box-sizing: border-box; }
+            .diario-grid { grid-template-columns: 1fr !important; gap: 8px !important; } /* Una sola columna en móvil */
 
             .seccion { padding: 40px 3% 20px 3%; }
             .tarjeta { padding: 15px; }
@@ -1154,7 +1168,7 @@
             <div id="vista-seguimiento-tabla" style="display: none;">
                 <div id="area-descarga" class="contenedor-tabla">
                     <table id="tabla-lab">
-                        <thead><tr><th>PLANTA</th><th>SEMANA</th><th>PH</th><th>EC</th><th>TEMP °C</th><th>HUM %</th><th>RIEGO</th><th>NOTAS</th></tr></thead>
+                        <thead><tr><th>PLANTA</th><th>SEMANA</th><th>PH</th><th>EC</th><th>TEMP °C</th><th>HUM %</th><th>RIEGO</th><th>OBSERVACIONES</th></tr></thead>
                         <tbody id="cuerpo-tabla"></tbody>
                     </table>
                 </div>
