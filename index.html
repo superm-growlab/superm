@@ -765,6 +765,31 @@
         .celda-sintoma:hover img { filter: grayscale(0%) brightness(1); }
         .celda-sintoma p { margin: 5px 0 0 0; font-size: 0.65rem; color: #aaa; text-transform: uppercase; font-weight: bold; }
         
+        /* Estilos Alchemist Bot (Changuito) */
+        .panel { border: 2px solid var(--p); padding: 30px; box-shadow: 0 0 20px rgba(57,255,20,0.2); max-width: 800px; margin: auto; border-radius: 15px; background: #000; }
+        .panel h1 { text-align: center; letter-spacing: 5px; text-shadow: 0 0 10px var(--p); border-bottom: 1px solid var(--s); padding-bottom: 10px; }
+        .grid-form { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .panel input { background: #000; border: 1px solid var(--s); color: var(--p); padding: 12px; border-radius: 5px; font-family: monospace; width:100%; box-sizing:border-box; }
+        .panel textarea { background: #000; border: 1px solid var(--s); color: #fff; padding: 12px; border-radius: 5px; font-family: monospace; width:100%; box-sizing:border-box; resize: vertical; }
+        .panel .full { grid-column: span 2; }
+        .btn-bot { background: var(--p); color: #000; border: none; padding: 15px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: 0.3s; font-size: 1rem; }
+        .btn-bot:hover { background: #fff; box-shadow: 0 0 20px var(--p); }
+        #status-bot { text-align: center; margin: 15px 0; font-size: 0.8rem; color: var(--s); min-height: 1.2rem; background: rgba(188, 19, 254, 0.1); padding: 5px; border-radius: 5px; }
+        #historial-bot { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; margin-top: 30px; border-top: 1px dashed var(--s); padding-top: 30px; }
+
+        #editor-producto { display: none; margin-top: 30px; border: 1px solid var(--s); padding: 20px; border-radius: 12px; background: #080808; }
+        .label-edit { display: block; font-size: 0.6rem; color: var(--s); margin-bottom: 5px; font-weight: bold; }
+        .preview-mini { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--p); }
+        .btn-confirm { background: var(--s); color: white; border: none; padding: 15px; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; margin-top: 20px; border-radius: 5px; font-size: 1rem; }
+        .html-snippet { background: #0a0a0a; color: #eee; font-size: 0.6rem; padding: 8px; border: 1px solid var(--p); margin-top: 5px; word-break: break-all; cursor: pointer; white-space: pre-wrap; text-align: left; max-height: 100px; overflow-y: auto; }
+        .csv-row { background: #111; color: #888; font-size: 0.6rem; padding: 8px; border: 1px solid #222; margin-top: 5px; word-break: break-all; cursor: pointer; }
+        .csv-row:hover { color: var(--p); border-color: var(--p); }
+        
+        .preview-box { background: rgba(57, 255, 20, 0.05); border: 1px dashed var(--p); padding: 15px; margin-top: 15px; border-radius: 8px; }
+        .mini-table { width: 100%; font-size: 0.65rem; border-collapse: collapse; margin-top: 10px; color: #aaa; }
+        .mini-table th { color: var(--s); text-align: left; padding: 4px; border-bottom: 1px solid #333; }
+        .mini-table td { padding: 4px; border-bottom: 1px solid #111; }
+
         .seccion-uploader {
             background: #111;
             border: 2px dashed var(--s);
@@ -1755,6 +1780,71 @@
         </div>
     </section>
 
+    <section id="changuito-tool" class="seccion">
+        <div class="panel">
+            <h1>🧪 SUPER M - ALCHEMIST BOT</h1>
+            <p style="text-align:center; font-size:0.7rem;">SISTEMA DE VALIDACIÓN Y CARGA DROP</p>
+
+            <div class="grid-form">
+                <input type="text" id="link-referido" class="full" placeholder="🔗 LINK DE REFERIDO (meli.la)">
+                <input type="text" id="id-producto-manual" class="full" placeholder="🆔 PRODUCT ID (NG8WAT-MGKE)">
+
+                <button class="btn-bot full" onclick="window.botTransmutar()">⚡ BUSCAR (TRANSMUTAR)</button>
+                <button class="btn-m full" style="margin-top:0; border-color:var(--p); color:var(--p);" onclick="window.probarConexionLlaves()">🔑 PROBAR CONEXIÓN LLAVES</button>
+                <div id="status-bot" class="full">SISTEMA LISTO.</div>
+            </div>
+
+            <!-- ZONA DE REVISIÓN Y EDICIÓN -->
+            <div id="editor-producto" class="editor-zone" style="display: none; margin-top: 30px; border: 1px solid var(--s); padding: 20px; border-radius: 12px; background: #080808;">
+                <h3 style="text-align:center; color: var(--p); margin-top:0;">🔍 REVISIÓN DE ALQUIMIA</h3>
+                
+                <div style="display:flex; gap:15px; align-items:center; margin-bottom:15px;">
+                    <img id="edit-preview-img" class="preview-mini" src="">
+                    <div style="flex:1;">
+                        <span class="label-edit">TÍTULO DEL PRODUCTO</span>
+                        <input type="text" id="edit-n" oninput="window.actualizarMesaInspeccion()">
+                    </div>
+                </div>
+
+                <div class="grid-form" style="margin-top:0;">
+                    <div><span class="label-edit">PRECIO ($)</span><input type="number" id="edit-p" oninput="window.actualizarMesaInspeccion()"></div>
+                    <div><span class="label-edit">CATEGORÍA</span><select id="edit-cat" onchange="window.actualizarMesaInspeccion()" style="background:#000; border:1px solid var(--s); color:var(--p); padding:10px; width:100%; border-radius:5px;"><option value="cat-nutricion">🧪 NUTRICIÓN</option><option value="cat-iluminacion">☀️ ILUMINACIÓN</option><option value="cat-sustratos">📦 SUSTRATOS</option><option value="cat-control">🔬 CONTROL</option><option value="cat-carpas">⛺ INDOOR</option></select></div>
+                    <div class="full"><span class="label-edit">FICHA TÉCNICA (TEXTO)</span><textarea id="edit-texto" rows="4" oninput="window.actualizarMesaInspeccion()"></textarea></div>
+                </div>
+
+                <!-- MESA DE INSPECCIÓN: VISTA PREVIA ANTES DE CARGAR -->
+                <div class="preview-box">
+                    <span class="label-edit" style="text-align: center; color: var(--p);">🧪 MESA DE INSPECCIÓN (VISTA PREVIA)</span>
+                    
+                    <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; margin-top: 10px;">
+                        <!-- Mini Tarjeta de Tienda -->
+                        <div id="mini-card-preview" style="width: 200px; transform: scale(0.8); transform-origin: top left;"></div>
+                        
+                        <!-- Previsualización de Fila de Planilla -->
+                        <div style="flex: 1; min-width: 250px;">
+                            <span class="label-edit" style="font-size: 0.5rem;">DATOS PARA GOOGLE SHEETS:</span>
+                            <table class="mini-table">
+                                <tr><th>COLUMNA</th><th>VALOR</th></tr>
+                                <tr><td>TÍTULO</td><td id="row-preview-titulo">-</td></tr>
+                                <tr><td>PRECIO</td><td id="row-preview-precio">-</td></tr>
+                                <tr><td>CATEGORÍA</td><td id="row-preview-cat">-</td></tr>
+                                <tr><td>LINK</td><td id="row-preview-link" style="color: var(--s);">-</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-confirm" onclick="window.cargarAFirebaseChanguito()">🚀 SUBIR A CLOUD (FIREBASE)</button>
+                <button class="btn-bot full" style="background:var(--s); color:white;" onclick="window.enviarASheetsChanguito()">📊 ENVIAR A PLANILLA SHEETS</button>
+                <button class="btn-bot full" style="background:transparent; color:#888; border:1px solid #333; font-size:0.7rem;" onclick="window.cancelarEdicionChanguito()">CANCELAR</button>
+            </div>
+
+            <h2 style="margin-top:40px; font-size:1rem; border-bottom:1px solid #333;">HISTORIAL DE CARGAS</h2>
+
+            <div id="historial-bot"></div>
+        </div>
+    </section>
+
     <section id="view-admin" class="seccion" style="position: relative;">
         <h2 style="color:var(--s); text-align: center;">🛡️ PANEL DE MODERACIÓN</h2>
         <div id="admin-tabs" style="display:flex; gap:10px; justify-content:center; margin-bottom:30px;">
@@ -1762,6 +1852,7 @@
             <button class="btn btn-m" id="btn-mod-comentarios" onclick="window.cargarModeracion('comentarios')">Comunidad</button>
             <button class="btn btn-m" id="btn-mod-reseñas_productos" onclick="window.cargarModeracion('reseñas_productos')">Reseñas</button>
             <button class="btn btn-m" id="btn-mod-sugerencias_notas" onclick="window.cargarModeracion('sugerencias_notas')">Propuestas Notas</button>
+            <button class="btn btn-m" id="btn-mod-changuito" onclick="window.ver('changuito-tool')">Changuito</button>
             <button class="btn btn-m" id="btn-mod-solicitudes" onclick="window.cargarModeracion('solicitudes_tablas')">Solicitudes</button>
         </div>
         <div id="admin-list" style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px;"></div>
@@ -1924,6 +2015,7 @@
                 'tablas': 'nav-tablas',
                 'info': 'nav-info',
                 'view-comunidad': 'nav-comunidad',
+                'changuito-tool': 'btn-mod-changuito', // Add changuito to navMap
                 'view-carrito': 'nav-carrito',
                 'view-admin': 'btn-admin-nav'
             };

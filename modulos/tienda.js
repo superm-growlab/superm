@@ -18,18 +18,22 @@ import {
     getDoc,
     updateDoc,
     increment,
+    setDoc,
     arrayUnion,
     arrayRemove,
     getDocs,
     deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { crearNotificacion } from './comunidad.js';
+import { Agente } from '../agente_central.js';
 
 const URL_SHEET_PRODUCTOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=0&single=true&output=tsv"; // Hoja 1: inventario (TSV)
+const URL_GAS_CHANGUITO = "https://script.google.com/macros/s/AKfycbzk6fUHwGdI4wCgL_ZPBuV_pXFuWiLsSRo3TxPKs_KCWRBzaU4-Aw8B0emmy7OBg9A/exec";
 
 // --- SISTEMA DE ACUMULACIÓN DE IMÁGENES ---
 let carrito = JSON.parse(localStorage.getItem('superm_cart')) || [];
 let contextoEnvio = null;
+let productoTemporalChanguito = null;
 window.productos = [];
 window.imgsReseña = [];
 window.currentProductImageIndex = 0;
@@ -887,6 +891,138 @@ export async function eliminarReview(id, productId) {
     } catch (e) { console.error(e); }
 }
 
+// --- SISTEMA CHANGUITO (CARGA PERSONAL) ---
+
+export async function probarConexionLlaves() {
+    const status = document.getElementById('status-bot');
+    if (!status) return;
+    status.innerText = "⏳ VERIFICANDO LLAVES EN FIRESTORE...";
+    try {
+        const res = await Agente.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { action: "test" });
+        status.innerText = "✅ " + res.message;
+        status.style.color = "var(--p)";
+    } catch (e) {
+        status.innerText = "❌ ERROR DE LLAVES: " + e.message;
+        status.style.color = "#ff3131";
+    }
+}
+
+export function actualizarMesaInspeccion() {
+    if (!productoTemporalChanguito) return;
+    const n = document.getElementById('edit-n').value;
+    const p = parseFloat(document.getElementById('edit-p').value) || 0;
+    const cat = document.getElementById('edit-cat').value;
+    const texto = document.getElementById('edit-texto').value;
+    const link = document.getElementById('link-referido').value;
+
+    document.getElementById('row-preview-titulo').innerText = n;
+    document.getElementById('row-preview-precio').innerText = "$" + p.toLocaleString();
+    document.getElementById('row-preview-cat').innerText = cat.replace('cat-', '').toUpperCase();
+    document.getElementById('row-preview-link').innerText = link.substring(0, 30) + "...";
+
+    const miniCard = document.getElementById('mini-card-preview');
+    miniCard.innerHTML = `
+        <div class="tarjeta">
+            <div class="contenedor-img">${obtenerImagenHTML(productoTemporalChanguito.pictures)}</div>
+            <div class="tarjeta-body">
+                <h3 style="margin: 0 0 10px 0; font-size: 0.9rem; color: #ccc;">${n}</h3>
+                <div style="color: var(--p); font-size: 1.4rem; font-weight: 600;">$${p.toLocaleString()}</div>
+                ${texto ? `<button class="btn-m" style="width:100%; margin-top:10px;">📄 FICHA TÉCNICA</button>` : ''}
+            </div>
+        </div>`;
+}
+
+export async function botTransmutar() {
+    const link = document.getElementById('link-referido').value.trim();
+    const idManual = document.getElementById('id-producto-manual').value.trim();
+    const status = document.getElementById('status-bot');
+    if (!link) return notify("⚠️ Ingresa un link.", "info");
+
+    status.innerText = "🔮 TRANSMUTANDO ENLACE...";
+    try {
+        const data = await Agente.servicios.mercadoLibre.getProductFromCloudFunction(link, idManual);
+        if (data.error) throw new Error(data.error);
+
+        productoTemporalChanguito = {
+            id: data.id || Date.now().toString(),
+            pictures: data.pictures || [],
+            title: data.title,
+            attributes: data.attributes || ["Calidad Super M"],
+            permalink: data.permalink
+        };
+
+        document.getElementById('edit-n').value = data.title || "";
+        document.getElementById('edit-p').value = data.price || 0;
+        document.getElementById('edit-texto').value = (data.attributes || []).join("\n") || data.description || "";
+        document.getElementById('edit-preview-img').src = (data.pictures?.[0]?.includes('http')) ? data.pictures[0] : "https://i.postimg.cc/rF9GqwGS/favicon.png";
+
+        status.innerText = "✨ PRODUCTO IDENTIFICADO.";
+        actualizarMesaInspeccion();
+        document.getElementById('editor-producto').style.display = 'block';
+    } catch (e) {
+        status.innerText = "❌ ERROR: " + e.message;
+    }
+}
+
+export async function cargarAFirebaseChanguito() {
+    if (!productoTemporalChanguito) return;
+    const status = document.getElementById('status-bot');
+    const dataFinal = {
+        category_id: document.getElementById('edit-cat').value,
+        title: document.getElementById('edit-n').value,
+        price: parseFloat(document.getElementById('edit-p').value),
+        pictures: productoTemporalChanguito.pictures,
+        description_short: productoTemporalChanguito.title,
+        attributes: productoTemporalChanguito.attributes,
+        permalink: document.getElementById('link-referido').value,
+        description: document.getElementById('edit-texto').value
+    };
+
+    try {
+        status.innerText = "🚀 SUBIENDO A FIREBASE...";
+        await setDoc(doc(db, "productos_tienda", productoTemporalChanguito.id), dataFinal);
+        renderizarHistorialChanguito(dataFinal, productoTemporalChanguito.id);
+        status.innerText = "✅ CARGA EXITOSA.";
+        document.getElementById('editor-producto').style.display = 'none';
+        productoTemporalChanguito = null;
+    } catch (e) { status.innerText = "❌ ERROR AL SUBIR."; }
+}
+
+export async function enviarASheetsChanguito() {
+    if (!productoTemporalChanguito) return;
+    const payload = {
+        id: productoTemporalChanguito.id,
+        titulo: document.getElementById('edit-n').value,
+        precio: document.getElementById('edit-p').value,
+        categoria: document.getElementById('edit-cat').value,
+        link: document.getElementById('link-referido').value,
+        timestamp: new Date().toLocaleString()
+    };
+    try {
+        await Agente.servicios.googleSheets.sendToSheet(URL_GAS_CHANGUITO, payload);
+        notify("📊 ENVIADO A SHEETS");
+    } catch (e) { notify("❌ ERROR SHEETS", "error"); }
+}
+
+function renderizarHistorialChanguito(p, id) {
+    const hist = document.getElementById('historial-bot');
+    if (!hist) return;
+    const csvRow = `${id};${p.category_id};${p.title};${p.price};${p.pictures.join('|')};${p.description_short};${p.attributes};${p.permalink};${p.description};`;
+    
+    const wrapper = document.createElement('div');
+    wrapper.style.marginBottom = "40px";
+    wrapper.innerHTML = `
+        <div class="tarjeta">
+            <div class="contenedor-img">${obtenerImagenHTML(p.pictures)}</div>
+            <h3 style="text-align:center; font-size:1rem;">${p.title}</h3>
+        </div>
+        <div style="margin-top:10px;">
+            <span class="label-edit">CSV COPIABLE:</span>
+            <div class="csv-row" onclick="navigator.clipboard.writeText(this.innerText); notify('Copiado!')">${csvRow}</div>
+        </div>`;
+    hist.prepend(wrapper);
+}
+
 // Exponer a window para compatibilidad con HTML y otros módulos
 window.cargarInventario = cargarInventario;
 window.mostrarCategorias = mostrarCategorias;
@@ -913,3 +1049,11 @@ window.votarRespuestaReview = votarRespuestaReview;
 window.cargarRatingPromedio = cargarRatingPromedio;
 window.eliminarReview = eliminarReview;
 window.MI_NUMERO = MI_NUMERO; // Exponer MI_NUMERO para uso global
+
+// Changuito Exports
+window.probarConexionLlaves = probarConexionLlaves;
+window.actualizarMesaInspeccion = actualizarMesaInspeccion;
+window.botTransmutar = botTransmutar;
+window.cargarAFirebaseChanguito = cargarAFirebaseChanguito;
+window.enviarASheetsChanguito = enviarASheetsChanguito;
+window.cancelarEdicionChanguito = () => { document.getElementById('editor-producto').style.display='none'; productoTemporalChanguito=null; };
