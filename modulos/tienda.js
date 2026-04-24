@@ -207,6 +207,83 @@ export function addToCart(id) {
     window.notify(`Añadido: ${p.title}`, 'success');
 }
 
+// --- SISTEMA DE GALERÍA DE PRODUCTOS (Nivel Superior para evitar ReferenceError) ---
+
+export function renderProductGallery(imageUrls) {
+    if (!imageUrls || imageUrls.length === 0) {
+        return `<div class="contenedor-img" style="height:350px"><div class="img-placeholder">🌿</div></div>`;
+    }
+
+    // Filtra los elementos que son URLs de imagen para las miniaturas
+    const actualImageUrls = imageUrls.filter(url => url && typeof url === 'string' && url.includes("http"));
+    
+    window.currentProductImages = actualImageUrls;
+
+    // El primer elemento puede ser una URL o un ícono
+    const mainDisplayItem = imageUrls[0]; 
+
+    let mainImageHtml;
+    if (mainDisplayItem && typeof mainDisplayItem === 'string' && mainDisplayItem.includes("http")) {
+        mainImageHtml = `<img id="main-product-image" src="${mainDisplayItem}" class="img-real" 
+                             onclick="window.verImagenAmpliada(this.src, window.currentProductImages)" 
+                             alt="Imagen principal del producto">`;
+    } else {
+        mainImageHtml = `<div class="img-placeholder" id="main-product-image">${mainDisplayItem || "🌿"}</div>`;
+    }
+
+    let thumbnailsHtml = '';
+    if (actualImageUrls.length > 1) { // Solo muestra miniaturas si hay más de una imagen real
+        thumbnailsHtml = `
+            <div style="display:flex; gap:10px; margin-top:15px; overflow-x:auto; padding-bottom:10px;">
+                ${actualImageUrls.map((url, index) => `
+                    <img src="${url}" 
+                         class="product-thumbnail" 
+                         data-full-src="${url}"
+                         onclick="window.changeMainProductImage('${url}')"
+                         alt="Miniatura ${index + 1}">
+                `).join('')}
+            </div>
+        `;
+    }
+
+    return `
+        <div class="contenedor-img" style="height:350px; margin-bottom:0; position:relative;">
+            ${mainImageHtml}
+            ${actualImageUrls.length > 1 ? `
+                <button onclick="window.navGallery(-1)" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.4); color:var(--p); border:none; border-radius:50%; width:35px; height:35px; cursor:pointer; font-size:20px; z-index:5; display:flex; align-items:center; justify-content:center;">❮</button>
+                <button onclick="window.navGallery(1)" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.4); color:var(--p); border:none; border-radius:50%; width:35px; height:35px; cursor:pointer; font-size:20px; z-index:5; display:flex; align-items:center; justify-content:center;">❯</button>
+            ` : ''}
+        </div>
+        ${thumbnailsHtml}
+    `;
+}
+
+export function changeMainProductImage(newSrc) {
+    const mainImgElement = document.getElementById('main-product-image');
+    if (mainImgElement) {
+        if (mainImgElement.tagName === 'IMG') { 
+            mainImgElement.src = newSrc; 
+        } else { 
+            const newImg = document.createElement('img'); 
+            newImg.id = 'main-product-image'; 
+            newImg.src = newSrc; 
+            newImg.className = 'img-real'; 
+            newImg.onclick = () => window.verImagenAmpliada(newSrc); 
+            mainImgElement.parentNode.replaceChild(newImg, mainImgElement); 
+        }
+    }
+    if (window.currentProductImages) {
+        const idx = window.currentProductImages.indexOf(newSrc);
+        if (idx !== -1) window.currentProductImageIndex = idx;
+    }
+}
+
+export function navGallery(dir) {
+    if (!window.currentProductImages || window.currentProductImages.length <= 1) return;
+    window.currentProductImageIndex = (window.currentProductImageIndex + dir + window.currentProductImages.length) % window.currentProductImages.length;
+    window.changeMainProductImage(window.currentProductImages[window.currentProductImageIndex]);
+}
+
 export function verProducto(id, guardar = true) {
     const p = window.productos.find(x => x.id === id);
     if (!p) return window.notify("❌ No se encontró el producto.", 'error');
@@ -221,82 +298,13 @@ export function verProducto(id, guardar = true) {
     window.currentProductImageIndex = 0;
     window.currentProductImages = [];
 
-    // Nueva función para renderizar la galería de imágenes del producto
-    function renderProductGallery(imageUrls) {
-        if (!imageUrls || imageUrls.length === 0) {
-            return `<div class="contenedor-img" style="height:350px"><div class="img-placeholder">🌿</div></div>`;
-        }
-
-        // Filtra los elementos que son URLs de imagen para las miniaturas
-        const actualImageUrls = imageUrls.filter(url => url.includes("http"));
-        
-        window.currentProductImages = actualImageUrls;
-
-        // El primer elemento puede ser una URL o un ícono
-        const mainDisplayItem = imageUrls[0]; 
-
-        let mainImageHtml;
-        if (mainDisplayItem && mainDisplayItem.includes("http")) { // Check for mainDisplayItem existence
-            mainImageHtml = `<img id="main-product-image" src="${mainDisplayItem}" class="img-real" 
-                                 onclick="verImagenAmpliada(this.src, window.currentProductImages)" 
-                                 alt="Imagen principal del producto">`;
-        } else {
-            mainImageHtml = `<div class="img-placeholder" id="main-product-image">${mainDisplayItem || "🌿"}</div>`;
-        }
-
-        let thumbnailsHtml = '';
-        if (actualImageUrls.length > 1) { // Solo muestra miniaturas si hay más de una imagen real
-            thumbnailsHtml = `
-                <div style="display:flex; gap:10px; margin-top:15px; overflow-x:auto; padding-bottom:10px;">
-                    ${actualImageUrls.map((url, index) => `
-                        <img src="${url}" 
-                             class="product-thumbnail" 
-                             data-full-src="${url}"
-                             onclick="window.changeMainProductImage('${url}')"
-                             alt="Miniatura ${index + 1}">
-                    `).join('')}
-                </div>
-            `;
-        }
-
-        return `
-            <div class="contenedor-img" style="height:350px; margin-bottom:0; position:relative;">
-                ${mainImageHtml}
-                ${actualImageUrls.length > 1 ? `
-                    <button onclick="window.navGallery(-1)" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.4); color:var(--p); border:none; border-radius:50%; width:35px; height:35px; cursor:pointer; font-size:20px; z-index:5; display:flex; align-items:center; justify-content:center;">❮</button>
-                    <button onclick="window.navGallery(1)" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.4); color:var(--p); border:none; border-radius:50%; width:35px; height:35px; cursor:pointer; font-size:20px; z-index:5; display:flex; align-items:center; justify-content:center;">❯</button>
-                ` : ''}
-            </div>
-            ${thumbnailsHtml}
-        `;
-    }
-
-    // Nueva función global para cambiar la imagen principal del producto
-    window.changeMainProductImage = (newSrc) => {
-        const mainImgElement = document.getElementById('main-product-image');
-        if (mainImgElement) {
-            if (mainImgElement.tagName === 'IMG') { mainImgElement.src = newSrc; } // Si ya es una imagen, cambia el src
-            else { const newImg = document.createElement('img'); newImg.id = 'main-product-image'; newImg.src = newSrc; newImg.className = 'img-real'; newImg.onclick = () => verImagenAmpliada(newSrc); mainImgElement.parentNode.replaceChild(newImg, mainImgElement); } // Si era un placeholder, reemplázalo por una imagen
-        }
-        if (window.currentProductImages) {
-            const idx = window.currentProductImages.indexOf(newSrc);
-            if (idx !== -1) window.currentProductImageIndex = idx;
-        }
-    };
-
-    window.navGallery = (dir) => {
-        if (!window.currentProductImages || window.currentProductImages.length <= 1) return;
-        window.currentProductImageIndex = (window.currentProductImageIndex + dir + window.currentProductImages.length) % window.currentProductImages.length;
-        window.changeMainProductImage(window.currentProductImages[window.currentProductImageIndex]);
-    };
-
     const btnMP = `<button class="btn btn-mp" style="width:100%; margin-top:10px" onclick="window.comprarDirecto('${p.id}')">Comprar</button>`;
     const btnFicha = (p.description) ? `<button class="btn btn-m" style="width:100%; margin-top:10px; border-color:var(--s); color:var(--s);" onclick="event.stopPropagation(); verNotasCompletas(decodeURIComponent('${encodeURIComponent(p.description)}'), '📖 FICHA TÉCNICA')">📄 FICHA TÉCNICA</button>` : '';
     
     document.getElementById('detalle-p').innerHTML = `
         <div class="producto-detalle">
             <div class="det-media-col"> 
-                ${renderProductGallery(p.pictures)}
+                ${window.renderProductGallery(p.pictures)}
                 <div id="avg-rating-display" style="margin-top: 20px;"></div>
                 
                 <!-- El selector de estrellas ahora vive bajo el resumen de calificación -->
@@ -916,6 +924,7 @@ window.verProducto = verProducto;
 window.changeQtyDet = changeQtyDet;
 window.addToCart = addToCart;
 window.obtenerImagenHTML = obtenerImagenHTML;
+window.renderProductGallery = renderProductGallery;
 window.changeMainProductImage = changeMainProductImage;
 window.navGallery = navGallery;
 window.updateCartUI = updateCartUI;
