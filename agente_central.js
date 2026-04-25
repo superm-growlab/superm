@@ -35,10 +35,15 @@ class AgenteCentral {
                 uso: 'Cerebro del Detector (Oráculo). Procesa el análisis botánico.',
                 link: 'https://aistudio.google.com/app/apikey'
             },
-            'ML_ACCESS_TOKEN': {
-                nombre: 'Mercado Libre Devs',
-                uso: 'Permite al Alchemist Bot extraer precios y fotos de links de ML.',
-                link: 'https://developers.mercadolibre.com.ar/es_ar/aplicaciones'
+            'ML_CLIENT_ID': {
+                nombre: 'Mercado Libre App ID',
+                uso: 'Identificador único de tu aplicación en Mercado Libre Devs.',
+                link: 'https://developers.mercadolibre.com.ar/es_ar/apps/list'
+            },
+            'ML_CLIENT_SECRET': {
+                nombre: 'Mercado Libre Client Secret',
+                uso: 'Clave privada para generar tokens de acceso automáticos.',
+                link: 'https://developers.mercadolibre.com.ar/es_ar/apps/list'
             },
             'MP_ACCESS_TOKEN': {
                 nombre: 'Mercado Pago SDK',
