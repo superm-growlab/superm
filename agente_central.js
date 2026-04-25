@@ -82,12 +82,21 @@ class AgenteCentral {
             this.tienda.obtenerProductos(),
             this.biblioteca.obtenerNotas(),
             this.recetarios.obtenerTodos(),
+            // Prueba de Comunidad y Herramientas (si existen endpoints)
+            this.herramientas.obtenerRecetarios().catch(() => {}),
+            this.comunidad.obtenerUltimosMensajes().catch(() => {}),
             // Prueba de Firebase y Cloud Functions (usando el modo test que ya programamos)
             this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { action: "test" })
                 .then(() => this.#actualizarEstado('firebase', true))
-                .catch(e => this.#actualizarEstado('firebase', false, e.message)),
+                .catch(e => this.#actualizarEstado('firebase', false, e.message || "Error en Servidor")),
+            // Prueba de Vision AI (IA)
+            this.servicios.firebaseFunctions.callCloudFunction('analizarImagenPlanta', { action: "test" })
+                .then(() => this.#actualizarEstado('visionAI', true))
+                .catch(e => this.#actualizarEstado('visionAI', false, e.message || "IA no disponible")),
             // Verificación de disponibilidad de la API de Mercado Libre
-            fetch('https://api.mercadolibre.com/').then(r => this.#actualizarEstado('mercadoLibre', r.ok)).catch(e => this.#actualizarEstado('mercadoLibre', false, e.message))
+            fetch('https://api.mercadolibre.com/').then(r => {
+                this.#actualizarEstado('mercadoLibre', r.ok, r.ok ? null : `Status ${r.status}`);
+            }).catch(e => this.#actualizarEstado('mercadoLibre', false, e.message))
         ];
 
         await Promise.allSettled(pruebas);
