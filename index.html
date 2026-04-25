@@ -1929,9 +1929,6 @@
             
             <div id="api-status-list" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;"></div>
             
-            <h4 style="color: var(--s); font-size: 0.7rem; border-top: 1px solid #333; padding-top: 20px; margin-top: 0; letter-spacing: 1px;">🗝️ INVENTARIO DE LLAVES MAESTRAS (SECRETS)</h4>
-            <div id="api-keys-inventory" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;"></div>
-            
             <button class="btn btn-m" style="width: 100%; margin-top: 25px;" onclick="document.getElementById('modal-diagnostico-api').style.display='none'">CERRAR</button>
         </div>
     </div>
@@ -2302,7 +2299,6 @@ onAuthStateChanged(auth, (user) => {
 window.mostrarDiagnosticoAPI = () => {
     const modal = document.getElementById('modal-diagnostico-api');
     const list = document.getElementById('api-status-list');
-    const inventory = document.getElementById('api-keys-inventory');
     if (!modal || !list) return;
 
     modal.style.display = 'flex';
@@ -2313,35 +2309,28 @@ window.mostrarDiagnosticoAPI = () => {
         const icon = info.conectada ? '✅' : (info.ultimoError ? '❌' : '⏳');
         const statusText = info.conectada ? 'CONECTADA' : (info.ultimoError ? 'ERROR' : 'PENDIENTE');
         
-        return `
-            <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border-left: 4px solid ${color}; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <div style="font-size: 0.7rem; color: ${color}; font-weight: bold; letter-spacing: 1px;">${key.toUpperCase()}</div>
-                    <div style="font-size: 0.6rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">${info.ultimoError || 'Sin errores registrados'}</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 0.8rem;">${icon}</div>
-                    <div style="font-size: 0.5rem; color: ${color}; font-weight: bold;">${statusText}</div>
-                </div>
+        // Buscar si este módulo tiene una llave secreta asociada para mostrarla aquí mismo
+        const llaveInfo = info.llaveAsociada ? Agente.inventarioLlaves[info.llaveAsociada] : null;
+        const secretHtml = llaveInfo ? `
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.55rem; color: var(--s); font-weight: bold;">🗝️ REQUIERE: ${info.llaveAsociada}</span>
+                <a href="${llaveInfo.link}" target="_blank" style="font-size: 0.5rem; color: #888; text-decoration: underline;">OBTENER ↗</a>
             </div>
-        `;
-    }).join('');
+        ` : '';
 
-    // Renderizar el inventario de llaves y dónde conseguirlas
-    inventory.innerHTML = Object.entries(Agente.inventarioLlaves).map(([key, info]) => {
-        const estaConfigurada = Agente.estado[info.modulo]?.conectada || false;
         return `
-            <div style="background: rgba(188, 19, 254, 0.05); padding: 10px; border-radius: 6px; border: 1px solid #222;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <span style="font-size: 0.65rem; color: var(--p); font-weight: bold;">${key}</span>
-                    <a href="${info.link}" target="_blank" style="font-size: 0.55rem; color: var(--s); text-decoration: none; border-bottom: 1px solid var(--s);">OBTENER CLAVE ↗</a>
+            <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border-left: 4px solid ${color};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 0.7rem; color: ${color}; font-weight: bold; letter-spacing: 1px;">${key.toUpperCase()}</div>
+                        <div style="font-size: 0.6rem; color: #888; max-width: 250px;">${info.ultimoError || 'Conexión establecida'}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.8rem;">${icon}</div>
+                        <div style="font-size: 0.5rem; color: ${color}; font-weight: bold;">${statusText}</div>
+                    </div>
                 </div>
-                <div style="font-size: 0.6rem; color: #ccc; line-height: 1.2;">
-                    <b style="color: #fff;">${info.nombre}:</b> ${info.uso}
-                </div>
-                <div style="font-size: 0.5rem; color: #666; margin-top: 5px; font-family: monospace;">
-                    Status: ${estaConfigurada ? 'VERIFICADA EN SESIÓN' : 'PENDIENTE DE PRUEBA'}
-                </div>
+                ${secretHtml}
             </div>
         `;
     }).join('');

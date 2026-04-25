@@ -21,7 +21,7 @@ class AgenteCentral {
             biblioteca: { conectada: false, ultimoError: null, llaveAsociada: null },
             recetarios: { conectada: false, ultimoError: null, llaveAsociada: null },
             firebase: { conectada: true, ultimoError: null, llaveAsociada: null },
-            mercadoLibre: { conectada: false, ultimoError: null, llaveAsociada: 'ML_ACCESS_TOKEN' },
+            mercadoLibre: { conectada: false, ultimoError: null, llaveAsociada: 'ML_CLIENT_ID' },
             herramientas: { conectada: false, ultimoError: null, llaveAsociada: null },
             comunidad: { conectada: false, ultimoError: null, llaveAsociada: null },
             visionAI: { conectada: false, ultimoError: null, llaveAsociada: 'GEMINI_API_KEY' },

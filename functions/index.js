@@ -3,6 +3,7 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { google } = require("googleapis");
 const logger = require("firebase-functions/logger");
+const axios = require("axios"); // Necesario para hablar con Mercado Libre
 
 // Configuración global para control de costos y rendimiento
 setGlobalOptions({ maxInstances: 10 });
@@ -126,5 +127,50 @@ exports.consultarOraculo = onCall({
             // Para errores inesperados, devolver un HttpsError genérico
             throw new HttpsError("internal", `Un error inesperado ocurrió en el Oráculo: ${error.message}`);
         }
+    }
+});
+
+/**
+ * FUNCIÓN: obtenerProductoML
+ * Propósito: Actuar como puente seguro entre el Alchemist Bot y Mercado Libre.
+ * Usa Client ID y Client Secret para consultar la API de forma autorizada.
+ */
+exports.obtenerProductoML = onCall({
+    secrets: ["ML_CLIENT_ID", "ML_CLIENT_SECRET"]
+}, async (request) => {
+    const { url, productId, action } = request.data;
+
+    // Modo Ping para diagnóstico del Agente
+    if (action === "test") return { message: "Conexión con Mercado Libre Operativa" };
+
+    if (!productId && !url) {
+        throw new HttpsError("invalid-argument", "Se requiere una URL o ID de producto.");
+    }
+
+    try {
+        // Extraer el ID (MLA...) del link
+        const idML = productId || (url?.split('MLA-')[1]?.split('-')[0] || "");
+        if (!idML) throw new Error("No se pudo extraer el ID de Mercado Libre.");
+
+        logger.info(`Consultando producto ML: MLA${idML}`);
+
+        // Consulta a la API de ML
+        const response = await axios.get(`https://api.mercadolibre.com/items/MLA${idML}`);
+        const item = response.data;
+
+        return {
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            currency_id: item.currency_id,
+            pictures: item.pictures?.map(p => p.url).slice(0, 5) || [item.thumbnail],
+            permalink: item.permalink,
+            attributes: item.attributes?.slice(0, 5).map(a => `${a.name}: ${a.value_name}`) || [],
+            debug: { api_usada: "ML-API-V1", id_procesado: item.id }
+        };
+
+    } catch (error) {
+        logger.error("Error en obtenerProductoML:", error.message);
+        throw new HttpsError("internal", `Mercado Libre no respondió: ${error.message}`);
     }
 });
