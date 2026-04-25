@@ -92,15 +92,15 @@ class AgenteCentral {
                 this.#actualizarEstado('herramientas', true);
                 this.#actualizarEstado('comunidad', true);
             }),
-            // Prueba de Firebase y Cloud Functions (usando el modo test que ya programamos)
-            // Nota: Si 'obtenerProductoML' no existe en functions/index.js, esto dará error 'internal'
-            this.servicios.firebaseFunctions.callCloudFunction('consultarOraculo', { action: "test", titulo: "ping_test" })
+            // Prueba de Firebase: Usamos obtenerProductoML que es un ping más directo
+            this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { action: "test" })
                 .then(() => this.#actualizarEstado('firebase', true))
-                .catch(e => this.#actualizarEstado('firebase', false, e.message.includes("not-found") ? "Función no desplegada" : e.message)),
-            // Prueba de Vision AI (IA)
-            this.servicios.firebaseFunctions.callCloudFunction('consultarOraculo', { action: "test", titulo: "ping" })
+                .catch(e => this.#actualizarEstado('firebase', false, "Error de comunicación: " + e.message)),
+            // Prueba de Vision AI: Aquí sí queremos ver si la llave de Gemini responde
+            // Llamamos a la función SIN el modo test para ver si la API de Google nos deja pasar
+            this.servicios.firebaseFunctions.callCloudFunction('consultarOraculo', { titulo: "Test de Conexión", action: "health_check" })
                 .then(() => this.#actualizarEstado('visionAI', true))
-                .catch(e => this.#actualizarEstado('visionAI', false, e.message || "IA no disponible")),
+                .catch(e => this.#actualizarEstado('visionAI', false, e.message.includes("not-found") ? "API Gemini no habilitada en Google Cloud" : e.message)),
             // Verificación de disponibilidad de la API de Mercado Libre
             fetch('https://api.mercadolibre.com/sites/MLA', { method: 'GET', mode: 'no-cors' }).then(() => {
                 // Si el fetch no falla (catch), asumimos que el servidor ML respondió aunque no podamos leer el JSON por CORS

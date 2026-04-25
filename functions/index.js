@@ -14,7 +14,10 @@ exports.consultarOraculo = onCall({
     region: "us-central1",
     secrets: ["GEMINI_API_KEY", "GOOGLE_SEARCH_API_KEY", "CUSTOM_SEARCH_ID"] 
 }, async (request) => {
-    const { titulo, tags = [] } = request.data;
+    const { titulo, tags = [], action } = request.data;
+
+    // Modo Ping para diagnóstico del Agente
+    if (action === "test") return { message: "Conexión con el Oráculo establecida." };
 
     if (!titulo) {
         logger.error("Consulta fallida: Título ausente");
