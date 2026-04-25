@@ -156,8 +156,8 @@ exports.analizarImagenPlanta = onCall({
         
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
-            logger.error("La IA no devolvió un JSON válido:", text);
-            throw new HttpsError("internal", "El Oráculo visual no pudo procesar la imagen correctamente.");
+            logger.error("IA devolvió texto plano en lugar de JSON:", text);
+            throw new HttpsError("internal", "El Oráculo no pudo procesar la imagen.");
         }
         
         return JSON.parse(jsonMatch[0]);

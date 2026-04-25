@@ -82,26 +82,30 @@ class AgenteCentral {
             this.tienda.obtenerProductos(),
             this.biblioteca.obtenerNotas(),
             this.recetarios.obtenerTodos(),
-            // Verificación de Google Sheets (Usando modo no-cors para evitar bloqueos de seguridad en el ping)
-            fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=0&single=true&output=tsv", { method: 'GET', mode: 'no-cors' })
-                .then(() => this.#actualizarEstado('googleSheets', true))
-                .catch(() => this.#actualizarEstado('googleSheets', false, "CORS/Bloqueo de red")),
+            // Verificación de Google Sheets: Ping simplificado
+            fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=0&single=true&output=tsv", { method: 'HEAD', mode: 'no-cors' })
+                .then(() => this.#actualizarEstado('googleSheets', true)).catch(() => this.#actualizarEstado('googleSheets', false, "Error de Red")),
             // Prueba de Comunidad y Herramientas (si existen endpoints)
-            // Al usar Firebase, si Firebase está OK, estos módulos también lo están
-            Promise.resolve().then(() => {
+            (async () => {
                 this.#actualizarEstado('herramientas', true);
                 this.#actualizarEstado('comunidad', true);
-            }),
+            })(),
             // Prueba de Firebase: Usamos obtenerProductoML que es un ping más directo
             this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { action: "test" })
                 .then(() => this.#actualizarEstado('firebase', true))
-                .catch(e => this.#actualizarEstado('firebase', false, "Error de comunicación: " + (e.message || "revisar logs"))),
+                .catch(e => {
+                    const msg = e.message?.includes("not-found") ? "Función no desplegada" : (e.message || "Error interno");
+                    this.#actualizarEstado('firebase', false, msg);
+                }),
             // Prueba de Vision AI: Aquí sí queremos ver si la llave de Gemini responde
-            this.servicios.firebaseFunctions.callCloudFunction('analizarImagenPlanta', { action: "test" })
+            this.servicios.firebaseFunctions.callCloudFunction('consultarOraculo', { action: "test" })
                 .then(() => this.#actualizarEstado('visionAI', true))
-                .catch(e => this.#actualizarEstado('visionAI', false, e.message.includes("not-found") ? "Habilitar 'Generative Language API' en Google Cloud" : e.message)),
+                .catch(e => {
+                    const msg = e.message?.includes("not-found") ? "Modelo Gemini no habilitado" : (e.message || "Error IA");
+                    this.#actualizarEstado('visionAI', false, msg);
+                }),
             // Verificación de disponibilidad de la API de Mercado Libre
-            fetch('https://api.mercadolibre.com/sites/MLA', { method: 'GET', mode: 'no-cors' }).then(() => {
+            fetch('https://api.mercadolibre.com/sites/MLA', { method: 'HEAD', mode: 'no-cors' }).then(() => {
                 // Si el fetch no falla (catch), asumimos que el servidor ML respondió aunque no podamos leer el JSON por CORS
                 this.#actualizarEstado('mercadoLibre', true);
             }).catch(e => this.#actualizarEstado('mercadoLibre', false, e.message))
