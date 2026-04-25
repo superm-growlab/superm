@@ -36,7 +36,7 @@ exports.consultarOraculo = onCall({
     logger.info(`Invocando Oráculo. Prefijo de Key: ${keyPrefix}`);
 
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
+        model: "models/gemini-1.5-flash", // Nombre explícito del modelo
         generationConfig: { responseMimeType: "application/json" }
     });
 
@@ -152,8 +152,11 @@ exports.obtenerProductoML = onCall({
 
     try {
         // Extraer el ID (MLA...) del link
-        const idML = productId || (url?.split('MLA-')[1]?.split('-')[0] || "");
-        if (!idML) throw new Error("No se pudo extraer el ID de Mercado Libre.");
+        let idML = productId || (url?.match(/MLA-?(\d+)/i)?.[1] || "");
+        if (!idML) throw new Error("No se pudo extraer un ID válido de Mercado Libre.");
+
+        // Limpiar si el usuario ya puso MLA en el ID manual
+        idML = idML.toUpperCase().replace('MLA', '');
 
         logger.info(`Consultando producto ML: MLA${idML}`);
 

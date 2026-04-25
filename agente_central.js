@@ -95,12 +95,11 @@ class AgenteCentral {
             // Prueba de Firebase: Usamos obtenerProductoML que es un ping más directo
             this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { action: "test" })
                 .then(() => this.#actualizarEstado('firebase', true))
-                .catch(e => this.#actualizarEstado('firebase', false, "Error de comunicación: " + e.message)),
+                .catch(e => this.#actualizarEstado('firebase', false, "Error de comunicación: " + (e.message || "internal"))),
             // Prueba de Vision AI: Aquí sí queremos ver si la llave de Gemini responde
-            // Llamamos a la función SIN el modo test para ver si la API de Google nos deja pasar
-            this.servicios.firebaseFunctions.callCloudFunction('consultarOraculo', { titulo: "Test de Conexión", action: "health_check" })
+            this.servicios.firebaseFunctions.callCloudFunction('consultarOraculo', { action: "test" })
                 .then(() => this.#actualizarEstado('visionAI', true))
-                .catch(e => this.#actualizarEstado('visionAI', false, e.message.includes("not-found") ? "API Gemini no habilitada en Google Cloud" : e.message)),
+                .catch(e => this.#actualizarEstado('visionAI', false, e.message.includes("not-found") ? "API Gemini o Modelo no habilitado" : e.message)),
             // Verificación de disponibilidad de la API de Mercado Libre
             fetch('https://api.mercadolibre.com/sites/MLA', { method: 'GET', mode: 'no-cors' }).then(() => {
                 // Si el fetch no falla (catch), asumimos que el servidor ML respondió aunque no podamos leer el JSON por CORS
