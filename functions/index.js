@@ -195,11 +195,11 @@ exports.obtenerProductoML = onCall({
         }
 
         // Extraer el ID (MLA...) del link
-        let idML = productId || (targetUrl?.match(/MLA-?(\d+)/i)?.[1] || "");
+        let idML = productId || (targetUrl?.match(/MLA-?(\d+)/i)?.[1] || url?.match(/MLA-?(\d+)/i)?.[1] || "");
         if (!idML) throw new Error("No se pudo extraer un ID válido de Mercado Libre.");
 
         // Limpiar si el usuario ya puso MLA en el ID manual
-        idML = idML.toUpperCase().replace('MLA', '');
+        idML = idML.toString().toUpperCase().replace(/MLA-?/g, '');
 
         logger.info(`Consultando producto ML: MLA${idML}`);
 

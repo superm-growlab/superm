@@ -312,7 +312,7 @@ class AgenteCentral {
                 obtenerDatosDesdeLink: async (referralLink) => {
                     // Intento de extracción local antes de ir al servidor
                     const match = referralLink.match(/MLA-?(\d+)/i);
-                    const idML = match ? `MLA${match[1]}` : "000";
+                    const idML = match ? match[1] : "000";
                     // Aquí no pasamos módulo porque es una API externa directa
                     const data = await this.#ejecutarConsulta(`https://api.mercadolibre.com/items/MLA${idML}`, {}, null, true, 'mercadoLibre');
                     if (!data) return null;

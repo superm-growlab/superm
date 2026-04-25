@@ -2184,14 +2184,23 @@ window.addEventListener('load', async () => {
         
         // Carga segura de datos externos
         try {
-            if (window.cargarInventario) await window.cargarInventario();
-            if (window.cargarRecetarios) await window.cargarRecetarios();
-            if (window.cargarNotasDesdeSheet) await window.cargarNotasDesdeSheet();
+            // Lanzamos las cargas en paralelo para no bloquear el inicio
+            const cargas = [
+                window.cargarInventario ? window.cargarInventario() : Promise.resolve(),
+                window.cargarRecetarios ? window.cargarRecetarios() : Promise.resolve(),
+                window.cargarNotasDesdeSheet ? window.cargarNotasDesdeSheet() : Promise.resolve()
+            ];
+            await Promise.allSettled(cargas);
         } catch (err) {
             console.warn("Algunos datos de Sheets no pudieron cargarse, pero el Lab iniciará:", err);
         }
 
         if (window.updateCartUI) window.updateCartUI();
+        
+        // Si no hay sección activa en el hash, forzamos el inicio para asegurar visibilidad
+        if (!window.location.hash) {
+            window.irAlInicio();
+        }
 
         // Restaurar vista según Hash o Estado
         const urlParams = new URLSearchParams(window.location.search);
