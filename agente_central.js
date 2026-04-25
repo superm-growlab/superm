@@ -14,6 +14,14 @@ import { functions } from './modulos/firebase-config.js';
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 
 class AgenteCentral {
+    constructor() {
+        // Inicialización de secciones para asegurar el acceso al método privado
+        this.#initTienda();
+        this.#initHerramientas();
+        this.#initComunidad();
+        this.#initServicios();
+    }
+
     /**
      * MÉTODO PRIVADO (#): Ejecutor maestro de consultas.
      * Centraliza la lógica de 'fetch', manejo de fallos y conversión a JSON.
@@ -38,143 +46,109 @@ class AgenteCentral {
     }
 
     // --- SECCIÓN: TIENDA ---
-    tienda = {
-        /**
-         * Solicita el inventario y lo "limpia" para la interfaz.
-         */
-        obtenerProductos: async () => {
-            const datos = await this.#ejecutarConsulta('./data/inventario.json', {}, []);
-            
-            return datos.map(item => ({
-                id: item.id || 0,
-                nombre: item.title || "Producto sin nombre",
-                precio: item.price || 0,
-                imagen: (item.pictures && item.pictures[0]) || 'https://i.postimg.cc/rF9GqwGS/favicon.png',
-                categoria: item.category_id || 'General'
-            }));
-        }
-    };
+    #initTienda() {
+        this.tienda = {
+            obtenerProductos: async () => {
+                const datos = await this.#ejecutarConsulta('./data/inventario.json', {}, []);
+                
+                return datos.map(item => ({
+                    id: item.id || 0,
+                    nombre: item.title || "Producto sin nombre",
+                    precio: item.price || 0,
+                    imagen: (item.pictures && item.pictures[0]) || 'https://i.postimg.cc/rF9GqwGS/favicon.png',
+                    categoria: item.category_id || 'General'
+                }));
+            }
+        };
+    }
 
     // --- SECCIÓN: HERRAMIENTAS ---
-    herramientas = {
-        /**
-         * Sincroniza las tablas de cultivo externas.
-         */
-        obtenerRecetarios: async () => {
-            const datos = await this.#ejecutarConsulta('https://api.superm.lab/recetarios', {}, []);
-            
-            return datos.map(r => ({
-                marca: r.brand_name || "Genérico",
-                imagenTabla: r.main_table_url || "",
-                descripcion: r.short_info || ""
-            }));
-        },
-
-        obtenerClimaSugerido: async (etapa) => {
-            // Lógica interna o consulta rápida
-            return {
-                tempIdeal: etapa === 'flora' ? 22 : 24,
-                humIdeal: etapa === 'flora' ? 45 : 60,
-                fuente: "Manual de Laboratorio Super M"
-            };
-        }
-    };
-
-    // --- SECCIÓN: COMUNIDAD ---
-    comunidad = {
-        /**
-         * Trae los debates recientes y formatea las fechas.
-         */
-        obtenerUltimosMensajes: async () => {
-            const mensajes = await this.#ejecutarConsulta('https://api.superm.lab/posts', {}, []);
-            
-            return mensajes.map(m => ({
-                usuario: m.author_name || "Anónimo",
-                texto: m.content_text || "",
-                fecha: new Date(m.created_at).toLocaleDateString() || "Reciente",
-                categoria: m.tag || "General"
-            }));
-        }
-    };
-
-    // --- SECCIÓN: SERVICIOS AVANZADOS ---
-    servicios = {
-        /**
-         * Módulo para interactuar con la API de Mercado Libre.
-         */
-        mercadoLibre: {
-            obtenerDatosDesdeLink: async (referralLink) => {
-                // Extraemos el ID del producto del enlace
-                const idML = referralLink.split('MLA-')[1]?.split('-')[0] || "000";
+    #initHerramientas() {
+        this.herramientas = {
+            obtenerRecetarios: async () => {
+                const datos = await this.#ejecutarConsulta('https://api.superm.lab/recetarios', {}, []);
                 
-                const data = await this.#ejecutarConsulta(`https://api.mercadolibre.com/items/MLA${idML}`, {}, null);
-                
-                if (!data) return null;
-
-                return {
-                    id: data.id,
-                    titulo: data.title,
-                    precio: new Intl.NumberFormat('es-AR', { style: 'currency', currency: data.currency_id }).format(data.price),
-                    imagen: data.pictures?.[0]?.url || 'https://i.postimg.cc/rF9GqwGS/favicon.png',
-                    link: referralLink
-                };
+                return datos.map(r => ({
+                    marca: r.brand_name || "Genérico",
+                    imagenTabla: r.main_table_url || "",
+                    descripcion: r.short_info || ""
+                }));
             },
-            /**
-             * Obtiene datos de producto procesados por la Cloud Function (scraping/API ML)
-             */
-            getProductFromCloudFunction: async (url, productId) => {
-                return await this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { url, productId });
-            }
-        },
-
-        /**
-         * Módulo para interactuar con Firebase Cloud Functions.
-         */
-        firebaseFunctions: {
-            callCloudFunction: async (functionName, payload) => {
-                try {
-                    const callable = httpsCallable(functions, functionName);
-                    const response = await callable(payload);
-                    return response.data;
-                } catch (e) { throw e; }
-            }
-        },
-
-        /**
-         * Módulo de Inteligencia Artificial para el Oráculo.
-         */
-        visionAI: {
-            analizarCarencia: async (base64Image) => {
-                const config = {
-                    method: 'POST',
-                    body: JSON.stringify({ image: base64Image }),
-                    headers: { 'Content-Type': 'application/json' }
-                };
-
-                const data = await this.#ejecutarConsulta('https://api.superm.lab/vision', config, { error: true });
-
+            obtenerClimaSugerido: async (etapa) => {
                 return {
-                    diagnostico: data.diagnosis || "No se detectó patrón claro",
-                    seguridad: (data.confidence * 100).toFixed(0) + "%",
-                    accion: data.remedy || "Revisar parámetros de pH y riego."
+                    tempIdeal: etapa === 'flora' ? 22 : 24,
+                    humIdeal: etapa === 'flora' ? 45 : 60,
+                    fuente: "Manual de Laboratorio Super M"
                 };
             }
-        },
+        };
+    }
 
-        /**
-         * Módulo para enviar datos a Google Sheets.
-         */
-        googleSheets: {
-            sendToSheet: async (url, payload) => {
-                const config = {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify(payload)
-                };
-                await fetch(url, config);
+    #initComunidad() {
+        this.comunidad = {
+            obtenerUltimosMensajes: async () => {
+                const mensajes = await this.#ejecutarConsulta('https://api.superm.lab/posts', {}, []);
+                return mensajes.map(m => ({
+                    usuario: m.author_name || "Anónimo",
+                    texto: m.content_text || "",
+                    fecha: new Date(m.created_at).toLocaleDateString() || "Reciente",
+                    categoria: m.tag || "General"
+                }));
             }
-        }
-    };
+        };
+    }
+
+    #initServicios() {
+        this.servicios = {
+            mercadoLibre: {
+                obtenerDatosDesdeLink: async (referralLink) => {
+                    const idML = referralLink.split('MLA-')[1]?.split('-')[0] || "000";
+                    const data = await this.#ejecutarConsulta(`https://api.mercadolibre.com/items/MLA${idML}`, {}, null);
+                    if (!data) return null;
+                    return {
+                        id: data.id,
+                        titulo: data.title,
+                        precio: new Intl.NumberFormat('es-AR', { style: 'currency', currency: data.currency_id }).format(data.price),
+                        imagen: data.pictures?.[0]?.url || 'https://i.postimg.cc/rF9GqwGS/favicon.png',
+                        link: referralLink
+                    };
+                },
+                getProductFromCloudFunction: async (url, productId) => {
+                    return await this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { url, productId });
+                }
+            },
+            firebaseFunctions: {
+                callCloudFunction: async (functionName, payload) => {
+                    try {
+                        const callable = httpsCallable(functions, functionName);
+                        const response = await callable(payload);
+                        return response.data;
+                    } catch (e) { throw e; }
+                }
+            },
+            visionAI: {
+                analizarCarencia: async (base64Image) => {
+                    const config = {
+                        method: 'POST',
+                        body: JSON.stringify({ image: base64Image }),
+                        headers: { 'Content-Type': 'application/json' }
+                    };
+                    const data = await this.#ejecutarConsulta('https://api.superm.lab/vision', config, { error: true });
+                    return {
+                        diagnostico: data.diagnosis || "No se detectó patrón claro",
+                        seguridad: (data.confidence * 100).toFixed(0) + "%",
+                        accion: data.remedy || "Revisar parámetros de pH y riego."
+                    };
+                }
+            },
+            googleSheets: {
+                sendToSheet: async (url, payload) => {
+                    const config = { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) };
+                    await fetch(url, config);
+                }
+            }
+        };
+    }
 }
 
 /**

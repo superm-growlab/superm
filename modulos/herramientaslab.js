@@ -1,5 +1,5 @@
+import { Agente } from '../agente_central.js';
 import { app, db, auth, functions, ADMIN_UID } from './firebase-config.js';
-import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 import {
     collection, addDoc, serverTimestamp, query, where, orderBy,
     onSnapshot, getDocs, deleteDoc, doc, getDoc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, limit 
@@ -958,9 +958,7 @@ export async function ejecutarAgenteConsultor(item, diagExistente) {
         if (diagExistente) {
             hallazgo = { ...diagExistente };
         } else {
-            const consultarOraculoFn = httpsCallable(window.functions, 'consultarOraculo');
-            const result = await consultarOraculoFn({ titulo: item.titulo, tags: item.tags || [] });
-            hallazgo = result.data;
+            hallazgo = await Agente.servicios.firebaseFunctions.callCloudFunction('consultarOraculo', { titulo: item.titulo, tags: item.tags || [] });
             if (!hallazgo) throw new Error("El Oráculo no devolvió datos válidos.");
             
             if (auth.currentUser) {
@@ -1030,13 +1028,10 @@ export async function sembrarBiblioteca() {
         { id: "potasio_carencia", titulo: "Carencia de Potasio", tags: ["potasio", "quemado"] }
     ];
 
-    const consultarOraculoFn = httpsCallable(functions, 'consultarOraculo');
-
     try {
         for (const m of muestrasBase) {
             // 1. Consultar al Oráculo (IA + Google)
-            const result = await consultarOraculoFn({ titulo: m.titulo, tags: m.tags });
-            const hallazgo = result.data;
+            const hallazgo = await Agente.servicios.firebaseFunctions.callCloudFunction('consultarOraculo', { titulo: m.titulo, tags: m.tags });
 
             if (hallazgo && hallazgo.url_imagen) {
                 // 2. Guardar el Diagnóstico Técnico (Sabiduría)

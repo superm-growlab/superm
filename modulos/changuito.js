@@ -222,7 +222,7 @@ export function renderizar(p) {
 window.actualizarMesaInspeccion = actualizarMesaInspeccion;
 window.probarConexionLlaves = probarConexionLlaves;
 window.botTransmutar = botTransmutar;
-window.cargarAFirebase = cargarAFirebase;
-window.enviarASheetsDirecto = enviarASheetsDirecto;
-window.cancelarEdicion = cancelarEdicion;
+window.cargarAFirebaseChanguito = cargarAFirebase;
+window.enviarASheetsChanguito = enviarASheetsDirecto;
+window.cancelarEdicionChanguito = cancelarEdicion;
 window.renderizar = renderizar;

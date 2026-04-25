@@ -16,7 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const functions = getFunctions(app);
+const functions = getFunctions(app, 'us-central1');
 
 // Constantes Globales del Alquimista
 export const ADMIN_UID = 'uYs87x57iGQPwR9WRilXf7dCYx62';
