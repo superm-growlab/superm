@@ -1924,7 +1924,14 @@
         <div class="form-box" style="border-color: var(--p); max-width: 500px; width: 100%;">
             <h3 style="color: var(--p);">🩺 ESTADO DEL AGENTE CENTRAL</h3>
             <p style="font-size: 0.7rem; color: #888; text-align: center; margin-bottom: 20px;">Reporte de salud de las conexiones externas.</p>
-            <div id="api-status-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            
+            <button id="btn-scan-api" class="btn btn-v" style="width: 100%; margin-bottom: 20px; font-size: 0.7rem; letter-spacing: 1px;" onclick="window.ejecutarEscaneoAPI(this)">⚡ ESCANEAR TODAS LAS CONEXIONES</button>
+            
+            <div id="api-status-list" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;"></div>
+            
+            <h4 style="color: var(--s); font-size: 0.7rem; border-top: 1px solid #333; padding-top: 20px; margin-top: 0; letter-spacing: 1px;">🗝️ INVENTARIO DE LLAVES MAESTRAS (SECRETS)</h4>
+            <div id="api-keys-inventory" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;"></div>
+            
             <button class="btn btn-m" style="width: 100%; margin-top: 25px;" onclick="document.getElementById('modal-diagnostico-api').style.display='none'">CERRAR</button>
         </div>
     </div>
@@ -2295,6 +2302,7 @@ onAuthStateChanged(auth, (user) => {
 window.mostrarDiagnosticoAPI = () => {
     const modal = document.getElementById('modal-diagnostico-api');
     const list = document.getElementById('api-status-list');
+    const inventory = document.getElementById('api-keys-inventory');
     if (!modal || !list) return;
 
     modal.style.display = 'flex';
@@ -2318,6 +2326,45 @@ window.mostrarDiagnosticoAPI = () => {
             </div>
         `;
     }).join('');
+
+    // Renderizar el inventario de llaves y dónde conseguirlas
+    inventory.innerHTML = Object.entries(Agente.inventarioLlaves).map(([key, info]) => {
+        const estaConfigurada = Agente.estado[info.modulo]?.conectada || false;
+        return `
+            <div style="background: rgba(188, 19, 254, 0.05); padding: 10px; border-radius: 6px; border: 1px solid #222;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <span style="font-size: 0.65rem; color: var(--p); font-weight: bold;">${key}</span>
+                    <a href="${info.link}" target="_blank" style="font-size: 0.55rem; color: var(--s); text-decoration: none; border-bottom: 1px solid var(--s);">OBTENER CLAVE ↗</a>
+                </div>
+                <div style="font-size: 0.6rem; color: #ccc; line-height: 1.2;">
+                    <b style="color: #fff;">${info.nombre}:</b> ${info.uso}
+                </div>
+                <div style="font-size: 0.5rem; color: #666; margin-top: 5px; font-family: monospace;">
+                    Status: ${estaConfigurada ? 'VERIFICADA EN SESIÓN' : 'PENDIENTE DE PRUEBA'}
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+// --- LÓGICA DE ESCANEO ACTIVO ---
+window.ejecutarEscaneoAPI = async (btn) => {
+    const originalContent = btn.innerHTML;
+    btn.innerHTML = "⏳ ESCANEANDO PROTOCOLOS...";
+    btn.disabled = true;
+    btn.style.opacity = "0.7";
+    
+    try {
+        await Agente.verificarSaludCompleta();
+        window.mostrarDiagnosticoAPI(); // Refrescar la lista con los nuevos resultados
+        window.notify("📡 Sincronización de Red Completada", "success");
+    } catch (e) {
+        window.notify("❌ Error durante el escaneo", "error");
+    } finally {
+        btn.innerHTML = originalContent;
+        btn.disabled = false;
+        btn.style.opacity = "1";
+    }
 };
 
 // Función para alternar la visibilidad de la contraseña

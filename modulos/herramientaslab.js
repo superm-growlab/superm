@@ -995,18 +995,31 @@ export function procesarImagenUsuario(event) {
     window.mostrarLoader();
     const reader = new FileReader();
     reader.onload = (e) => {
+        const base64Image = e.target.result;
         const panel = document.getElementById('panel-resultados-oraculo');
         const contenido = document.getElementById('contenido-resultado-oraculo');
+        
         panel.style.display = 'block';
         contenido.innerHTML = `
             <div style="text-align:center; padding:20px;">
-                <p style="color:var(--p); font-weight:bold;">ANALIZANDO ADN VISUAL...</p>
-                <img src="${e.target.result}" style="width:120px; border-radius:10px; border:2px solid var(--s); opacity:0.7;">
+                <p style="color:var(--p); font-weight:bold; letter-spacing:2px;">🔮 EL ORÁCULO ESTÁ OBSERVANDO...</p>
+                <img src="${base64Image}" style="width:120px; border-radius:10px; border:2px solid var(--s); box-shadow: 0 0 20px var(--s);">
             </div>`;
-        setTimeout(() => {
-            window.consultarMuestraOraculo("calcio_carencia"); // Simulación de match
+
+        // Llamada REAL al Agente
+        Agente.servicios.visionAI.analizarCarencia(base64Image).then(resultado => {
+            contenido.innerHTML = `
+                <div class="lab-data-box" style="border-color:var(--p);">
+                    <h4 style="color:var(--p);">DIAGNÓSTICO IA: ${resultado.diagnostico}</h4>
+                    <p style="font-size:0.8rem; color:#ccc;">${resultado.accion}</p>
+                    <small style="color:var(--s);">Confianza del análisis: ${resultado.seguridad}</small>
+                </div>
+                <button class="btn-reset-oraculo" onclick="window.resetOraculo()">NUEVA CONSULTA</button>`;
+        }).catch(err => {
+            contenido.innerHTML = `<p style="color:red; text-align:center;">Error en la conexión astral: ${err.message}</p>`;
+        }).finally(() => {
             window.ocultarLoader();
-        }, 2000);
+        });
     };
     reader.readAsDataURL(file);
 }

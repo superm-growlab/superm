@@ -17,15 +17,44 @@ class AgenteCentral {
     constructor() {
         // Sistema de Monitoreo: Aquí guardamos la salud de tus conexiones
         this.estado = {
-            tienda: { conectada: false, ultimoError: null },
-            biblioteca: { conectada: false, ultimoError: null },
-            recetarios: { conectada: false, ultimoError: null },
-            firebase: { conectada: true, ultimoError: null }, // Firebase inicia con el SDK
-            mercadoLibre: { conectada: false, ultimoError: null },
-            herramientas: { conectada: false, ultimoError: null },
-            comunidad: { conectada: false, ultimoError: null },
-            visionAI: { conectada: false, ultimoError: null },
-            googleSheets: { conectada: false, ultimoError: null }
+            tienda: { conectada: false, ultimoError: null, llaveAsociada: null },
+            biblioteca: { conectada: false, ultimoError: null, llaveAsociada: null },
+            recetarios: { conectada: false, ultimoError: null, llaveAsociada: null },
+            firebase: { conectada: true, ultimoError: null, llaveAsociada: null },
+            mercadoLibre: { conectada: false, ultimoError: null, llaveAsociada: 'ML_ACCESS_TOKEN' },
+            herramientas: { conectada: false, ultimoError: null, llaveAsociada: null },
+            comunidad: { conectada: false, ultimoError: null, llaveAsociada: null },
+            visionAI: { conectada: false, ultimoError: null, llaveAsociada: 'GEMINI_API_KEY' },
+            googleSheets: { conectada: false, ultimoError: null, llaveAsociada: null }
+        };
+
+        // Inventario de Seguridad: Mapa de llaves requeridas y sus fuentes
+        this.inventarioLlaves = {
+            'GEMINI_API_KEY': {
+                nombre: 'Google Gemini AI',
+                uso: 'Cerebro del Detector (Oráculo). Procesa el análisis botánico.',
+                link: 'https://aistudio.google.com/app/apikey'
+            },
+            'ML_ACCESS_TOKEN': {
+                nombre: 'Mercado Libre Devs',
+                uso: 'Permite al Alchemist Bot extraer precios y fotos de links de ML.',
+                link: 'https://developers.mercadolibre.com.ar/es_ar/aplicaciones'
+            },
+            'MP_ACCESS_TOKEN': {
+                nombre: 'Mercado Pago SDK',
+                uso: 'Procesamiento de pagos y creación de preferencias de compra.',
+                link: 'https://www.mercadopago.com.ar/developers/panel'
+            },
+            'GOOGLE_SEARCH_API_KEY': {
+                nombre: 'Google Search API',
+                uso: 'Búsqueda dinámica de imágenes para el Oráculo.',
+                link: 'https://console.cloud.google.com/apis/credentials'
+            },
+            'CUSTOM_SEARCH_ID': {
+                nombre: 'Google Custom Search CX',
+                uso: 'ID del motor de búsqueda para imágenes botánicas.',
+                link: 'https://programmablesearchengine.google.com/controlpanel/all'
+            }
         };
 
         // Inicialización de secciones para asegurar el acceso al método privado
@@ -35,6 +64,29 @@ class AgenteCentral {
         this.#initServicios();
         this.#initBiblioteca();
         this.#initRecetarios();
+    }
+
+    /**
+     * Realiza un diagnóstico activo de todos los puntos de conexión.
+     * Dispara las peticiones y actualiza el estado de salud global.
+     */
+    async verificarSaludCompleta() {
+        console.log("🔍 Agente: Iniciando diagnóstico global de red...");
+        
+        const pruebas = [
+            this.tienda.obtenerProductos(),
+            this.biblioteca.obtenerNotas(),
+            this.recetarios.obtenerTodos(),
+            // Prueba de Firebase y Cloud Functions (usando el modo test que ya programamos)
+            this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { action: "test" })
+                .then(() => this.#actualizarEstado('firebase', true))
+                .catch(e => this.#actualizarEstado('firebase', false, e.message)),
+            // Verificación de disponibilidad de la API de Mercado Libre
+            fetch('https://api.mercadolibre.com/').then(r => this.#actualizarEstado('mercadoLibre', r.ok)).catch(e => this.#actualizarEstado('mercadoLibre', false, e.message))
+        ];
+
+        await Promise.allSettled(pruebas);
+        return this.estado;
     }
 
     /**
@@ -57,14 +109,29 @@ class AgenteCentral {
                 }
 
                 const datos = esJson ? await respuesta.json() : await respuesta.text();
+                
+                // ✅ Si la consulta es exitosa, guardamos una copia en la "mochila" (Caché)
+                if (modulo !== 'global' && datos) {
+                    localStorage.setItem(`cache_agente_${modulo}`, esJson ? JSON.stringify(datos) : datos);
+                }
+
                 this.#actualizarEstado(modulo, true);
                 return datos;
             } catch (error) {
                 const esUltimoIntento = i === reintentos - 1;
                 
                 if (esUltimoIntento) {
-                    this.#actualizarEstado(modulo, false, error.message);
                     console.error(`🚨 Agente Central - Fallo definitivo en [${modulo}]:`, error.message);
+                    
+                    // 🔄 INTENTO DE RECUPERACIÓN: ¿Tenemos algo en la mochila de emergencia?
+                    const respaldo = localStorage.getItem(`cache_agente_${modulo}`);
+                    if (respaldo) {
+                        console.warn(`🩹 Agente: Usando datos de respaldo (Caché) para el módulo ${modulo}.`);
+                        this.#actualizarEstado(modulo, false, `${error.message} (Usando Respaldo)`);
+                        return esJson ? JSON.parse(respaldo) : respaldo;
+                    }
+
+                    this.#actualizarEstado(modulo, false, error.message);
                     return fallback;
                 }
 
@@ -260,17 +327,14 @@ class AgenteCentral {
                  * Costo: Basado en cuota de uso.
                  */
                 analizarCarencia: async (base64Image) => {
-                    const config = {
-                        method: 'POST',
-                        body: JSON.stringify({ image: base64Image }),
-                        headers: { 'Content-Type': 'application/json' }
-                    };
-                    const data = await this.#ejecutarConsulta('https://api.superm.lab/vision', config, { error: true }, true, 'visionAI');
-                    this.#actualizarEstado('visionAI', !!data && !data.error, data?.error);
+                    // Enviamos la foto a la Cloud Function que tiene acceso a Gemini
+                    const data = await this.servicios.firebaseFunctions.callCloudFunction('analizarImagenPlanta', { image: base64Image });
+                    
+                    this.#actualizarEstado('visionAI', !!data, data?.error);
                     return {
-                        diagnostico: data.diagnosis || "No se detectó patrón claro",
-                        seguridad: (data.confidence * 100).toFixed(0) + "%",
-                        accion: data.remedy || "Revisar parámetros de pH y riego."
+                        diagnostico: data?.diagnostico || "No se detectó patrón claro",
+                        seguridad: data?.confianza || "0%",
+                        accion: data?.accion || "Revisar parámetros de pH y riego."
                     };
                 }
             },
