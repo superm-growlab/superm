@@ -82,15 +82,18 @@ class AgenteCentral {
             this.tienda.obtenerProductos(),
             this.biblioteca.obtenerNotas(),
             this.recetarios.obtenerTodos(),
+            // Verificación de Google Sheets (Ping de accesibilidad)
+            fetch("https://docs.google.com/spreadsheets/").then(r => this.#actualizarEstado('googleSheets', r.ok)).catch(() => this.#actualizarEstado('googleSheets', false, "Bloqueo de red")),
             // Prueba de Comunidad y Herramientas (si existen endpoints)
             this.herramientas.obtenerRecetarios().catch(() => {}),
             this.comunidad.obtenerUltimosMensajes().catch(() => {}),
             // Prueba de Firebase y Cloud Functions (usando el modo test que ya programamos)
             this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { action: "test" })
                 .then(() => this.#actualizarEstado('firebase', true))
-                .catch(e => this.#actualizarEstado('firebase', false, e.message || "Error en Servidor")),
+                .catch(e => this.#actualizarEstado('firebase', false, e.message || "Error Interno")),
             // Prueba de Vision AI (IA)
-            this.servicios.firebaseFunctions.callCloudFunction('analizarImagenPlanta', { action: "test" })
+            // Intentamos llamar a la función de análisis en modo prueba
+            this.servicios.firebaseFunctions.callCloudFunction('consultarOraculo', { action: "test", titulo: "ping" })
                 .then(() => this.#actualizarEstado('visionAI', true))
                 .catch(e => this.#actualizarEstado('visionAI', false, e.message || "IA no disponible")),
             // Verificación de disponibilidad de la API de Mercado Libre
