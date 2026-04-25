@@ -101,7 +101,15 @@ class AgenteCentral {
             this.servicios.firebaseFunctions.callCloudFunction('consultarOraculo', { action: "test" })
                 .then(() => this.#actualizarEstado('visionAI', true))
                 .catch(e => {
-                    const msg = e.message?.includes("not-found") ? "Modelo Gemini no habilitado" : (e.message || "Error IA");
+                    let msg = e.message || "Error Desconocido en IA";
+                    // Mejoramos la detección de errores de configuración
+                    if (e.message?.includes("404") || e.message?.includes("not-found") || e.message?.includes("not enabled")) {
+                        msg = "Generative Language API no habilitada en Google Cloud";
+                    } else if (e.message?.includes("API_KEY_INVALID")) {
+                        msg = "La GEMINI_API_KEY es incorrecta";
+                    } else if (e.message?.includes("billing")) {
+                        msg = "Falta activar facturación/créditos en Google Cloud";
+                    }
                     this.#actualizarEstado('visionAI', false, msg);
                 }),
             // Verificación de disponibilidad de la API de Mercado Libre
@@ -340,11 +348,15 @@ class AgenteCentral {
                     try {
                         const callable = httpsCallable(functions, functionName);
                         const response = await callable(payload);
-                        this.#actualizarEstado('firebase', true);
                         return response.data;
                     } catch (e) { 
-                        this.#actualizarEstado('firebase', false, e.message);
-                        throw e; 
+                        // Solo marcamos error crítico si la función no existe o el servidor está caído
+                        if (e.code === 'not-found' || e.code === 'unavailable' || e.message?.includes("Network Error")) {
+                            this.#actualizarEstado('firebase', false, e.message);
+                        } else {
+                            console.warn(`Agente: Respuesta controlada de ${functionName}:`, e.message);
+                        }
+                        throw e;
                     }
                 }
             },

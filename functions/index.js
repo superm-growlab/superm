@@ -17,22 +17,40 @@ exports.consultarOraculo = onCall({
     const { titulo, tags = [], action } = request.data;
 
     // Modo Ping para diagnóstico del Agente
-    if (action === "test") return { message: "Conexión con el Oráculo establecida." };
+    if (action === "test") {
+        try {
+            const key = process.env.GEMINI_API_KEY;
+            if (!key) throw new Error("Falta la variable GEMINI_API_KEY en los Secrets.");
+            if (!key.startsWith("AIza")) throw new Error("La API Key no tiene el formato correcto (debe empezar con AIza).");
+            
+            const genAI = new GoogleGenerativeAI(key);
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            
+            // Validamos la API Key con una operación ligera que no consume cuota de generación
+            await model.countTokens("ping");
+            return { message: "Conexión con el Oráculo establecida y validada." };
+        } catch (e) {
+            logger.error("Error en validación de Oráculo:", e.message);
+            throw new HttpsError("unauthenticated", "Fallo de validación Gemini: " + e.message);
+        }
+    }
 
     if (!titulo) {
         logger.error("Consulta fallida: Título ausente");
         throw new HttpsError("invalid-argument", "El título de la muestra es obligatorio.");
     }
 
-    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.length < 20) {
-        throw new HttpsError("unauthenticated", "La clave GEMINI_API_KEY no está configurada o es inválida.");
+    const key = process.env.GEMINI_API_KEY;
+    if (!key || key.length < 20 || !key.startsWith("AIza")) {
+        logger.error("Clave GEMINI_API_KEY no configurada correctamente en Secrets.");
+        throw new HttpsError("unauthenticated", "El Oráculo no tiene acceso a su llave de sabiduría. Verifica los Secrets de Firebase.");
     }
 
     const tagsText = Array.isArray(tags) && tags.length > 0 ? tags.join(", ") : "sin etiquetas";
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(key);
 
     // Log de seguridad para depuración (solo muestra los primeros 4 caracteres)
-    const keyPrefix = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(0, 4) : "null";
+    const keyPrefix = key.substring(0, 4);
     logger.info(`Invocando Oráculo. Prefijo de Key: ${keyPrefix}`);
 
     const model = genAI.getGenerativeModel({ 
@@ -128,7 +146,12 @@ exports.consultarOraculo = onCall({
             throw error; // Propagar HttpsError directamente al cliente
         } else {
             // Para errores inesperados, devolver un HttpsError genérico
-            throw new HttpsError("internal", `Un error inesperado ocurrió en el Oráculo: ${error.message}`);
+            const is404 = error.message?.includes("404") || error.status === 404;
+            const msg = is404 
+                ? "Modelo no encontrado o API no habilitada. Revisa la consola de Google Cloud." 
+                : error.message;
+            
+            throw new HttpsError(is404 ? "not-found" : "internal", `Fallo del Oráculo: ${msg}`);
         }
     }
 });
@@ -178,7 +201,16 @@ exports.obtenerProductoML = onCall({
     const { url, productId, action } = request.data;
 
     // Modo Ping para diagnóstico del Agente
-    if (action === "test") return { message: "Conexión con Mercado Libre Operativa" };
+    if (action === "test") {
+        try {
+            // Intentamos una llamada pública rápida para verificar conectividad del servidor
+            await axios.get("https://api.mercadolibre.com/sites/MLA", { timeout: 3000 });
+            return { message: "Conexión con Mercado Libre Operativa" };
+        } catch (e) {
+            logger.error("Error en test de ML:", e.message);
+            throw new HttpsError("unavailable", "La API de Mercado Libre no responde desde el servidor de funciones.");
+        }
+    }
 
     if (!productId && !url) {
         throw new HttpsError("invalid-argument", "Se requiere una URL o ID de producto.");
@@ -190,7 +222,11 @@ exports.obtenerProductoML = onCall({
         // 🔗 RESOLVER LINKS ACORTADOS (meli.la/xxx)
         if (url && url.includes("meli.la")) {
             const res = await axios.get(url, { maxRedirects: 5 });
-            targetUrl = res.request.res.responseUrl || url;
+            // Intentamos capturar la URL final de forma más robusta (para evitar 404 por redirecciones rotas)
+            targetUrl = res.request?.res?.responseUrl || 
+                        res.request?._redirectable?._currentUrl || 
+                        res.config?.url || 
+                        url;
             logger.info(`Link resuelto: ${targetUrl}`);
         }
 
@@ -219,7 +255,12 @@ exports.obtenerProductoML = onCall({
         };
 
     } catch (error) {
-        logger.error("Error en obtenerProductoML:", error.message);
-        throw new HttpsError("internal", `Mercado Libre no respondió: ${error.message}`);
+        const status = error.response?.status;
+        logger.error("Error en obtenerProductoML:", { message: error.message, status });
+        
+        if (status === 404) {
+            throw new HttpsError("not-found", "Producto no encontrado. Verifica el ID o que el link sea de un artículo activo.");
+        }
+        throw new HttpsError("internal", `Error de comunicación con ML: ${error.message}`);
     }
 });
