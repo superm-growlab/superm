@@ -153,8 +153,16 @@ exports.analizarImagenPlanta = onCall({
         const prompt = "Analiza esta planta de cannabis. Responde en JSON puro: { \"diagnostico\": \"nombre\", \"confianza\": \"X%\", \"accion\": \"instruccion\" }";
         const result = await model.generateContent([prompt, { inlineData: { data: base64Data, mimeType: "image/jpeg" } }]);
         const text = result.response.text();
-        return JSON.parse(text.match(/\{[\s\S]*\}/)[0]);
+        
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            logger.error("La IA no devolvió un JSON válido:", text);
+            throw new HttpsError("internal", "El Oráculo visual no pudo procesar la imagen correctamente.");
+        }
+        
+        return JSON.parse(jsonMatch[0]);
     } catch (error) {
+        logger.error("Error en analizarImagenPlanta:", error);
         throw new HttpsError("internal", "Error IA: " + error.message);
     }
 });
