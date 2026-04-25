@@ -36,7 +36,7 @@ exports.consultarOraculo = onCall({
     logger.info(`Invocando Oráculo. Prefijo de Key: ${keyPrefix}`);
 
     const model = genAI.getGenerativeModel({ 
-        model: "models/gemini-1.5-flash", // Nombre explícito del modelo
+        model: "gemini-1.5-flash", 
         generationConfig: { responseMimeType: "application/json" }
     });
 
@@ -134,6 +134,32 @@ exports.consultarOraculo = onCall({
 });
 
 /**
+ * FUNCIÓN: analizarImagenPlanta
+ * Propósito: Recibir una foto en base64 y usar Gemini Vision para diagnosticar.
+ */
+exports.analizarImagenPlanta = onCall({
+    region: "us-central1",
+    secrets: ["GEMINI_API_KEY"]
+}, async (request) => {
+    const { image, action } = request.data;
+    if (action === "test") return { message: "Ojo del Oráculo Operativo" };
+    if (!image) throw new HttpsError("invalid-argument", "Imagen ausente.");
+
+    try {
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const base64Data = image.split(",")[1] || image;
+
+        const prompt = "Analiza esta planta de cannabis. Responde en JSON puro: { \"diagnostico\": \"nombre\", \"confianza\": \"X%\", \"accion\": \"instruccion\" }";
+        const result = await model.generateContent([prompt, { inlineData: { data: base64Data, mimeType: "image/jpeg" } }]);
+        const text = result.response.text();
+        return JSON.parse(text.match(/\{[\s\S]*\}/)[0]);
+    } catch (error) {
+        throw new HttpsError("internal", "Error IA: " + error.message);
+    }
+});
+
+/**
  * FUNCIÓN: obtenerProductoML
  * Propósito: Actuar como puente seguro entre el Alchemist Bot y Mercado Libre.
  * Usa Client ID y Client Secret para consultar la API de forma autorizada.
@@ -151,8 +177,17 @@ exports.obtenerProductoML = onCall({
     }
 
     try {
+        let targetUrl = url;
+
+        // 🔗 RESOLVER LINKS ACORTADOS (meli.la/xxx)
+        if (url && url.includes("meli.la")) {
+            const res = await axios.get(url, { maxRedirects: 5 });
+            targetUrl = res.request.res.responseUrl || url;
+            logger.info(`Link resuelto: ${targetUrl}`);
+        }
+
         // Extraer el ID (MLA...) del link
-        let idML = productId || (url?.match(/MLA-?(\d+)/i)?.[1] || "");
+        let idML = productId || (targetUrl?.match(/MLA-?(\d+)/i)?.[1] || "");
         if (!idML) throw new Error("No se pudo extraer un ID válido de Mercado Libre.");
 
         // Limpiar si el usuario ya puso MLA en el ID manual
