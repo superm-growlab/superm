@@ -1854,6 +1854,13 @@
         >
             🤖 ALCHEMIST BOT
         </button>
+        <button onclick="window.mostrarDiagnosticoAPI()" 
+            style="position: absolute; top: 60px; right: 5%; background: #000; border: 2px solid var(--s); color: var(--s); padding: 8px 16px; font-weight: 900; border-radius: 10px; cursor: pointer; font-size: 0.65rem; letter-spacing: 1px; box-shadow: 0 0 15px rgba(188, 19, 254, 0.2); transition: 0.3s; z-index: 100; font-family: 'Courier New', monospace;"
+            onmouseover="this.style.background='var(--s)'; this.style.color='#000'; this.style.boxShadow='0 0 25px var(--s)';"
+            onmouseout="this.style.background='#000'; this.style.color='var(--s)'; this.style.boxShadow='0 0 15px rgba(188, 19, 254, 0.2)';"
+        >
+            📊 DIAGNÓSTICO API
+        </button>
 
         <h2 style="color:var(--s); text-align: center;">🛡️ PANEL DE MODERACIÓN</h2>
         <div id="admin-tabs" style="display:flex; gap:10px; justify-content:center; margin-bottom:30px;">
@@ -1911,6 +1918,16 @@
             <p style="margin: 5px 0;">Contenido para mayores de 18 años. Fomentamos el cultivo técnico, responsable y dentro del marco legal vigente.</p>
         </div>
     </footer>
+
+    <!-- MODAL DIAGNÓSTICO API -->
+    <div id="modal-diagnostico-api" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 30005; justify-content: center; align-items: center; backdrop-filter: blur(10px); padding: 20px;">
+        <div class="form-box" style="border-color: var(--p); max-width: 500px; width: 100%;">
+            <h3 style="color: var(--p);">🩺 ESTADO DEL AGENTE CENTRAL</h3>
+            <p style="font-size: 0.7rem; color: #888; text-align: center; margin-bottom: 20px;">Reporte de salud de las conexiones externas.</p>
+            <div id="api-status-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            <button class="btn btn-m" style="width: 100%; margin-top: 25px;" onclick="document.getElementById('modal-diagnostico-api').style.display='none'">CERRAR</button>
+        </div>
+    </div>
 
     <!-- CAPA GLOBAL: Visores y Modales (Fuera de las secciones) -->
     <div id="visor-notas" style="display:none;" onclick="window.cerrarNota()">
@@ -2143,6 +2160,7 @@ import './modulos/comunidad.js';
 import './modulos/tienda.js'; // Nuevo módulo para la tienda y reseñas
 import './modulos/changuito.js';
 
+import { Agente } from './agente_central.js';
 import { auth, db, ADMIN_UID } from './modulos/firebase-config.js';
 import { 
     signInWithEmailAndPassword, 
@@ -2272,6 +2290,35 @@ onAuthStateChanged(auth, (user) => {
         window.cargarDiarioCultivo();
     }
 });
+
+// --- LÓGICA DE DIAGNÓSTICO API ---
+window.mostrarDiagnosticoAPI = () => {
+    const modal = document.getElementById('modal-diagnostico-api');
+    const list = document.getElementById('api-status-list');
+    if (!modal || !list) return;
+
+    modal.style.display = 'flex';
+    const estado = Agente.estado;
+    
+    list.innerHTML = Object.entries(estado).map(([key, info]) => {
+        const color = info.conectada ? 'var(--p)' : (info.ultimoError ? '#ff3131' : '#555');
+        const icon = info.conectada ? '✅' : (info.ultimoError ? '❌' : '⏳');
+        const statusText = info.conectada ? 'CONECTADA' : (info.ultimoError ? 'ERROR' : 'PENDIENTE');
+        
+        return `
+            <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border-left: 4px solid ${color}; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-size: 0.7rem; color: ${color}; font-weight: bold; letter-spacing: 1px;">${key.toUpperCase()}</div>
+                    <div style="font-size: 0.6rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">${info.ultimoError || 'Sin errores registrados'}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.8rem;">${icon}</div>
+                    <div style="font-size: 0.5rem; color: ${color}; font-weight: bold;">${statusText}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+};
 
 // Función para alternar la visibilidad de la contraseña
 window.togglePasswordVisibility = () => {

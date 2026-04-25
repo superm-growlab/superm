@@ -10,9 +10,7 @@ import {
     arrayUnion, arrayRemove, increment, 
     query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-// Sintonía con la biblioteca de notas (Hoja 2: Notas)
-const URL_SHEET_NOTAS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=188672931&single=true&output=tsv";
+import { Agente } from '../agente_central.js';
 
 window.notasDinamicas = [];
 window.notasCargadasInicialmente = false; // Nuevo flag para controlar el estado de carga
@@ -40,39 +38,13 @@ export async function cargarNotasDesdeSheet() {
     window.cargandoNotasLock = true;
 
     try {
-        const r = await fetch(URL_SHEET_NOTAS);
-        if (!r.ok) throw new Error(`Error HTTP: ${r.status}`);
+        // El Agente resuelve el conflicto de la API y el parseo
+        const notasMapeadas = await Agente.biblioteca.obtenerNotas();
         
-        const text = await r.text();
-
-        // Blindaje contra respuestas erróneas de Google
-        if (text.trim().startsWith("<") || text.toLowerCase().includes("<!doctype html>")) {
-            throw new Error("Google Sheets no entregó datos (HTML detectado).");
-        }
-
-        // Normalización y split robusto (respeta saltos de línea dentro de comillas del HTML)
-        const dataClean = text.replace(/^\uFEFF/, '').replace(/\r/g, '');
-        const filas = dataClean.split(/\n(?=(?:[^"]*"[^"]*")*[^"]*$)/).slice(1);
-        
-        const notasMapeadas = filas.filter(linea => linea.trim() !== "").map((linea, index) => {
-            // Split por tabulador con limpieza robusta de comillas (estilo recetarios)
-            const c = linea.split(/\t(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v ? v.trim().replace(/^"|"$/g, '').replace(/""/g, '"') : "");
-            
-            return {
-                id: c[0] || index.toString(),
-                titulo: c[1] || 'Nota sin título',
-                cat: c[2] || 'General',
-                resumen: c[3] || '',
-                contenido: decodificarHTML(c[4] || ''), 
-                icono: c[5] || '📜',   
-                fecha: c[6] || '',     
-                imageUrls: (c[7] || "").split('|').filter(u => u.includes('http')), 
-                upvotes: 0,            // Sincronización con Firebase
-                downvotes: 0
-            };
-        });
-
-        window.notasDinamicas = notasMapeadas;
+        window.notasDinamicas = notasMapeadas.map(n => ({
+            ...n,
+            contenido: decodificarHTML(n.contenido)
+        }));
 
         // Liberamos la interfaz inmediatamente con los datos de Sheets
         window.notasCargadasInicialmente = true;

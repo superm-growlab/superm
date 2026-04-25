@@ -27,9 +27,6 @@ import {
 import { crearNotificacion } from './comunidad.js';
 import { Agente } from '../agente_central.js';
 
-const URL_SHEET_PRODUCTOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=0&single=true&output=tsv"; // Hoja 1: inventario (TSV)
-const URL_GAS_CHANGUITO = "https://script.google.com/macros/s/AKfycbzk6fUHwGdI4wCgL_ZPBuV_pXFuWiLsSRo3TxPKs_KCWRBzaU4-Aw8B0emmy7OBg9A/exec";
-
 // --- SISTEMA DE ACUMULACIÓN DE IMÁGENES ---
 let carrito = JSON.parse(localStorage.getItem('superm_cart')) || [];
 let contextoEnvio = null;
@@ -56,32 +53,11 @@ const categorias = [
 
 export async function cargarInventario() {
     window.productos = [];
-    // 1. Cargar desde Google Sheets
+
+    // 1. Cargar desde el Agente (El Agente ya resuelve URL y TSV)
     try {
-        const response = await fetch(URL_SHEET_PRODUCTOS);
-        const text = await response.text();
-        
-        if (text.trim().startsWith("<") || text.includes("<!DOCTYPE html>")) {
-            throw new Error("Google Sheets no entregó datos (HTML detectado).");
-        }
-        const dataClean = text.replace(/^\uFEFF/, '').replace(/\r/g, '');
-        const rows = dataClean.split(/\n(?=(?:[^"]*"[^"]*")*[^"]*$)/).slice(1);
-        const sheetProds = rows.filter(r => r.trim() !== "").map((row, index) => {
-            const c = row.split(/\t(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v ? v.trim().replace(/^"|"$/g, '').replace(/""/g, '"') : "");
-            return {
-                id: c[0] || index.toString(),
-                category_id: c[1] || 'General', 
-                title: c[2] || 'Producto sin título',  
-                price: parseInt((c[3] || "0").replace(/[^0-9]/g, '')) || 0,
-                pictures: (c[4] || "").split('|').filter(u => u.trim() !== "") || ['🌿'], 
-                description_short: c[5] || '', 
-                attributes: (c[6] || "").split('|').filter(a => a.trim() !== ""),
-                permalink: c[7] || '',
-                description: c[8] || ''
-            };
-        });
-        window.productos = [...sheetProds];
-    } catch (e) { console.error("Error cargando inventario desde Sheets:", e); }
+        window.productos = await Agente.tienda.obtenerProductos();
+    } catch (e) { console.error("Error cargando inventario desde el Agente:", e); }
 
     // 2. Cargar y Sincronizar desde Firebase (Independiente del Sheet)
     try {

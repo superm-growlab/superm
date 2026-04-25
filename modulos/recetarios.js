@@ -2,8 +2,7 @@ import { db, auth, ADMIN_UID } from './firebase-config.js';
 import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { notify } from './herramientaslab.js';
 import { crearNotificacion } from './comunidad.js';
-
-const URL_SHEET_RECETARIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=654571090&single=true&output=tsv";
+import { Agente } from '../agente_central.js';
 
 let recetarios = [];
 window.recetarioStates = {};
@@ -19,34 +18,8 @@ export async function cargarRecetarios() {
     grid.innerHTML = `<p style="text-align:center; color:var(--s); grid-column:1/-1; font-family:monospace;">🔍 Sincronizando Recetarios con la Nube...</p>`;
 
     try {
-        const r = await fetch(URL_SHEET_RECETARIOS);
-        if (!r.ok) throw new Error(`Error HTTP: ${r.status}`);
-        
-        const text = await r.text();
-        
-        // Verificamos si Google devolvió HTML (error de permisos/publicación) o texto
-        if (text.trim().startsWith("<") || text.includes("<!DOCTYPE html>")) {
-            console.error("Respuesta inesperada de Google (HTML):", text.substring(0, 200));
-            throw new Error("Google Sheets no entregó los datos. Verifica en 'Archivo > Compartir > Publicar en la web' que el formato sea 'Valores separados por tabuladores (.tsv)' y que la URL coincida.");
-        }
-
-        const dataClean = text.replace(/^\uFEFF/, '').replace(/\r/g, '');
-        // Split robusto para TSV que permite saltos de línea dentro de las celdas (como en la descripción)
-        const rows = dataClean.split(/\n(?=(?:[^"]*"[^"]*")*[^"]*$)/).slice(1);
-        
-        recetarios = rows.filter(row => row && row.trim() !== "").map((linea, index) => {
-            // Split avanzado para TSV que respeta comillas
-            const c = linea.split(/\t(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v ? v.trim().replace(/^"|"$/g, '') : "");
-
-            // Mapeo según tu planilla: 0:ID, 1:Marca, 2:Imagen, 3:Link, 4:Descripcion
-            return { 
-                id: index, 
-                marca: c[1] || 'Sin Marca', 
-                imagenes: (c[2] || '').split('|').map(u => u.trim()).filter(u => u.startsWith('http')), 
-                links: (c[3] || '').split('|').map(u => u.trim()).filter(u => u.startsWith('http')), 
-                desc: c[4] || '' 
-            };
-        });
+        // El Agente ahora es el responsable de ir a buscar y limpiar los datos
+        recetarios = await Agente.recetarios.obtenerTodos();
 
         window.recetarios_data = [...recetarios]; // Clonamos para el buscador global
         renderRecetarios();
