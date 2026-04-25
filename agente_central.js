@@ -82,22 +82,24 @@ class AgenteCentral {
             this.tienda.obtenerProductos(),
             this.biblioteca.obtenerNotas(),
             this.recetarios.obtenerTodos(),
-            // Verificación de Google Sheets (Ping de accesibilidad)
-            fetch("https://docs.google.com/spreadsheets/").then(r => this.#actualizarEstado('googleSheets', r.ok)).catch(() => this.#actualizarEstado('googleSheets', false, "Bloqueo de red")),
+            // Verificación de Google Sheets (Ping a la URL real de datos para evitar bloqueo CORS)
+            fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQz-fNndUCID7stvplq5hmb2gLdSLs68uks2dfAr3DJK1Ft9LUtF0tYRyET3HEHotB-eKAqxishKe_A/pub?gid=0&single=true&output=tsv", { method: 'HEAD' })
+                .then(r => this.#actualizarEstado('googleSheets', r.ok))
+                .catch(() => this.#actualizarEstado('googleSheets', false, "Error de acceso a la hoja")),
             // Prueba de Comunidad y Herramientas (si existen endpoints)
-            this.herramientas.obtenerRecetarios().catch(() => {}),
-            this.comunidad.obtenerUltimosMensajes().catch(() => {}),
+            // Comentamos estos pings ya que actualmente usas Firestore, no una API externa en api.superm.lab
+            // this.herramientas.obtenerRecetarios().catch(() => {}),
+            // this.comunidad.obtenerUltimosMensajes().catch(() => {}),
             // Prueba de Firebase y Cloud Functions (usando el modo test que ya programamos)
             this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { action: "test" })
                 .then(() => this.#actualizarEstado('firebase', true))
                 .catch(e => this.#actualizarEstado('firebase', false, e.message || "Error Interno")),
             // Prueba de Vision AI (IA)
-            // Intentamos llamar a la función de análisis en modo prueba
             this.servicios.firebaseFunctions.callCloudFunction('consultarOraculo', { action: "test", titulo: "ping" })
                 .then(() => this.#actualizarEstado('visionAI', true))
                 .catch(e => this.#actualizarEstado('visionAI', false, e.message || "IA no disponible")),
             // Verificación de disponibilidad de la API de Mercado Libre
-            fetch('https://api.mercadolibre.com/').then(r => {
+            fetch('https://api.mercadolibre.com/sites/MLA').then(r => {
                 this.#actualizarEstado('mercadoLibre', r.ok, r.ok ? null : `Status ${r.status}`);
             }).catch(e => this.#actualizarEstado('mercadoLibre', false, e.message))
         ];
