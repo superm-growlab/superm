@@ -300,17 +300,20 @@ export function renderizar(p) {
                 <button onclick="window.eliminarProductoFirebase('${p.id}')" style="background:none; border:none; color:#ff3131; cursor:pointer; font-size: 1.1rem;" title="Eliminar">🗑️</button>
              </div>
         </div>
-        <div class="tarjeta" style="cursor: default; pointer-events: none; border-color: #333;">
+        <div class="tarjeta" style="cursor: default; pointer-events: none; border-color: #333; height: auto !important; flex: none;">
             <div class="contenedor-img">${obtenerImagenHTML(pics)}</div>
             <h3 style="margin: 10px 0; text-align: center; font-size:1rem;">${p.title}</h3>
             <div style="text-align: center; color: var(--p); font-weight: bold; margin-bottom:10px;">$${p.price.toLocaleString()}</div>
         </div>
-        <div style="margin-top:15px;">
-            <span class="label-edit">CSV PARA GOOGLE SHEETS</span>
-            <div class="csv-row" onclick="navigator.clipboard.writeText(this.innerText); notify('Fila CSV copiada!')">${csvRow}</div>
-            <span class="label-edit" style="margin-top:10px;">SNIPPET HTML PARA INDEX.HTML</span>
-            <div class="html-snippet" onclick="navigator.clipboard.writeText(this.innerText); notify('Snippet HTML copiado!')">${htmlSnippet.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-        </div>
+        <details style="margin-top:15px; cursor: pointer;">
+            <summary style="font-size: 0.6rem; color: var(--s); font-weight: bold; outline: none; margin-bottom: 5px;">[ + VER CÓDIGOS DE CARGA ]</summary>
+            <div style="padding-top: 5px;">
+                <span class="label-edit">CSV PARA GOOGLE SHEETS</span>
+                <div class="csv-row" onclick="navigator.clipboard.writeText(this.innerText); notify('Fila CSV copiada!')">${csvRow}</div>
+                <span class="label-edit" style="margin-top:10px;">SNIPPET HTML PARA INDEX.HTML</span>
+                <div class="html-snippet" onclick="navigator.clipboard.writeText(this.innerText); notify('Snippet HTML copiado!')">${htmlSnippet.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+            </div>
+        </details>
     `;
     
     hist.prepend(wrapper);
