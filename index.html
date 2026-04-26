@@ -935,7 +935,6 @@
     <!-- MODAL DE DIAGNÓSTICO -->
     <div id="modal-diagnostico" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10002; justify-content: center; align-items: center; backdrop-filter: blur(8px);">
         <div id="diagnostico-contenido" style="background: var(--card); border: 4px solid var(--p); padding: 15px; border-radius: 15px; width: 94%; max-width: 400px; box-shadow: 0 0 40px rgba(57, 255, 20, 0.3); overflow-y: auto; max-height: 95vh; position: relative;">
-            <button class="close-btn" onclick="document.getElementById('modal-diagnostico').style.display='none'" style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--s); font-size: 1.8rem; cursor: pointer;">&times;</button>
             <h3 style="color: var(--s); text-align: center; margin-top: 5px; letter-spacing: 2px; font-size: 1.4rem;">🔮 REPORTE DE ALQUIMIA</h3>
             <p style="font-size: 0.75rem; color: #888; text-align: center; margin-bottom: 12px;">Análisis detallado de tu registro.</p>
 
@@ -947,10 +946,6 @@
             </div>
             <div id="res-vpd-modal" class="lab-data-box" style="margin-top:10px; border-color: var(--s); padding: 12px;"></div>
             <div id="consejo-alquimista-modal" class="alerta-alquimista" style="display:none;"></div>
-
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-m" style="padding: 10px 30px;" onclick="document.getElementById('modal-diagnostico').style.display='none'">Cerrar</button>
-            </div>
         </div>
     </div>
 
@@ -2056,6 +2051,8 @@
             // 3. Reset de visores globales
             const visor = document.getElementById('visor-notas');
             if (visor) visor.style.display = 'none';
+            if (document.getElementById('modal-diagnostico-api')) document.getElementById('modal-diagnostico-api').style.display = 'none';
+            if (document.getElementById('modal-diagnostico')) document.getElementById('modal-diagnostico').style.display = 'none';
 
             // 4. Disparo de Renders (Con guardas de existencia para evitar bloqueos)
             if (id === 'tienda') { 
@@ -2310,6 +2307,7 @@ window.mostrarDiagnosticoAPI = () => {
     if (!modal || !list) return;
 
     modal.style.display = 'flex';
+    history.pushState({ section: 'diagnostico-api' }, '', '#diagnostico-api');
     const estado = Agente.estado;
     
     list.innerHTML = Object.entries(estado).map(([key, info]) => {

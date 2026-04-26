@@ -258,22 +258,26 @@ exports.obtenerProductoML = onCall({
         if (input.includes("http")) {
             permalinkToUse = input; // Guardamos el link original (referido)
             if (input.includes("meli.la")) {
-                const res = await axios.get(input, { maxRedirects: 5, headers: { 'Authorization': `Bearer ${accessToken}` } });
+                const res = await axios.get(input, { maxRedirects: 5, headers: { 'Authorization': `Bearer ${accessToken}`, 'User-Agent': USER_AGENT_ALQUIMISTA } });
                 targetUrl = res.request?.res?.responseUrl || res.request?._redirectable?._currentUrl || input;
             }
-        } else if (input.match(/^[A-Z]{3,4}\d+$/i)) {
-            finalId = input.toUpperCase();
+        } else if (input.match(/^[A-Z]{3,4}-?\d+$/i)) {
+            finalId = input.replace("-", "").toUpperCase();
         } else {
             // Es un código corto (ej: NG8WAT-7T61)
             permalinkToUse = `https://meli.la/${input}`;
-            const res = await axios.get(permalinkToUse, { maxRedirects: 5, headers: { 'Authorization': `Bearer ${accessToken}` } });
+            const res = await axios.get(permalinkToUse, { maxRedirects: 5, headers: { 'Authorization': `Bearer ${accessToken}`, 'User-Agent': USER_AGENT_ALQUIMISTA } });
             targetUrl = res.request?.res?.responseUrl || res.request?._redirectable?._currentUrl || permalinkToUse;
         }
 
         // 2. Extraer ID si no lo tenemos (soporta MLA y MLAU)
         if (!finalId) {
-            const match = targetUrl.match(/(MLA|MLB|MLM|MLC|MLU|MLV|MPE|MCO|MEC|MRD|MGT|MCR|MBO|MPY|MSV|MHN|MNI|MPA)[A-Z]?(\d+)/i);
-            if (match) finalId = match[0].toUpperCase();
+            // Corregimos los paréntesis para capturar el prefijo completo (3 o 4 letras) en el grupo 1
+            const match = targetUrl.match(/((?:MLA|MLB|MLM|MLC|MLU|MLV|MPE|MCO|MEC|MRD|MGT|MCR|MBO|MPY|MSV|MHN|MNI|MPA)[A-Z]?)-?(\d+)/i);
+            if (match) {
+                // Ahora match[1] contiene el prefijo completo (ej: MLAU) y match[2] los números
+                finalId = (match[1] + match[2]).toUpperCase();
+            }
         }
 
         if (!finalId) throw new Error("No se detectó un ID de producto válido.");
