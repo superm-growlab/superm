@@ -213,10 +213,14 @@ exports.obtenerProductoML = onCall({
             });
             return { message: "Conexión con Mercado Libre Operativa", status: testRes.status };
         } catch (e) {
-            const isForbidden = e.response?.status === 403 || e.code === 'EAI_AGAIN';
-            const errorDetail = isForbidden ? "Acceso denegado (¿Plan Blaze habilitado?)" : e.message;
-            logger.error("Error en test de ML:", errorDetail);
-            throw new HttpsError("unavailable", `La API de Mercado Libre no responde: ${errorDetail}. Nota: Firebase requiere el Plan Blaze para conectar con APIs externas.`);
+            const status = e.response?.status;
+            const code = e.code;
+            logger.error("Error en test de ML:", { status, code, message: e.message });
+            
+            let errorDetail = code === 'EAI_AGAIN' ? "Fallo de red DNS (común en arranques en frío o propagación de facturación)" : e.message;
+            if (status === 403) errorDetail = "Acceso denegado por Mercado Libre (403)";
+
+            throw new HttpsError("unavailable", `La API de Mercado Libre no responde: ${errorDetail}`);
         }
     }
 

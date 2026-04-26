@@ -100,9 +100,15 @@ class AgenteCentral {
                     this.#actualizarEstado('mercadoLibre', true);
                 })
                 .catch(e => {
-                    const msg = e.message?.includes("not-found") ? "Función no desplegada" : (e.message || "Error interno");
-                    this.#actualizarEstado('firebase', false, msg);
-                    this.#actualizarEstado('mercadoLibre', false, msg);
+                    // Si el error es 'unavailable', la función se ejecutó pero el ping a ML falló
+                    if (e.code === 'unavailable') {
+                        this.#actualizarEstado('firebase', true); // El puente Firebase funciona
+                        this.#actualizarEstado('mercadoLibre', false, e.message);
+                    } else {
+                        const msg = e.message?.includes("not-found") ? "Función no desplegada" : (e.message || "Error de red");
+                        this.#actualizarEstado('firebase', false, msg);
+                        this.#actualizarEstado('mercadoLibre', false, "Puente Firebase desconectado");
+                    }
                 }),
             // Prueba de Vision AI: Aquí sí queremos ver si la llave de Gemini responde
             this.servicios.firebaseFunctions.callCloudFunction('analizarImagenPlanta', { action: "test" })
