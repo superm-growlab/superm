@@ -841,6 +841,14 @@ export function descargarImagen() {
 export function cargarBibliotecaOraculo() {
     const grilla = document.getElementById('grilla-sintomas-oraculo');
     if (!grilla) return;
+
+    // Ocultar botón de siembra si no es admin
+    const btnSiembra = document.getElementById('btn-siembra-oraculo') || document.querySelector('.btn-siembra');
+    if (btnSiembra) {
+        const user = auth.currentUser;
+        btnSiembra.style.display = (user && user.uid === ADMIN_UID) ? 'block' : 'none';
+    }
+
     grilla.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:var(--s); font-size:0.8rem; font-family:monospace;">📡 Sincronizando Frecuencias de ADN...</p>`;
     
     const q = query(collection(db, "biblioteca_visual"), orderBy("timestamp", "desc"), limit(50));

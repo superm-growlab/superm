@@ -21,7 +21,7 @@ exports.consultarOraculo = onCall({
     // Modo Ping para diagnóstico del Agente
     if (action === "test") {
         try {
-            const key = process.env.GEMINI_API_KEY;
+            const key = process.env.GEMINI_API_KEY?.trim();
             if (!key) throw new Error("Falta la variable GEMINI_API_KEY en los Secrets.");
             if (!key.startsWith("AIza")) throw new Error("La API Key no tiene el formato correcto (debe empezar con AIza).");
             
@@ -42,7 +42,7 @@ exports.consultarOraculo = onCall({
         throw new HttpsError("invalid-argument", "El título de la muestra es obligatorio.");
     }
 
-    const key = process.env.GEMINI_API_KEY;
+    const key = process.env.GEMINI_API_KEY?.trim();
     if (!key || key.length < 20 || !key.startsWith("AIza")) {
         logger.error("Clave GEMINI_API_KEY no configurada correctamente en Secrets.");
         throw new HttpsError("unauthenticated", "El Oráculo no tiene acceso a su llave de sabiduría. Verifica los Secrets de Firebase.");
@@ -134,7 +134,7 @@ exports.consultarOraculo = onCall({
         return { ...diagnosis, url_imagen };
 
     } catch (error) {
-        logger.error("Fallo detallado del Oráculo:", {
+        logger.error("Fallo detallado del Oráculo (consultarOraculo):", {
             message: error.message,
             status: error.status,
             stack: error.stack
@@ -172,7 +172,7 @@ exports.analizarImagenPlanta = onCall({
         if (action === "test") return { message: "Ojo del Oráculo Operativo" };
         if (!image) throw new HttpsError("invalid-argument", "Imagen ausente.");
 
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY?.trim());
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const base64Data = image.split(",")[1] || image;
 
@@ -188,7 +188,7 @@ exports.analizarImagenPlanta = onCall({
         
         return JSON.parse(jsonMatch[0]);
     } catch (error) {
-        logger.error("Error en analizarCarencia:", error);
+        logger.error("Error en analizarImagenPlanta:", error);
         throw new HttpsError("internal", "Error IA: " + error.message);
     }
 });
@@ -208,7 +208,10 @@ exports.obtenerProductoML = onCall({
     if (action === "test") {
         try {
             // Intentamos una llamada pública rápida para verificar conectividad del servidor
-            await axios.get("https://api.mercadolibre.com/sites/MLA", { timeout: 3000 });
+            await axios.get("https://api.mercadolibre.com/sites/MLA", { 
+                timeout: 10000,
+                headers: { 'User-Agent': 'SuperM-Lab-Agente/1.0' }
+            });
             return { message: "Conexión con Mercado Libre Operativa" };
         } catch (e) {
             logger.error("Error en test de ML:", e.message);
@@ -225,8 +228,8 @@ exports.obtenerProductoML = onCall({
     try {
         const tokenRes = await axios.post("https://api.mercadolibre.com/oauth/token", {
             grant_type: "client_credentials",
-            client_id: process.env.ML_CLIENT_ID,
-            client_secret: process.env.ML_CLIENT_SECRET
+            client_id: process.env.ML_CLIENT_ID?.trim(),
+            client_secret: process.env.ML_CLIENT_SECRET?.trim()
         });
         accessToken = tokenRes.data.access_token;
     } catch (e) {
