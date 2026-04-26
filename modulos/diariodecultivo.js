@@ -8,7 +8,7 @@ import {
     verNotasCompletas, drawVPDGraph, analizarVPD, MATRIZ_NUTRIENTES 
 } from './herramientaslab.js';
 
-window.vistaDiarioActual = 'seguimiento';
+window.vistaDiarioActual = 'tabla';
 window.imgsDiario = [];
 window.imgsAnotacion = [];
 window.diarioGrupoActivo = null;

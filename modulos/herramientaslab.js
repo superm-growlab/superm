@@ -160,6 +160,32 @@ window.confirmAlquimista = (mensaje, titulo = "🧪 PROTOCOLO") => {
     });
 };
 
+window.promptAlquimista = (mensaje, defecto = "", titulo = "🧪 PROTOCOLO") => {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('modal-prompt-alquimista');
+        const txt = document.getElementById('prompt-mensaje');
+        const tit = document.getElementById('prompt-titulo');
+        const input = document.getElementById('prompt-input');
+        const btnAceptar = document.getElementById('prompt-btn-aceptar');
+        const btnCancelar = document.getElementById('prompt-btn-cancelar');
+        if (!modal || !input) return resolve(prompt(mensaje, defecto));
+        tit.innerText = titulo;
+        txt.innerText = mensaje;
+        input.value = defecto;
+        modal.style.display = 'flex';
+        input.focus();
+        const limpiar = () => {
+            modal.style.display = 'none';
+            btnAceptar.onclick = null;
+            btnCancelar.onclick = null;
+            input.onkeydown = null;
+        };
+        btnAceptar.onclick = () => { const val = input.value; limpiar(); resolve(val); };
+        btnCancelar.onclick = () => { limpiar(); resolve(null); };
+        input.onkeydown = (e) => { if (e.key === 'Enter') btnAceptar.click(); if (e.key === 'Escape') btnCancelar.click(); };
+    });
+};
+
 export const comprimirImagen = (file) => {
     return new Promise((resolve) => {
         if (!file || !file.type.startsWith('image/')) return resolve('');
@@ -821,11 +847,31 @@ export function nuevaFila(datos = []) {
     tr.innerHTML = headers.map((label, i) => 
         `<td data-label="${label}"><input type="text" class="input-tabla" value="${datos[i] || ''}" oninput="window.guardarTablas()"></td>`).join('');
     const tbody = document.getElementById('cuerpo-tabla');
-    if(tbody) tbody.appendChild(tr);
+    if(tbody) {
+        tbody.appendChild(tr);
+        // Si estamos en modo vertical, hacemos scroll al final (derecha)
+        const area = document.getElementById('area-descarga');
+        if (area && area.classList.contains('modo-vertical')) {
+            area.scrollLeft = area.scrollWidth;
+        }
+    }
+}
+
+export function quitarFila() {
+    const tbody = document.getElementById('cuerpo-tabla');
+    if (tbody && tbody.lastElementChild) {
+        tbody.removeChild(tbody.lastElementChild);
+        guardarTablas();
+    }
 }
 
 export function guardarTablas() {
-    const headers = Array.from(document.querySelectorAll('#encabezado-tabla th')).map(th => th.innerText);
+    const headers = Array.from(document.querySelectorAll('#encabezado-tabla th')).map(th => {
+        const input = th.querySelector('input');
+        if (input) return input.value.toUpperCase().trim();
+        const nameSpan = th.querySelector('.col-name');
+        return nameSpan ? nameSpan.innerText : th.innerText.replace('×', '').trim();
+    });
     const filas = [];
     document.querySelectorAll('#cuerpo-tabla tr').forEach(tr => {
         const c = Array.from(tr.querySelectorAll('input')).map(i => i.value);
@@ -865,10 +911,42 @@ export function renderHeaders(labels) {
     thead.innerHTML = "";
     labels.forEach((l, i) => {
         const th = document.createElement('th');
-        th.innerText = (l || '').toUpperCase();
+        th.style.position = "relative";
+        th.style.paddingTop = "18px"; // Espacio para la X de borrado
         th.style.cursor = "pointer";
+
+        // Contenedor del nombre
+        const spanName = document.createElement('span');
+        spanName.className = "col-name";
+        spanName.innerText = (l || '').toUpperCase();
+        th.appendChild(spanName);
+
+        // Botón de borrado (X) arriba del nombre
+        const btnDel = document.createElement('span');
+        btnDel.className = "btn-del-col";
+        btnDel.innerHTML = "&times;";
+        btnDel.style.cssText = `
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ff3131;
+            font-size: 0.9rem;
+            line-height: 1;
+            cursor: pointer;
+            transition: 0.3s;
+            opacity: 0.5;
+        `;
+        btnDel.title = "Eliminar dimensión";
+        btnDel.onmouseover = () => btnDel.style.opacity = "1";
+        btnDel.onmouseout = () => btnDel.style.opacity = "0.5";
+        btnDel.onclick = (e) => {
+            e.stopPropagation();
+            quitarColumna(i);
+        };
+        th.appendChild(btnDel);
+
         th.title = "Click para editar nombre";
-        // Vinculamos la función de edición directamente
         th.addEventListener('click', (e) => {
             e.stopPropagation();
             editarColumna(i);
@@ -877,53 +955,100 @@ export function renderHeaders(labels) {
     });
 }
 
-export function nuevaColumna() {
-    const nombre = prompt("Nombre de la nueva dimensión (columna):", "NUEVA VARIABLE");
-    if (!nombre || nombre.trim() === "") return;
-    const name = nombre.toUpperCase().trim();
+export async function quitarColumna(index) {
+    if (!await window.confirmAlquimista("¿Seguro que quieres eliminar esta columna y todos sus datos?")) return;
+    
+    guardarTablas(); // Sincronizamos primero lo que haya en el DOM
+    let stored = JSON.parse(localStorage.getItem('superm_tablas_v2'));
+    if (!stored) return;
 
-    // 1. Leemos la REALIDAD actual de la tabla en pantalla (Headers y Datos)
-    const headers = Array.from(document.querySelectorAll('#encabezado-tabla th')).map(th => th.innerText);
+    // Quitamos la columna de los headers y de cada fila de datos
+    stored.headers.splice(index, 1);
+    stored.filas = stored.filas.map(f => {
+        f.splice(index, 1);
+        return f;
+    });
+
+    localStorage.setItem('superm_tablas_v2', JSON.stringify(stored));
+    cargarTablasPersistentes();
+    notify("Dimensión eliminada.", "info");
+}
+
+export function nuevaColumna() {
+    // 1. Leemos la REALIDAD actual de la tabla en pantalla
+    const headers = Array.from(document.querySelectorAll('#encabezado-tabla th')).map(th => {
+        const nameSpan = th.querySelector('.col-name');
+        return nameSpan ? nameSpan.innerText : th.innerText.replace('×', '').trim();
+    });
     const filas = [];
     document.querySelectorAll('#cuerpo-tabla tr').forEach(tr => {
         const rowData = Array.from(tr.querySelectorAll('input')).map(i => i.value);
         filas.push(rowData);
     });
 
-    // 2. Modificamos los datos en memoria agregando la nueva columna
-    headers.push(name);
-    const nuevasFilas = filas.map(f => [...f, ""]); // Agregamos una celda vacía al final de cada fila
+    // 2. Agregamos una columna placeholder
+    headers.push("NUEVA");
+    const nuevasFilas = filas.map(f => [...f, ""]);
 
     // 3. Persistimos en LocalStorage y redibujamos
     localStorage.setItem('superm_tablas_v2', JSON.stringify({ headers, filas: nuevasFilas }));
     cargarTablasPersistentes();
 
-    notify(`Dimensión "${name}" integrada al sistema.`, "success");
+    // 4. Activamos inmediatamente la edición en la nueva columna
+    setTimeout(() => {
+        editarColumna(headers.length - 1);
+    }, 100);
 }
 
 export function editarColumna(index) {
-    // 1. Leemos encabezados actuales directamente del DOM
-    const headers = Array.from(document.querySelectorAll('#encabezado-tabla th')).map(th => th.innerText);
-    if (!headers[index]) return;
+    const thead = document.getElementById('encabezado-tabla');
+    if (!thead) return;
+    const ths = thead.querySelectorAll('th');
+    const th = ths[index];
+    if (!th) return;
 
-    const currentName = headers[index];
-    const nuevoNombre = prompt("Renombrar dimensión:", currentName);
-    if (nuevoNombre === null || nuevoNombre.trim() === "") return;
-    const name = nuevoNombre.toUpperCase().trim();
+    // Extraemos el nombre real sin la X de borrado
+    const nameSpan = th.querySelector('.col-name');
+    const currentName = nameSpan ? nameSpan.innerText : th.innerText.replace('×', '').trim();
 
-    // 2. Capturamos los datos actuales de las celdas para no perder lo que el usuario escribió
-    const filas = [];
-    document.querySelectorAll('#cuerpo-tabla tr').forEach(tr => {
-        const rowData = Array.from(tr.querySelectorAll('input')).map(i => i.value);
-        filas.push(rowData);
-    });
-
-    // 3. Actualizamos el nombre en el array y guardamos todo
-    headers[index] = name;
-    localStorage.setItem('superm_tablas_v2', JSON.stringify({ headers, filas }));
+    // Convertimos el encabezado en un input para edición directa
+    th.innerHTML = `<input type="text" class="input-tabla" value="${currentName}" style="width: 85%; font-size: 0.7rem; border-color: var(--p); height: auto; padding: 2px;">`;
+    const input = th.querySelector('input');
+    input.focus();
+    input.select();
     
-    // 4. Redibujamos para que los data-label (vista móvil) se actualicen
-    cargarTablasPersistentes();
+    input.onclick = (e) => e.stopPropagation();
+
+    let finalizado = false;
+    const guardarCambio = () => {
+        if (finalizado) return;
+        finalizado = true;
+        const name = input.value.toUpperCase().trim() || currentName;
+        // Corregido: Extraer el nombre real de cada TH, no su innerText completo
+        const headers = Array.from(ths).map((t, i_th) => {
+            if (i_th === index) { // Si es la columna que se está editando
+                return name; // Usar el nuevo nombre del input
+            } else { // Para las otras columnas, extraer el nombre del span.col-name
+                const existingNameSpan = t.querySelector('.col-name');
+                return existingNameSpan ? existingNameSpan.innerText : t.innerText.replace('×', '').trim();
+            }
+        });
+        
+        const filas = [];
+        document.querySelectorAll('#cuerpo-tabla tr').forEach(tr => {
+            const rowData = Array.from(tr.querySelectorAll('input')).map(i => i.value);
+            filas.push(rowData);
+        });
+
+        localStorage.setItem('superm_tablas_v2', JSON.stringify({ headers, filas }));
+        cargarTablasPersistentes();
+    };
+
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); guardarCambio(); }
+        if (e.key === 'Escape') { finalizado = true; cargarTablasPersistentes(); }
+    };
+    input.onblur = guardarCambio;
 }
 
 export async function borrarTablas() { 
@@ -934,10 +1059,40 @@ export async function borrarTablas() {
     } 
 }
 
+export function toggleModoImpresion() {
+    const area = document.getElementById('area-descarga');
+    const btn = document.getElementById('btn-toggle-print');
+    if (!area || !btn) return;
+
+    area.classList.toggle('modo-impresion');
+    const esModoImpresion = area.classList.contains('modo-impresion');
+
+    // Cambiamos el estilo del botón para dar feedback
+    btn.innerText = esModoImpresion ? "MODO NEÓN" : "MODO IMPRESIÓN";
+    btn.style.borderColor = esModoImpresion ? "var(--s)" : "var(--p)";
+    btn.style.color = esModoImpresion ? "var(--s)" : "var(--p)";
+}
+
+export function toggleModoVertical() {
+    const area = document.getElementById('area-descarga');
+    const btn = document.getElementById('btn-toggle-vertical');
+    if (!area || !btn) return;
+
+    area.classList.toggle('modo-vertical');
+    const esVertical = area.classList.contains('modo-vertical');
+
+    // Cambiamos el texto y color del botón para feedback visual
+    btn.innerText = esVertical ? "VISTA HORIZONTAL" : "VISTA VERTICAL";
+    btn.style.borderColor = esVertical ? "var(--p)" : "var(--s)";
+    btn.style.color = esVertical ? "var(--p)" : "var(--s)";
+}
+
 export function descargarImagen() {
     const area = document.getElementById('area-descarga');
     if(!area) return;
-    html2canvas(area, { backgroundColor: '#050505' }).then(canvas => {
+    const esModoImpresion = area.classList.contains('modo-impresion');
+    
+    html2canvas(area, { backgroundColor: esModoImpresion ? '#ffffff' : '#050505' }).then(canvas => {
         const link = document.createElement('a'); link.download = 'SuperM_Lab_Report.png';
         link.href = canvas.toDataURL(); link.click();
     });
@@ -958,17 +1113,35 @@ export function cargarBibliotecaOraculo() {
         btnSiembra.style.display = (user && user.uid === ADMIN_UID) ? 'block' : 'none';
     }
 
-    grilla.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:var(--s); font-size:0.8rem; font-family:monospace;">📡 Sincronizando Frecuencias de ADN...</p>`;
-    
+    // Generamos 20 placeholders con la estética de Super M (Logo fallback) 
+    // para que la grilla luzca completa mientras se calibra la conexión API.
+    const catalogoSintomas = [
+        "Carencia de Nitrógeno", "Exceso de Nitrógeno", "Carencia de Fósforo", "Carencia de Potasio",
+        "Carencia de Magnesio", "Carencia de Calcio", "Carencia de Azufre", "Carencia de Hierro",
+        "Carencia de Zinc", "Carencia de Manganeso", "Carencia de Boro", "Carencia de Cobre",
+        "Carencia de Molibdeno", "Sobrefertilización", "Estrés Lumínico", "Estrés Hídrico",
+        "Hongo: Botrytis", "Hongo: Oídio", "Plaga: Araña Roja", "Plaga: Trips"
+    ].map((titulo, i) => ({
+        id: `placeholder-${i}`,
+        titulo: titulo.toUpperCase(),
+        imageUrls: [], // Esto disparará el uso del logo de Super M como fallback
+        tags: ["placeholder"]
+    }));
+
+    window.bibliotecaVisual = catalogoSintomas;
+    renderizarGaleriaOraculo(window.bibliotecaVisual);
+
     const q = query(collection(db, "biblioteca_visual"), orderBy("timestamp", "desc"), limit(50));
     
     // Usamos onSnapshot para que las imágenes aparezcan apenas se guarden en Firebase
     onSnapshot(q, (snapshot) => {
-        window.bibliotecaVisual = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderizarGaleriaOraculo(window.bibliotecaVisual);
+        if (!snapshot.empty) {
+            window.bibliotecaVisual = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderizarGaleriaOraculo(window.bibliotecaVisual);
+        }
     }, (error) => {
         console.error("Error Oráculo:", error);
-        grilla.innerHTML = `<p style='grid-column: 1/-1; text-align:center; color:red;'>Error de frecuencia astral.</p>`;
+        // Mantenemos los placeholders visibles si la conexión con Firebase falla o está en curso
     });
 }
 
@@ -1222,8 +1395,12 @@ window.reiniciarComparativa = reiniciarComparativa;
 window.volverAlMenuCalc = volverAlMenuCalc;
 window.actualizarNutrientes = generarDiagnostico;
 window.nuevaFila = nuevaFila;
+window.quitarFila = quitarFila;
+window.quitarColumna = quitarColumna;
 window.nuevaColumna = nuevaColumna;
 window.editarColumna = editarColumna;
+window.toggleModoImpresion = toggleModoImpresion;
+window.toggleModoVertical = toggleModoVertical;
 window.guardarTablas = guardarTablas;
 window.borrarTablas = borrarTablas;
 window.descargarImagen = descargarImagen;

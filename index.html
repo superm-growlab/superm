@@ -195,7 +195,7 @@
         
         .contenedor-img { 
             width: 100%; height: 240px; 
-            background: #fff; display: flex; justify-content: center; 
+            background: #111; display: flex; justify-content: center; 
             align-items: center; overflow: hidden; border-bottom: 1px solid #222;
         }
         .img-placeholder { font-size: 3.5rem; }
@@ -358,6 +358,84 @@
         .lab-data-box h4 { color: var(--p); margin-top: 0; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px; }
         .rango-ideal { display: flex; justify-content: space-between; background: #111; padding: 10px; border-radius: 5px; margin-top: 5px; border: 1px solid #222; }
         .val-v { color: var(--p); font-weight: bold; }
+
+        /* Estilos específicos para el Modo Impresión de la Tabla Técnica */
+        .modo-impresion {
+            background: #ffffff !important;
+            border-color: #000000 !important;
+            box-shadow: none !important;
+            padding: 20px !important;
+        }
+        .modo-impresion table, 
+        .modo-impresion th, 
+        .modo-impresion td, 
+        .modo-impresion input {
+            color: #000000 !important;
+            border-color: #cccccc !important;
+        }
+        .modo-impresion th {
+            background: #f5f5f5 !important;
+            text-shadow: none !important;
+            border-bottom: 2px solid #000000 !important;
+        }
+        .modo-impresion .input-tabla {
+            background: #ffffff !important;
+            border: 1px solid #dddddd !important;
+        }
+        .modo-impresion span[title="Eliminar dimensión"] {
+            display: none !important;
+        }
+
+        /* Vista Vertical (Transposición de Tabla) */
+        .modo-vertical #tabla-lab {
+            display: flex !important;
+            flex-direction: row !important;
+            overflow-x: auto;
+            min-width: 100% !important;
+            border: 1px solid var(--s);
+            background: #000;
+        }
+        .modo-vertical #tabla-lab thead, 
+        .modo-vertical #tabla-lab tbody,
+        .modo-vertical #encabezado-tabla,
+        .modo-vertical #cuerpo-tabla {
+            display: flex !important;
+            flex-direction: row !important;
+        }
+        .modo-vertical #tabla-lab tr {
+            display: flex !important;
+            flex-direction: column !important; /* Las celdas de una planta van hacia abajo */
+            min-width: 150px;
+            border-right: 1px solid #222;
+        }
+        .modo-vertical #tabla-lab th, 
+        .modo-vertical #tabla-lab td {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center;
+            justify-content: center;
+            height: 65px !important; /* Altura fija para que las filas coincidan */
+            width: 100% !important;
+            padding: 5px !important;
+            padding-top: 5px !important;
+            border: none !important;
+            border-bottom: 1px solid #111 !important;
+            box-sizing: border-box;
+            color: var(--p);
+            background: rgba(57, 255, 20, 0.05);
+        }
+
+        /* Reposicionamos la X adelante del nombre en Vista Vertical */
+        .modo-vertical #tabla-lab th .btn-del-col {
+            position: static !important;
+            transform: none !important;
+            margin-right: 8px;
+            order: -1; /* Lo mueve al principio del flex */
+            opacity: 0.7;
+        }
+
+        .modo-vertical .input-tabla { width: 90%; background: transparent; border: none; border-bottom: 1px solid #222; }
+        .modo-impresion.modo-vertical #tabla-lab tr { background: #fff !important; border-color: #ccc !important; }
 
         .selector-etapa {
             display: grid;
@@ -522,7 +600,8 @@
 
             .nota-card { padding: 20px !important; }
             .nota-icon { font-size: 2.5rem; margin-bottom: 10px; }
-            .nota-contenido-wrapper { padding: 25px; }
+            #visor-notas { padding: 10px; }
+            .nota-contenido-wrapper { padding: 20px; width: 96%; max-height: 85vh; }
             .info-layout { flex-direction: column; }
             .info-sidebar { width: 100%; position: static; }
             .buscador:focus { max-width: 100%; }
@@ -1347,17 +1426,24 @@
                 <div style="border: 1px solid rgba(57, 255, 20, 0.4); padding: 20px; border-radius: 12px; margin-bottom: 25px; background: rgba(57, 255, 20, 0.03); font-family: 'Courier New', monospace; font-size: 0.8rem; line-height: 1.6; color: #aaa; text-align: center;">
                     Diseñá tu propia hoja de ruta. Editá los encabezados, agregá columnas y configurá tu planilla técnica a medida para descargarla e imprimirla. Tu laboratorio, tus reglas.
                 </div>
+                <div style="margin-bottom:20px; display:flex; gap:8px; flex-wrap: wrap; align-items: center;">
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-m" style="border-color:var(--p); color:var(--p); font-size: 0.7rem; padding: 8px 12px;" onclick="window.nuevaFila()">+ FILA</button>
+                        <button class="btn btn-m" style="border-color:#ff4444; color:#ff4444; font-size: 0.7rem; padding: 8px 12px;" onclick="window.quitarFila()">- FILA</button>
+                    </div>
+                    <button class="btn btn-m" style="border-color:var(--p); color:var(--p); font-size: 0.7rem; padding: 8px 12px;" onclick="window.nuevaColumna()">+ COLUMNA</button>
+                </div>
                 <div id="area-descarga" class="contenedor-tabla">
                     <table id="tabla-lab">
                         <thead><tr id="encabezado-tabla"></tr></thead>
                         <tbody id="cuerpo-tabla"></tbody>
                     </table>
                 </div>
-                <div style="margin-top:20px; display:flex; gap:10px; flex-wrap: wrap;">
-                    <button class="btn btn-v" onclick="window.nuevaFila()">+ Fila</button>
-                    <button class="btn btn-m" style="border-color:var(--p); color:var(--p);" onclick="window.nuevaColumna()">+ Columna</button>
-                    <button class="btn btn-m" onclick="window.descargarImagen()">📸 descargar</button>
-                    <button class="btn btn-m" style="border-color:#ff4444; color:#ff4444;" onclick="window.borrarTablas()">Reset</button>
+                <div style="margin-top:20px; display:flex; gap:5px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+                    <button class="btn btn-m" style="font-size: 0.7rem; padding: 8px 12px;" onclick="window.descargarImagen()">DESCARGAR</button>
+                    <button id="btn-toggle-print" class="btn btn-m" style="border-color:var(--p); color:var(--p); font-size: 0.7rem; padding: 8px 12px;" onclick="window.toggleModoImpresion()">MODO IMPRESIÓN</button>
+                    <button id="btn-toggle-vertical" class="btn btn-m" style="border-color:var(--s); color:var(--s); font-size: 0.7rem; padding: 8px 12px;" onclick="window.toggleModoVertical()">VISTA VERTICAL</button>
+                    <button class="btn btn-m" style="border-color:#ff4444; color:#ff4444; font-size: 0.7rem; padding: 8px 12px;" onclick="window.borrarTablas()">RESET</button>
                 </div>
             </div>
 
@@ -1410,7 +1496,7 @@
                 </div>
             </div>
 
-            <div id="visor-calculadoras" class="nota-contenido-wrapper" style="display:none; border-color: var(--p); max-width: 600px; margin: 20px auto 0 auto;">
+            <div id="visor-calculadoras" class="nota-contenido-wrapper" style="display:none; border-color: var(--p); max-width: 850px; margin: 20px auto 0 auto;">
                 <div id="c-ferti" class="calc-panel" style="display:none;">
                     <h4 style="color:var(--p); text-align: center; margin-top: 0; letter-spacing: 2px; font-weight: 900;">🧪 ESTACIÓN DE MEZCLA SUPER M</h4>
                     
@@ -1716,7 +1802,7 @@
                     <button id="btn-save-diag" class="btn btn-v" style="display:none; width:100%; margin-top:10px; font-size: 0.7rem;" onclick="window.prepararGuardadoCalculo('Análisis pH/EC')">💾 Guardar Diagnóstico</button>
                 </div>
 
-                <div id="c-oraculo" class="calc-panel" style="display:none; background: #0d0d0d; border: 2px solid var(--s); border-radius: 15px; padding: 25px; max-width: 700px; margin: 20px auto; box-shadow: 0 0 20px rgba(188, 19, 254, 0.2);">
+                <div id="c-oraculo" class="calc-panel" style="display:none; background: transparent; border: none; padding: 0; max-width: 100%; margin: 0; box-shadow: none;">
                     <h4 style="color:var(--p); text-align: center; letter-spacing: 2px; margin-top: 0; text-transform: uppercase;">DETECTOR DE CARENCIAS Y EXCESOS</h4>
                     
                     <div class="buscador-adn-cont">
@@ -1992,6 +2078,19 @@
             <div style="display: flex; gap: 10px;">
                 <button id="confirm-btn-cancelar" class="btn btn-m" style="flex: 1;">CANCELAR</button>
                 <button id="confirm-btn-aceptar" class="btn btn-v" style="flex: 1;">CONFIRMAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE PROMPT ALQUIMISTA (INPUT PERSONALIZADO) -->
+    <div id="modal-prompt-alquimista" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 40001; justify-content: center; align-items: center; backdrop-filter: blur(10px); padding: 20px;">
+        <div class="form-box" style="border-color: var(--p); max-width: 400px; text-align: center;">
+            <h3 id="prompt-titulo" style="color: var(--s); letter-spacing: 2px;">🧪 ENTRADA DE DATOS</h3>
+            <p id="prompt-mensaje" style="font-family: 'Courier New', monospace; font-size: 0.85rem; color: #eee; margin: 15px 0;"></p>
+            <input type="text" id="prompt-input" class="input-lab" style="width: 100%; margin-bottom: 20px; border-color: var(--p); text-align: center;">
+            <div style="display: flex; gap: 10px;">
+                <button id="prompt-btn-cancelar" class="btn btn-m" style="flex: 1;">CANCELAR</button>
+                <button id="prompt-btn-aceptar" class="btn btn-v" style="flex: 1;">CONFIRMAR</button>
             </div>
         </div>
     </div>
