@@ -96,19 +96,17 @@ class AgenteCentral {
             // Prueba de Firebase: Usamos obtenerProductoML que es un ping más directo
             this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { action: "test" })
                 .then(() => {
-                    this.#actualizarEstado('firebase', true);
-                    this.#actualizarEstado('mercadoLibre', true);
+                    if (res.error) {
+                        this.#actualizarEstado('firebase', true); // La función respondió, así que el puente está vivo
+                        this.#actualizarEstado('mercadoLibre', false, res.error);
+                    } else {
+                        this.#actualizarEstado('firebase', true);
+                        this.#actualizarEstado('mercadoLibre', true);
+                    }
                 })
                 .catch(e => {
-                    // Si el error es 'unavailable', la función se ejecutó pero el ping a ML falló
-                    if (e.code === 'unavailable') {
-                        this.#actualizarEstado('firebase', true); // El puente Firebase funciona
-                        this.#actualizarEstado('mercadoLibre', false, e.message);
-                    } else {
-                        const msg = e.message?.includes("not-found") ? "Función no desplegada" : (e.message || "Error de red");
-                        this.#actualizarEstado('firebase', false, msg);
-                        this.#actualizarEstado('mercadoLibre', false, "Puente Firebase desconectado");
-                    }
+                    this.#actualizarEstado('firebase', false, e.message || "Servidor inaccesible");
+                    this.#actualizarEstado('mercadoLibre', false, "Puente Firebase caído");
                 }),
             // Prueba de Vision AI: Aquí sí queremos ver si la llave de Gemini responde
             this.servicios.firebaseFunctions.callCloudFunction('analizarImagenPlanta', { action: "test" })
@@ -356,12 +354,7 @@ class AgenteCentral {
                         const response = await callable(payload);
                         return response.data;
                     } catch (e) { 
-                        // Solo marcamos error crítico si la función no existe o el servidor está caído
-                        if (e.code === 'not-found' || e.code === 'unavailable' || e.message?.includes("Network Error")) {
-                            this.#actualizarEstado('firebase', false, e.message);
-                        } else {
-                            console.warn(`Agente: Respuesta controlada de ${functionName}:`, e.message);
-                        }
+                        console.error(`Error invocando ${functionName}:`, e.message);
                         throw e;
                     } finally {
                         this.isWorking = false;

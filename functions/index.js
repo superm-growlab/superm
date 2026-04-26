@@ -10,6 +10,7 @@ setGlobalOptions({ maxInstances: 10 });
 
 const customsearch = google.customsearch("v1");
 const ORIGIN_ALLOWED = "https://superm-growlab.github.io";
+const USER_AGENT_ALQUIMISTA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 exports.consultarOraculo = onCall({ 
     region: "us-central1",
@@ -206,21 +207,21 @@ exports.obtenerProductoML = onCall({
     // Modo Ping para diagnóstico del Agente
     if (action === "test") {
         try {
-            // Intentamos una llamada pública rápida para verificar conectividad del servidor
-            const testRes = await axios.get("https://api.mercadolibre.com/sites/MLA", { 
-                timeout: 10000,
-                headers: { 'User-Agent': 'SuperM-Lab-Agente/1.0' }
+            // En lugar de un ping público (que da 403), probamos si podemos generar un token
+            const tokenRes = await axios.post("https://api.mercadolibre.com/oauth/token", {
+                grant_type: "client_credentials",
+                client_id: String(process.env.ML_CLIENT_ID || "").trim(),
+                client_secret: String(process.env.ML_CLIENT_SECRET || "").trim()
+            }, { 
+                timeout: 7000,
+                headers: { 'User-Agent': USER_AGENT_ALQUIMISTA }
             });
-            return { message: "Conexión con Mercado Libre Operativa", status: testRes.status };
+            return { message: "Conexión con Mercado Libre Operativa (Token OK)", status: 200 };
         } catch (e) {
-            const status = e.response?.status;
-            const code = e.code;
-            logger.error("Error en test de ML:", { status, code, message: e.message });
-            
-            let errorDetail = code === 'EAI_AGAIN' ? "Fallo de red DNS (común en arranques en frío o propagación de facturación)" : e.message;
-            if (status === 403) errorDetail = "Acceso denegado por Mercado Libre (403)";
-
-            throw new HttpsError("unavailable", `La API de Mercado Libre no responde: ${errorDetail}`);
+            const msg = e.response?.data?.message || e.message;
+            logger.error("Fallo de salud en Proxy ML:", msg);
+            // Devolvemos objeto en lugar de HttpsError para que el Agente no piense que Firebase murió
+            return { error: `ML rechazó la conexión: ${msg}`, status: e.response?.status || 500 };
         }
     }
 
@@ -237,7 +238,7 @@ exports.obtenerProductoML = onCall({
             client_secret: String(process.env.ML_CLIENT_SECRET || "").trim()
         }, { 
             timeout: 5000,
-            headers: { 'User-Agent': 'SuperM-Lab-Agente/1.0' }
+            headers: { 'User-Agent': USER_AGENT_ALQUIMISTA }
         });
         accessToken = tokenRes.data.access_token;
         logger.info("Token de ML generado con éxito.");
@@ -281,7 +282,7 @@ exports.obtenerProductoML = onCall({
 
         // 2. CONSULTA AUTORIZADA
         const response = await axios.get(`https://api.mercadolibre.com/items/${finalId}`, {
-            headers: { 'Authorization': `Bearer ${accessToken}`, 'User-Agent': 'SuperM-Lab-Agente/1.0' },
+            headers: { 'Authorization': `Bearer ${accessToken}`, 'User-Agent': USER_AGENT_ALQUIMISTA },
             timeout: 10000
         });
         const item = response.data;
