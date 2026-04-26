@@ -222,7 +222,7 @@ exports.obtenerProductoML = onCall({
     }
 
     // 1. OBTENER TOKEN DE ACCESO (Client Credentials Flow)
-    let accessToken;
+    let accessToken = null;
     try {
         const tokenRes = await axios.post("https://api.mercadolibre.com/oauth/token", {
             grant_type: "client_credentials",
@@ -236,31 +236,41 @@ exports.obtenerProductoML = onCall({
         throw new HttpsError("internal", "No se pudo autenticar con Mercado Libre.");
     }
 
-    try {
-        let targetUrl = url;
+    const input = (productId || url || "").trim();
+    let finalId = "";
+    let permalinkToUse = "";
 
-        // 🔗 RESOLVER LINKS ACORTADOS (meli.la/xxx)
-        if (url && url.includes("meli.la")) {
-            const res = await axios.get(url, { maxRedirects: 5, headers: { 'Authorization': `Bearer ${accessToken}` } });
-            // Intentamos capturar la URL final de forma más robusta (para evitar 404 por redirecciones rotas)
-            targetUrl = res.request?.res?.responseUrl || 
-                        res.request?._redirectable?._currentUrl || 
-                        res.config?.url || 
-                        url;
-            logger.info(`Link resuelto: ${targetUrl}`);
+    try {
+        let targetUrl = input;
+
+        // 1. Identificar tipo de entrada
+        if (input.includes("http")) {
+            permalinkToUse = input; // Guardamos el link original (referido)
+            if (input.includes("meli.la")) {
+                const res = await axios.get(input, { maxRedirects: 5, headers: { 'Authorization': `Bearer ${accessToken}` } });
+                targetUrl = res.request?.res?.responseUrl || res.request?._redirectable?._currentUrl || input;
+            }
+        } else if (input.match(/^[A-Z]{3,4}\d+$/i)) {
+            finalId = input.toUpperCase();
+        } else {
+            // Es un código corto (ej: NG8WAT-7T61)
+            permalinkToUse = `https://meli.la/${input}`;
+            const res = await axios.get(permalinkToUse, { maxRedirects: 5, headers: { 'Authorization': `Bearer ${accessToken}` } });
+            targetUrl = res.request?.res?.responseUrl || res.request?._redirectable?._currentUrl || permalinkToUse;
         }
 
-        // Extraer el ID (MLA...) del link
-        let idML = String(productId || targetUrl?.match(/MLA-?(\d+)/i)?.[1] || url?.match(/MLA-?(\d+)/i)?.[1] || "").trim();
-        if (!idML) throw new Error("No se pudo extraer un ID válido de Mercado Libre.");
+        // 2. Extraer ID si no lo tenemos (soporta MLA y MLAU)
+        if (!finalId) {
+            const match = targetUrl.match(/(MLA|MLB|MLM|MLC|MLU|MLV|MPE|MCO|MEC|MRD|MGT|MCR|MBO|MPY|MSV|MHN|MNI|MPA)[A-Z]?(\d+)/i);
+            if (match) finalId = match[0].toUpperCase();
+        }
 
-        // Limpiar si el usuario ya puso MLA en el ID manual
-        idML = idML.toUpperCase().replace(/MLA-?/g, '');
+        if (!finalId) throw new Error("No se detectó un ID de producto válido.");
 
-        logger.info(`Consultando producto ML: MLA${idML}`);
+        logger.info(`Consultando Producto ML: ${finalId}`);
 
         // 2. CONSULTA AUTORIZADA
-        const response = await axios.get(`https://api.mercadolibre.com/items/MLA${idML}`, {
+        const response = await axios.get(`https://api.mercadolibre.com/items/${finalId}`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         const item = response.data;
@@ -271,7 +281,7 @@ exports.obtenerProductoML = onCall({
             price: item.price,
             currency_id: item.currency_id,
             pictures: item.pictures?.map(p => p.url).slice(0, 5) || [item.thumbnail],
-            permalink: item.permalink,
+            permalink: permalinkToUse || item.permalink,
             attributes: item.attributes?.slice(0, 5).map(a => `${a.name}: ${a.value_name}`) || [],
             debug: { api_usada: "ML-API-V1", id_procesado: item.id }
         };
@@ -301,11 +311,18 @@ exports.debugListarModelos = onCall({
     if (!key) throw new HttpsError("unauthenticated", "No se encontró la GEMINI_API_KEY en los Secrets.");
 
     try {
-        const genAI = new GoogleGenerativeAI(key);
-        const result = await genAI.listModels();
-        return result; 
+        // Usamos axios para consultar directamente la API de Google, saltándonos las limitaciones del SDK
+        const response = await axios.get(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`, {
+            timeout: 10000
+        });
+        
+        logger.info("Lista de modelos obtenida con éxito.");
+        return response.data; 
     } catch (error) {
-        logger.error("Error al listar modelos de Gemini:", error);
-        throw new HttpsError("internal", "Error al consultar modelos: " + error.message);
+        const status = error.response?.status || 500;
+        const msg = error.response?.data?.error?.message || error.message;
+        
+        logger.error("Error al listar modelos de Gemini:", msg);
+        throw new HttpsError("internal", `Error de Google (Status ${status}): ${msg}`);
     }
 });

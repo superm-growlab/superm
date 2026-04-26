@@ -57,13 +57,12 @@ export async function probarConexionLlaves() {
 }
 
 export async function botTransmutar() {
-    const linkReferido = document.getElementById('link-referido').value.trim();
-    const idManual = document.getElementById('id-producto-manual').value.trim();
+    const inputUnico = document.getElementById('link-referido').value.trim();
     const status = document.getElementById('status-bot');
     const editor = document.getElementById('editor-producto');
 
-    if (!linkReferido) {
-        status.innerText = "⚠️ INGRESA UN LINK PARA COMENZAR.";
+    if (!inputUnico) {
+        status.innerText = "⚠️ INGRESA UN LINK, ID O CÓDIGO CORTO.";
         return;
     }
 
@@ -71,8 +70,8 @@ export async function botTransmutar() {
     status.style.color = "var(--s)";
 
     try {
-        // Usamos el Agente Central para obtener el producto de Mercado Libre
-        const data = await Agente.servicios.mercadoLibre.getProductFromCloudFunction(linkReferido, idManual);
+        // Enviamos el mismo valor a la función inteligente
+        const data = await Agente.servicios.mercadoLibre.getProductFromCloudFunction(inputUnico, inputUnico);
 
         if (data.error) throw new Error(data.error);
 
