@@ -9,10 +9,12 @@ const axios = require("axios"); // Necesario para hablar con Mercado Libre
 setGlobalOptions({ maxInstances: 10 });
 
 const customsearch = google.customsearch("v1");
+const ORIGIN_ALLOWED = "https://superm-growlab.github.io";
 
 exports.consultarOraculo = onCall({ 
     region: "us-central1",
-    secrets: ["GEMINI_API_KEY", "GOOGLE_SEARCH_API_KEY", "CUSTOM_SEARCH_ID"] 
+    secrets: ["GEMINI_API_KEY", "GOOGLE_SEARCH_API_KEY", "CUSTOM_SEARCH_ID"],
+    cors: [ORIGIN_ALLOWED]
 }, async (request) => {
     const { titulo, tags = [], action } = request.data;
 
@@ -157,18 +159,19 @@ exports.consultarOraculo = onCall({
 });
 
 /**
- * FUNCIÓN: analizarImagenPlanta
- * Propósito: Recibir una foto en base64 y usar Gemini Vision para diagnosticar.
+ * FUNCIÓN: analizarCarencia
+ * Propósito: Recibir una foto en base64 y usar Gemini Vision para diagnosticar carencias.
  */
-exports.analizarImagenPlanta = onCall({
+exports.analizarCarencia = onCall({
     region: "us-central1",
-    secrets: ["GEMINI_API_KEY"]
+    secrets: ["GEMINI_API_KEY"],
+    cors: [ORIGIN_ALLOWED]
 }, async (request) => {
-    const { image, action } = request.data;
-    if (action === "test") return { message: "Ojo del Oráculo Operativo" };
-    if (!image) throw new HttpsError("invalid-argument", "Imagen ausente.");
-
     try {
+        const { image, action } = request.data;
+        if (action === "test") return { message: "Ojo del Oráculo Operativo" };
+        if (!image) throw new HttpsError("invalid-argument", "Imagen ausente.");
+
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const base64Data = image.split(",")[1] || image;
@@ -185,18 +188,18 @@ exports.analizarImagenPlanta = onCall({
         
         return JSON.parse(jsonMatch[0]);
     } catch (error) {
-        logger.error("Error en analizarImagenPlanta:", error);
+        logger.error("Error en analizarCarencia:", error);
         throw new HttpsError("internal", "Error IA: " + error.message);
     }
 });
 
 /**
- * FUNCIÓN: obtenerProductoML
- * Propósito: Actuar como puente seguro entre el Alchemist Bot y Mercado Libre.
- * Usa Client ID y Client Secret para consultar la API de forma autorizada.
+ * FUNCIÓN: getMercadoLibreData
+ * Propósito: Proxy privado para Mercado Libre con autenticación Client Credentials.
  */
-exports.obtenerProductoML = onCall({
-    secrets: ["ML_CLIENT_ID", "ML_CLIENT_SECRET"]
+exports.getMercadoLibreData = onCall({
+    secrets: ["ML_CLIENT_ID", "ML_CLIENT_SECRET"],
+    cors: [ORIGIN_ALLOWED]
 }, async (request) => {
     const { url, productId, action } = request.data;
 
@@ -216,12 +219,26 @@ exports.obtenerProductoML = onCall({
         throw new HttpsError("invalid-argument", "Se requiere una URL o ID de producto.");
     }
 
+    // 1. OBTENER TOKEN DE ACCESO (Client Credentials Flow)
+    let accessToken;
+    try {
+        const tokenRes = await axios.post("https://api.mercadolibre.com/oauth/token", {
+            grant_type: "client_credentials",
+            client_id: process.env.ML_CLIENT_ID,
+            client_secret: process.env.ML_CLIENT_SECRET
+        });
+        accessToken = tokenRes.data.access_token;
+    } catch (e) {
+        logger.error("Error obteniendo token de ML:", e.message);
+        throw new HttpsError("internal", "No se pudo autenticar con Mercado Libre.");
+    }
+
     try {
         let targetUrl = url;
 
         // 🔗 RESOLVER LINKS ACORTADOS (meli.la/xxx)
         if (url && url.includes("meli.la")) {
-            const res = await axios.get(url, { maxRedirects: 5 });
+            const res = await axios.get(url, { maxRedirects: 5, headers: { 'Authorization': `Bearer ${accessToken}` } });
             // Intentamos capturar la URL final de forma más robusta (para evitar 404 por redirecciones rotas)
             targetUrl = res.request?.res?.responseUrl || 
                         res.request?._redirectable?._currentUrl || 
@@ -239,8 +256,10 @@ exports.obtenerProductoML = onCall({
 
         logger.info(`Consultando producto ML: MLA${idML}`);
 
-        // Consulta a la API de ML
-        const response = await axios.get(`https://api.mercadolibre.com/items/MLA${idML}`);
+        // 2. CONSULTA AUTORIZADA
+        const response = await axios.get(`https://api.mercadolibre.com/items/MLA${idML}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
         const item = response.data;
 
         return {

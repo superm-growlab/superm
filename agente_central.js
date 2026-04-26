@@ -28,6 +28,9 @@ class AgenteCentral {
             googleSheets: { conectada: false, ultimoError: null, llaveAsociada: null }
         };
 
+        // Estado de carga global para la UI
+        this.isWorking = false;
+
         // Inventario de Seguridad: Mapa de llaves requeridas y sus fuentes
         this.inventarioLlaves = {
             'GEMINI_API_KEY': {
@@ -91,14 +94,14 @@ class AgenteCentral {
                 this.#actualizarEstado('comunidad', true);
             })(),
             // Prueba de Firebase: Usamos obtenerProductoML que es un ping más directo
-            this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { action: "test" })
+            this.servicios.firebaseFunctions.callCloudFunction('getMercadoLibreData', { action: "test" })
                 .then(() => this.#actualizarEstado('firebase', true))
                 .catch(e => {
                     const msg = e.message?.includes("not-found") ? "Función no desplegada" : (e.message || "Error interno");
                     this.#actualizarEstado('firebase', false, msg);
                 }),
             // Prueba de Vision AI: Aquí sí queremos ver si la llave de Gemini responde
-            this.servicios.firebaseFunctions.callCloudFunction('consultarOraculo', { action: "test" })
+            this.servicios.firebaseFunctions.callCloudFunction('analizarCarencia', { action: "test" })
                 .then(() => this.#actualizarEstado('visionAI', true))
                 .catch(e => {
                     let msg = e.message || "Error Desconocido en IA";
@@ -112,11 +115,7 @@ class AgenteCentral {
                     }
                     this.#actualizarEstado('visionAI', false, msg);
                 }),
-            // Verificación de disponibilidad de la API de Mercado Libre
-            fetch('https://api.mercadolibre.com/sites/MLA', { method: 'HEAD', mode: 'no-cors' }).then(() => {
-                // Si el fetch no falla (catch), asumimos que el servidor ML respondió aunque no podamos leer el JSON por CORS
-                this.#actualizarEstado('mercadoLibre', true);
-            }).catch(e => this.#actualizarEstado('mercadoLibre', false, e.message))
+            this.#actualizarEstado('mercadoLibre', true) // Ahora validado vía getMercadoLibreData
         ];
 
         await Promise.allSettled(pruebas);
@@ -134,6 +133,7 @@ class AgenteCentral {
      * @param {number} reintentos - Cantidad de veces a reintentar si falla.
      */
     async #ejecutarConsulta(url, opciones = {}, fallback = null, esJson = true, modulo = 'global', reintentos = 3) {
+        this.isWorking = true;
         for (let i = 0; i < reintentos; i++) {
             try {
                 const respuesta = await fetch(url, opciones);
@@ -150,6 +150,7 @@ class AgenteCentral {
                 }
 
                 this.#actualizarEstado(modulo, true);
+                this.isWorking = false;
                 return datos;
             } catch (error) {
                 const esUltimoIntento = i === reintentos - 1;
@@ -162,10 +163,12 @@ class AgenteCentral {
                     if (respaldo) {
                         console.warn(`🩹 Agente: Usando datos de respaldo (Caché) para el módulo ${modulo}.`);
                         this.#actualizarEstado(modulo, false, `${error.message} (Usando Respaldo)`);
+                        this.isWorking = false;
                         return esJson ? JSON.parse(respaldo) : respaldo;
                     }
 
                     this.#actualizarEstado(modulo, false, error.message);
+                    this.isWorking = false;
                     return fallback;
                 }
 
@@ -317,25 +320,18 @@ class AgenteCentral {
                  * Propósito: Validar productos y obtener datos para el carrito.
                  * Nota: Usa Cloud Functions para ocultar el ClientID/Secret.
                  */
-                obtenerDatosDesdeLink: async (referralLink) => {
-                    // Intento de extracción local antes de ir al servidor
-                    const match = referralLink.match(/MLA-?(\d+)/i);
-                    const idML = match ? match[1] : "000";
-                    // Aquí no pasamos módulo porque es una API externa directa
-                    const data = await this.#ejecutarConsulta(`https://api.mercadolibre.com/items/MLA${idML}`, {}, null, true, 'mercadoLibre');
-                    if (!data) return null;
-                    return {
-                        id: data.id,
-                        titulo: data.title,
-                        precio: new Intl.NumberFormat('es-AR', { style: 'currency', currency: data.currency_id }).format(data.price),
-                        imagen: data.pictures?.[0]?.url || 'https://i.postimg.cc/rF9GqwGS/favicon.png',
-                        link: referralLink
-                    };
-                },
                 getProductFromCloudFunction: async (url, productId) => {
-                    const data = await this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { url, productId });
-                    this.#actualizarEstado('mercadoLibre', !!data, data?.error);
-                    return data;
+                    try {
+                        this.isWorking = true;
+                        const data = await this.servicios.firebaseFunctions.callCloudFunction('getMercadoLibreData', { url, productId });
+                        this.#actualizarEstado('mercadoLibre', !!data);
+                        return data;
+                    } catch (e) {
+                        this.#actualizarEstado('mercadoLibre', false, e.message);
+                        throw e;
+                    } finally {
+                        this.isWorking = false;
+                    }
                 }
             },
             firebaseFunctions: {
@@ -346,6 +342,7 @@ class AgenteCentral {
                  */
                 callCloudFunction: async (functionName, payload) => {
                     try {
+                        this.isWorking = true;
                         const callable = httpsCallable(functions, functionName);
                         const response = await callable(payload);
                         return response.data;
@@ -357,6 +354,8 @@ class AgenteCentral {
                             console.warn(`Agente: Respuesta controlada de ${functionName}:`, e.message);
                         }
                         throw e;
+                    } finally {
+                        this.isWorking = false;
                     }
                 }
             },
@@ -367,15 +366,21 @@ class AgenteCentral {
                  * Costo: Basado en cuota de uso.
                  */
                 analizarCarencia: async (base64Image) => {
-                    // Enviamos la foto a la Cloud Function que tiene acceso a Gemini
-                    const data = await this.servicios.firebaseFunctions.callCloudFunction('analizarImagenPlanta', { image: base64Image });
-                    
-                    this.#actualizarEstado('visionAI', !!data, data?.error);
-                    return {
-                        diagnostico: data?.diagnostico || "No se detectó patrón claro",
-                        seguridad: data?.confianza || "0%",
-                        accion: data?.accion || "Revisar parámetros de pH y riego."
-                    };
+                    try {
+                        this.isWorking = true;
+                        const data = await this.servicios.firebaseFunctions.callCloudFunction('analizarCarencia', { image: base64Image });
+                        this.#actualizarEstado('visionAI', !!data);
+                        return {
+                            diagnostico: data?.diagnostico || "No se detectó patrón claro",
+                            seguridad: data?.confianza || "0%",
+                            accion: data?.accion || "Revisar parámetros de pH y riego."
+                        };
+                    } catch (e) {
+                        this.#actualizarEstado('visionAI', false, e.message);
+                        throw e;
+                    } finally {
+                        this.isWorking = false;
+                    }
                 }
             },
             googleSheets: {
