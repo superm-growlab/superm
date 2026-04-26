@@ -108,13 +108,16 @@ exports.consultarOraculo = onCall({
         // 🔎 BÚSQUEDA DINÁMICA DE IMÁGENES (Google Search API)
         let url_imagen = "https://i.postimg.cc/rF9GqwGS/favicon.png"; // Imagen genérica de respaldo
         try {
-            if (!process.env.GOOGLE_SEARCH_API_KEY || !process.env.CUSTOM_SEARCH_ID || process.env.GOOGLE_SEARCH_API_KEY.length < 20) {
+            const googleKey = process.env.GOOGLE_SEARCH_API_KEY?.trim();
+            const cxId = process.env.CUSTOM_SEARCH_ID?.trim();
+
+            if (!googleKey || !cxId || googleKey.length < 20) {
                 throw new HttpsError("unauthenticated", "Faltan credenciales de búsqueda de Google (API Key o CX ID).");
             }
 
             const searchRes = await customsearch.cse.list({
-                auth: process.env.GOOGLE_SEARCH_API_KEY,
-                cx: process.env.CUSTOM_SEARCH_ID,
+                auth: googleKey,
+                cx: cxId,
                 q: `${titulo} cannabis deficiency leaf symptom`,
                 searchType: "image",
                 num: 1,
