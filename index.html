@@ -1344,14 +1344,18 @@
             </div>
 
             <div id="vista-seguimiento-tabla" style="display: none;">
+                <div style="border: 1px solid rgba(57, 255, 20, 0.4); padding: 20px; border-radius: 12px; margin-bottom: 25px; background: rgba(57, 255, 20, 0.03); font-family: 'Courier New', monospace; font-size: 0.8rem; line-height: 1.6; color: #aaa; text-align: center;">
+                    Diseñá tu propia hoja de ruta. Editá los encabezados, agregá columnas y configurá tu planilla técnica a medida para descargarla e imprimirla. Tu laboratorio, tus reglas.
+                </div>
                 <div id="area-descarga" class="contenedor-tabla">
                     <table id="tabla-lab">
-                        <thead><tr><th>PLANTA</th><th>SEMANA</th><th>PH</th><th>EC</th><th>TEMP °C</th><th>HUM %</th><th>RIEGO</th><th>OBSERVACIONES</th></tr></thead>
+                        <thead><tr id="encabezado-tabla"></tr></thead>
                         <tbody id="cuerpo-tabla"></tbody>
                     </table>
                 </div>
                 <div style="margin-top:20px; display:flex; gap:10px; flex-wrap: wrap;">
                     <button class="btn btn-v" onclick="window.nuevaFila()">+ Fila</button>
+                    <button class="btn btn-m" style="border-color:var(--p); color:var(--p);" onclick="window.nuevaColumna()">+ Columna</button>
                     <button class="btn btn-m" onclick="window.descargarImagen()">📸 descargar</button>
                     <button class="btn btn-m" style="border-color:#ff4444; color:#ff4444;" onclick="window.borrarTablas()">Reset</button>
                 </div>

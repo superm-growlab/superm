@@ -192,6 +192,11 @@ function renderDiarioCard(container, data) {
         </div>
     ` : 'N/A';
 
+    const hasNotas = data.notas && data.notas.trim() !== "";
+    const notasBtnHtml = hasNotas 
+        ? `onclick="window.verNotasCompletas('${notasEscaped}', 'OBSERVACIONES - ${nombrePlanta.toUpperCase()}', ${imgUrlsJson})" style="font-size:0.6rem; cursor:pointer; color:var(--p); text-decoration:underline;"` 
+        : `style="font-size:0.6rem; color:#444;"`;
+
     row.innerHTML = `
         <td data-label="FECHA">${data.fecha?.split(',')[0] || '---'}</td>
         <td data-label="SEMANA">${data.semana || '1'}</td>
@@ -202,7 +207,7 @@ function renderDiarioCard(container, data) {
         <td data-label="HUM">${data.humedad || '--'}%</td>
         <td data-label="FOTO">${imgHtml}</td>
         <td data-label="ORÁCULO"><button class="btn btn-m" style="font-size:0.6rem; padding:4px; border-color:var(--p); color:var(--p);" onclick="window.abrirReporteAlquimia('${encodeURIComponent(JSON.stringify(data))}')">🔮 REPORTE</button></td>
-        <td data-label="OBSERVACIONES" onclick="window.verNotasCompletas('${notasEscaped}', 'OBSERVACIONES - ${nombrePlanta.toUpperCase()}', ${imgUrlsJson})" style="font-size:0.6rem; cursor:pointer; color:var(--p); text-decoration:underline;">${data.notas || 'VER'}</td>
+        <td data-label="OBSERVACIONES" ${notasBtnHtml}>${hasNotas ? 'VER' : '---'}</td>
         <td data-label="ACCION"><button onclick="window.eliminarRegistroDiario('${data.id}', this.closest('tr'))" style="background:none; border:none; color:#ff4444; cursor:pointer;">✕ ELIMINAR</button></td>
     `;
     tbody.prepend(row); // Insertamos al inicio para que la semana más nueva sea la primera página

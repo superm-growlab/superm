@@ -53,7 +53,7 @@ export function verSubSeccionLab(sub, guardar = true) {
     const parentSec = document.getElementById('tablas');
     // Si intentamos ver una subsección y la principal no está activa, la activamos primero
     if (parentSec && !parentSec.classList.contains('activa')) {
-        window.ver('tablas', guardar);
+        if (typeof window.ver === 'function') window.ver('tablas', guardar, true);
     }
     if (guardar) history.pushState({ section: 'tablas', subLab: sub }, '', `#tablas/${sub}`);
     document.getElementById('lab-seguimiento').style.display = (sub === 'seguimiento') ? 'block' : 'none';
@@ -815,21 +815,23 @@ export function volverAlMenuCalc() {
     document.querySelectorAll('.calc-panel').forEach(p => p.style.display = 'none');
 }
 
-export function nuevaFila(datos = ["", "", "", "", "", "", "", ""]) {
-    const labels = ["PLANTA", "SEMANA", "PH", "EC", "TEMP °C", "HUM %", "RIEGO", "OBSERVACIONES"];
+export function nuevaFila(datos = []) {
+    const headers = Array.from(document.querySelectorAll('#encabezado-tabla th')).map(th => th.innerText);
     const tr = document.createElement('tr');
-    tr.innerHTML = datos.map((d, i) => `<td data-label="${labels[i]}"><input type="text" class="input-tabla" value="${d}" oninput="window.guardarTablas()"></td>`).join('');
+    tr.innerHTML = headers.map((label, i) => 
+        `<td data-label="${label}"><input type="text" class="input-tabla" value="${datos[i] || ''}" oninput="window.guardarTablas()"></td>`).join('');
     const tbody = document.getElementById('cuerpo-tabla');
     if(tbody) tbody.appendChild(tr);
 }
 
 export function guardarTablas() {
+    const headers = Array.from(document.querySelectorAll('#encabezado-tabla th')).map(th => th.innerText);
     const filas = [];
     document.querySelectorAll('#cuerpo-tabla tr').forEach(tr => {
         const c = Array.from(tr.querySelectorAll('input')).map(i => i.value);
         filas.push(c);
     });
-    localStorage.setItem('superm_tablas', JSON.stringify(filas));
+    localStorage.setItem('superm_tablas_v2', JSON.stringify({ headers, filas }));
 }
 
 export function cargarTablasPersistentes() {
@@ -837,18 +839,98 @@ export function cargarTablasPersistentes() {
     if(!tbody) return;
     tbody.innerHTML = "";
     
-    let datos = JSON.parse(localStorage.getItem('superm_tablas'));
-    // Si no hay datos, o son los datos de ejemplo viejos (Planta A), forzamos 5 filas vacías
-    if (!datos || (datos.length === 1 && datos[0][0] === "Planta A")) {
-        datos = Array.from({ length: 5 }, () => ["", "", "", "", "", "", "", ""]);
+    let stored = JSON.parse(localStorage.getItem('superm_tablas_v2'));
+    let headers, filas;
+
+    if (!stored) {
+        headers = ["PLANTA", "SEMANA", "PH", "EC", "TEMP °C", "HUM %", "RIEGO", "OBSERVACIONES"];
+        let oldData = JSON.parse(localStorage.getItem('superm_tablas'));
+        if (oldData && oldData.length > 0 && oldData[0][0] !== "Planta A") {
+            filas = oldData;
+        } else {
+            filas = Array.from({ length: 5 }, () => Array(headers.length).fill(""));
+        }
+    } else {
+        headers = stored.headers;
+        filas = stored.filas;
     }
-    datos.forEach(d => nuevaFila(d));
+
+    renderHeaders(headers);
+    filas.forEach(d => nuevaFila(d));
+}
+
+export function renderHeaders(labels) {
+    const thead = document.getElementById('encabezado-tabla');
+    if(!thead) return;
+    thead.innerHTML = "";
+    labels.forEach((l, i) => {
+        const th = document.createElement('th');
+        th.innerText = (l || '').toUpperCase();
+        th.style.cursor = "pointer";
+        th.title = "Click para editar nombre";
+        // Vinculamos la función de edición directamente
+        th.addEventListener('click', (e) => {
+            e.stopPropagation();
+            editarColumna(i);
+        });
+        thead.appendChild(th);
+    });
+}
+
+export function nuevaColumna() {
+    const nombre = prompt("Nombre de la nueva dimensión (columna):", "NUEVA VARIABLE");
+    if (!nombre || nombre.trim() === "") return;
+    const name = nombre.toUpperCase().trim();
+
+    // 1. Leemos la REALIDAD actual de la tabla en pantalla (Headers y Datos)
+    const headers = Array.from(document.querySelectorAll('#encabezado-tabla th')).map(th => th.innerText);
+    const filas = [];
+    document.querySelectorAll('#cuerpo-tabla tr').forEach(tr => {
+        const rowData = Array.from(tr.querySelectorAll('input')).map(i => i.value);
+        filas.push(rowData);
+    });
+
+    // 2. Modificamos los datos en memoria agregando la nueva columna
+    headers.push(name);
+    const nuevasFilas = filas.map(f => [...f, ""]); // Agregamos una celda vacía al final de cada fila
+
+    // 3. Persistimos en LocalStorage y redibujamos
+    localStorage.setItem('superm_tablas_v2', JSON.stringify({ headers, filas: nuevasFilas }));
+    cargarTablasPersistentes();
+
+    notify(`Dimensión "${name}" integrada al sistema.`, "success");
+}
+
+export function editarColumna(index) {
+    // 1. Leemos encabezados actuales directamente del DOM
+    const headers = Array.from(document.querySelectorAll('#encabezado-tabla th')).map(th => th.innerText);
+    if (!headers[index]) return;
+
+    const currentName = headers[index];
+    const nuevoNombre = prompt("Renombrar dimensión:", currentName);
+    if (nuevoNombre === null || nuevoNombre.trim() === "") return;
+    const name = nuevoNombre.toUpperCase().trim();
+
+    // 2. Capturamos los datos actuales de las celdas para no perder lo que el usuario escribió
+    const filas = [];
+    document.querySelectorAll('#cuerpo-tabla tr').forEach(tr => {
+        const rowData = Array.from(tr.querySelectorAll('input')).map(i => i.value);
+        filas.push(rowData);
+    });
+
+    // 3. Actualizamos el nombre en el array y guardamos todo
+    headers[index] = name;
+    localStorage.setItem('superm_tablas_v2', JSON.stringify({ headers, filas }));
+    
+    // 4. Redibujamos para que los data-label (vista móvil) se actualicen
+    cargarTablasPersistentes();
 }
 
 export async function borrarTablas() { 
-    if(await window.confirmAlquimista("¿Estás seguro de resetear el laboratorio? Todos los datos de la tabla actual se perderán.")) { 
-        localStorage.removeItem('superm_tablas'); 
-        window.cargarTablasPersistentes(); 
+    if(await window.confirmAlquimista("¿Estás seguro de resetear la planilla? Se perderán las columnas personalizadas y todos los datos.")) { 
+        localStorage.removeItem('superm_tablas_v2');
+        localStorage.removeItem('superm_tablas');
+        cargarTablasPersistentes(); 
     } 
 }
 
@@ -1140,6 +1222,8 @@ window.reiniciarComparativa = reiniciarComparativa;
 window.volverAlMenuCalc = volverAlMenuCalc;
 window.actualizarNutrientes = generarDiagnostico;
 window.nuevaFila = nuevaFila;
+window.nuevaColumna = nuevaColumna;
+window.editarColumna = editarColumna;
 window.guardarTablas = guardarTablas;
 window.borrarTablas = borrarTablas;
 window.descargarImagen = descargarImagen;
