@@ -111,7 +111,7 @@ export async function botTransmutar() {
         console.error("Error completo en Alchemist Bot:", e);
         const code = e.code || "unknown";
         const message = e.message || "Error interno del servidor";
-        alert(`❌ FALLO DE CONEXIÓN [${code}]: ${message}`);
+        notify(`❌ FALLO DE CONEXIÓN [${code}]: ${message}`, 'error');
         status.innerText = `❌ ERROR [${code}]: ${message}`;
     }
 }

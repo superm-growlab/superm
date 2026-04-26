@@ -134,6 +134,32 @@ export function notify(m, type = 'success') {
     setTimeout(() => { n.style.display = 'none'; }, 4000);
 }
 
+/** --- SISTEMA DE DIÁLOGOS PERSONALIZADOS (ALCHEMIST UI) --- **/
+window.confirmAlquimista = (mensaje, titulo = "🧪 PROTOCOLO") => {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('modal-confirmacion-alquimista');
+        const txt = document.getElementById('confirm-mensaje');
+        const tit = document.getElementById('confirm-titulo');
+        const btnAceptar = document.getElementById('confirm-btn-aceptar');
+        const btnCancelar = document.getElementById('confirm-btn-cancelar');
+
+        if (!modal || !txt) return resolve(confirm(mensaje)); // Fallback por seguridad
+
+        tit.innerText = titulo;
+        txt.innerText = mensaje;
+        modal.style.display = 'flex';
+
+        const limpiar = () => {
+            modal.style.display = 'none';
+            btnAceptar.onclick = null;
+            btnCancelar.onclick = null;
+        };
+
+        btnAceptar.onclick = () => { limpiar(); resolve(true); };
+        btnCancelar.onclick = () => { limpiar(); resolve(false); };
+    });
+};
+
 export const comprimirImagen = (file) => {
     return new Promise((resolve) => {
         if (!file || !file.type.startsWith('image/')) return resolve('');
@@ -179,6 +205,7 @@ export function verImagenAmpliada(url, lista = []) {
         img.style.cursor = 'zoom-in';
         img.src = url;
         modal.style.display = 'flex';
+        history.pushState({ section: 'tablas', subLab: 'seguimiento', view: 'imagen' }, '', '#visor-multimedia');
 
         window.currentVisorImages = Array.isArray(lista) ? lista : [];
         window.currentVisorIndex = window.currentVisorImages.indexOf(url);
@@ -234,6 +261,7 @@ export function verNotasCompletas(texto, titulo, imagenes = []) {
         display.innerText = texto;
         if (imgCont) imgCont.innerHTML = (imagenes && imagenes.length > 0) ? window.renderGalería(imagenes) : "";
         modal.style.display = 'flex';
+        history.pushState({ section: 'tablas', subLab: 'seguimiento', view: 'reporte' }, '', '#visor-reporte');
     }
 }
 
@@ -818,8 +846,8 @@ export function cargarTablasPersistentes() {
     datos.forEach(d => nuevaFila(d));
 }
 
-export function borrarTablas() { 
-    if(confirm("¿Resetear laboratorio?")) { 
+export async function borrarTablas() { 
+    if(await window.confirmAlquimista("¿Estás seguro de resetear el laboratorio? Todos los datos de la tabla actual se perderán.")) { 
         localStorage.removeItem('superm_tablas'); 
         window.cargarTablasPersistentes(); 
     } 
@@ -1035,7 +1063,7 @@ export function procesarImagenUsuario(event) {
 export async function sembrarBiblioteca() {
     // Usamos notify directamente ya que está en el mismo ámbito del módulo
     if (auth.currentUser?.uid !== ADMIN_UID) return notify("Acceso denegado.", "error");
-    if (!confirm("¿Iniciar siembra de muestras? Se consultará al Oráculo y Google para poblar la biblioteca.")) return;
+    if (!await window.confirmAlquimista("¿Iniciar siembra de muestras tecnológicas? Esto consultará al Oráculo para poblar la biblioteca.")) return;
 
     notify("🌱 Iniciando siembra tecnológica...", "info");
     window.mostrarLoader();

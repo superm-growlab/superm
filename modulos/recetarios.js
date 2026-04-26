@@ -73,6 +73,7 @@ export function descargarTablaDirecta(url, nombreMarca) {
 export function abrirModalSolicitarTabla() { 
     if(!auth.currentUser) return notify("🔒 Inicia sesión.", "info"); 
     document.getElementById('modal-solicitar-tabla').style.display = 'flex'; 
+    history.pushState({ section: 'tablas', subLab: 'recetarios', view: 'solicitud' }, '', '#solicitud-tabla');
 }
 
 export async function enviarSolicitudTabla() {

@@ -545,6 +545,7 @@ export function responderComentario(id) {
     const preview = document.getElementById('reply-img-preview');
     if (preview) preview.innerHTML = "";
     document.getElementById('modal-respuesta').style.display = 'flex';
+    history.pushState({ section: 'view-comunidad', view: 'respuesta' }, '', '#responder');
 }
 
 export function setupResponderComentarioHandler() {
@@ -594,6 +595,7 @@ export function editarComentario(id, data) {
     editingTarget = { type: 'comment', id };
     document.getElementById('edit-comment-txt').value = data.texto;
     document.getElementById('modal-editar-comentario').style.display = 'flex';
+    history.pushState({ section: 'view-comunidad', view: 'edicion' }, '', '#editar-protocolo');
 }
 
 export async function editarRespuesta(commentId, replyId) {
@@ -637,7 +639,7 @@ export function setupEditarComentarioHandler() {
 }
 
 export async function eliminarComentario(id) {
-    if (!confirm("🔮 ¿Estás seguro de que deseas desvanecer este mensaje del laboratorio?")) return;
+    if (!await window.confirmAlquimista("🔮 ¿Estás seguro de que deseas desvanecer este mensaje del laboratorio?")) return;
     
     try {
         await deleteDoc(doc(db, 'comentarios', id));
@@ -778,7 +780,7 @@ export async function procesarSolicitudAdmin(id) {
 }
 
 export async function borrarComoAdmin(coleccion, id, productId) {
-    if (!confirm("⚠️ ¿ALQUIMISTA, estás seguro? Esta transmutación es irreversible. El mensaje desaparecerá para siempre.")) return;
+    if (!await window.confirmAlquimista("⚠️ ¿ALQUIMISTA, estás seguro? Esta purga es irreversible y el mensaje desaparecerá de las dimensiones del laboratorio.")) return;
     try {
         await deleteDoc(doc(db, coleccion, id));
         await limpiarNotificacionesRelacionadas(id);

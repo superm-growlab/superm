@@ -854,7 +854,7 @@ export async function cargarRatingPromedio(productId, containerId) {
 }
 
 export async function eliminarReview(id, productId) {
-    if (!confirm("¿Eliminar reseña?")) return;
+    if (!await window.confirmAlquimista("¿Deseas eliminar tu valoración de este producto?")) return;
     try {
         await deleteDoc(doc(db, 'reseñas_productos', id));
         // Asumiendo que limpiarNotificacionesRelacionadas está en comunidad.js y expuesto a window

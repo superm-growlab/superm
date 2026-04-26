@@ -1922,8 +1922,6 @@
             <button id="btn-scan-api" class="btn btn-v" style="width: 100%; margin-bottom: 20px; font-size: 0.7rem; letter-spacing: 1px;" onclick="window.ejecutarEscaneoAPI(this)">⚡ ESCANEAR TODAS LAS CONEXIONES</button>
             
             <div id="api-status-list" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;"></div>
-            
-            <button class="btn btn-m" style="width: 100%; margin-top: 25px;" onclick="document.getElementById('modal-diagnostico-api').style.display='none'">CERRAR</button>
         </div>
     </div>
 
@@ -1945,8 +1943,8 @@
         window.mostrarLoader = () => { document.getElementById('loader-global').style.display = 'flex'; };
         window.ocultarLoader = () => { document.getElementById('loader-global').style.display = 'none'; };
 
-        window.abrirModalPrivacidad = () => { document.getElementById('modal-privacidad').style.display = 'flex'; };
-        window.abrirModalAporte = () => { document.getElementById('modal-aporte').style.display = 'flex'; };
+        window.abrirModalPrivacidad = () => { document.getElementById('modal-privacidad').style.display = 'flex'; history.pushState({ section: 'landing', view: 'privacidad' }, '', '#privacidad'); };
+        window.abrirModalAporte = () => { document.getElementById('modal-aporte').style.display = 'flex'; history.pushState({ section: 'landing', view: 'aporte' }, '', '#aporte'); };
         window.copiarAlias = () => {
             navigator.clipboard.writeText("SuperMlab").then(() => {
                 window.notify("✅ Alias copiado al portapapeles", "success");

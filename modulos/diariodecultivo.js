@@ -200,13 +200,13 @@ function renderAnotacionCard(container, data) {
 }
 
 export async function eliminarRegistroDiario(id, rowElement) {
-    if (!confirm('¿Eliminar registro?')) return;
+    if (!await window.confirmAlquimista('¿Deseas desvanecer esta semana del registro?')) return;
     rowElement.remove();
     try { await deleteDoc(doc(db, 'seguimientos', id)); } catch (e) { console.error(e); }
 }
 
 export async function eliminarSeguimiento(nombre) {
-    if (!confirm(`¿Eliminar todo el seguimiento de "${nombre}"?`)) return;
+    if (!await window.confirmAlquimista(`¿Eliminar todo el expediente de "${nombre}"? Esta transmutación es irreversible.`)) return;
     const q = query(collection(db, 'seguimientos'), where('usuario', '==', auth.currentUser.uid), where('nombre', '==', nombre));
     const snap = await getDocs(q);
     await Promise.all(snap.docs.map(d => deleteDoc(doc(db, 'seguimientos', d.id))));
@@ -261,7 +261,7 @@ export async function previsualizarAnotacion() {
 }
 
 export async function eliminarAnotacion(id) {
-    if (!confirm("¿Eliminar este registro de tu diario?")) return;
+    if (!await window.confirmAlquimista("¿Deseas purgar esta anotación de tu bitácora?")) return;
     try { await deleteDoc(doc(db, 'seguimientos', id)); notify("🗑️ Registro eliminado.", "info"); cargarDiarioCultivo(); } catch (e) { console.error(e); }
 }
 
@@ -286,6 +286,7 @@ export function cargarRegistroEnFormulario(dataJson) {
 export function abrirReporteAlquimia(dataJson) {
     const data = JSON.parse(decodeURIComponent(dataJson));
     document.getElementById('modal-diagnostico').style.display = 'flex';
+    history.pushState({ section: 'tablas', subLab: 'seguimiento', view: 'reporte_alquimia' }, '', '#reporte-alquimia');
     let sem = parseInt(data.semana) || 1;
     const config = MATRIZ_NUTRIENTES[sem > 12 ? 12 : sem] || MATRIZ_NUTRIENTES[1];
     document.getElementById('diag-output-modal').innerHTML = `<h4 style="color:var(--p);">SEMANA ${sem}: ${config.n}</h4><p>pH: ${data.ph} | EC: ${data.ec}</p><div style="font-family:monospace; color:var(--p);">${config.ratio}</div>`;

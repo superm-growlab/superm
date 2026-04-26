@@ -240,6 +240,7 @@ export function abrirModalProponerNota() {
     const preview = document.getElementById('prop-img-preview');
     if (preview) preview.innerHTML = '';
     document.getElementById('modal-proponer-nota').style.display = 'flex';
+    history.pushState({ section: 'info', view: 'propuesta' }, '', '#proponer-nota');
 }
 
 export async function enviarPropuestaNota() {
@@ -318,7 +319,7 @@ export async function votarNota(id, tipo) {
 }
 
 export async function aprobarPropuestaNota(id) {
-    if(!confirm("¿Aprobar esta propuesta? Aparecerá en el panel de moderación como procesada.")) return;
+    if(!await window.confirmAlquimista("¿Confirmas la aprobación de este conocimiento para la biblioteca pública?")) return;
     try {
         await updateDoc(doc(db, 'sugerencias_notas', id), { status: 'aprobado' });
         notify("✅ Nota marcada como aprobada.", "success");
