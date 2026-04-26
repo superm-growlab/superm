@@ -159,10 +159,10 @@ exports.consultarOraculo = onCall({
 });
 
 /**
- * FUNCIÓN: analizarCarencia
+ * FUNCIÓN: analizarImagenPlanta
  * Propósito: Recibir una foto en base64 y usar Gemini Vision para diagnosticar carencias.
  */
-exports.analizarCarencia = onCall({
+exports.analizarImagenPlanta = onCall({
     region: "us-central1",
     secrets: ["GEMINI_API_KEY"],
     cors: [ORIGIN_ALLOWED]
@@ -194,10 +194,11 @@ exports.analizarCarencia = onCall({
 });
 
 /**
- * FUNCIÓN: getMercadoLibreData
+ * FUNCIÓN: obtenerProductoML
  * Propósito: Proxy privado para Mercado Libre con autenticación Client Credentials.
  */
-exports.getMercadoLibreData = onCall({
+exports.obtenerProductoML = onCall({
+    region: "us-central1",
     secrets: ["ML_CLIENT_ID", "ML_CLIENT_SECRET"],
     cors: [ORIGIN_ALLOWED]
 }, async (request) => {

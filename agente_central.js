@@ -94,14 +94,14 @@ class AgenteCentral {
                 this.#actualizarEstado('comunidad', true);
             })(),
             // Prueba de Firebase: Usamos obtenerProductoML que es un ping más directo
-            this.servicios.firebaseFunctions.callCloudFunction('getMercadoLibreData', { action: "test" })
+            this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { action: "test" })
                 .then(() => this.#actualizarEstado('firebase', true))
                 .catch(e => {
                     const msg = e.message?.includes("not-found") ? "Función no desplegada" : (e.message || "Error interno");
                     this.#actualizarEstado('firebase', false, msg);
                 }),
             // Prueba de Vision AI: Aquí sí queremos ver si la llave de Gemini responde
-            this.servicios.firebaseFunctions.callCloudFunction('analizarCarencia', { action: "test" })
+            this.servicios.firebaseFunctions.callCloudFunction('analizarImagenPlanta', { action: "test" })
                 .then(() => this.#actualizarEstado('visionAI', true))
                 .catch(e => {
                     let msg = e.message || "Error Desconocido en IA";
@@ -115,7 +115,7 @@ class AgenteCentral {
                     }
                     this.#actualizarEstado('visionAI', false, msg);
                 }),
-            this.#actualizarEstado('mercadoLibre', true) // Ahora validado vía getMercadoLibreData
+            this.#actualizarEstado('mercadoLibre', true) // Ahora validado vía obtenerProductoML
         ];
 
         await Promise.allSettled(pruebas);
@@ -323,7 +323,7 @@ class AgenteCentral {
                 getProductFromCloudFunction: async (url, productId) => {
                     try {
                         this.isWorking = true;
-                        const data = await this.servicios.firebaseFunctions.callCloudFunction('getMercadoLibreData', { url, productId });
+                        const data = await this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { url, productId });
                         this.#actualizarEstado('mercadoLibre', !!data);
                         return data;
                     } catch (e) {
@@ -368,7 +368,7 @@ class AgenteCentral {
                 analizarCarencia: async (base64Image) => {
                     try {
                         this.isWorking = true;
-                        const data = await this.servicios.firebaseFunctions.callCloudFunction('analizarCarencia', { image: base64Image });
+                        const data = await this.servicios.firebaseFunctions.callCloudFunction('analizarImagenPlanta', { image: base64Image });
                         this.#actualizarEstado('visionAI', !!data);
                         return {
                             diagnostico: data?.diagnostico || "No se detectó patrón claro",
