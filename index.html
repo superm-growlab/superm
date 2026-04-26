@@ -2225,10 +2225,10 @@
             if (id === 'tienda') { 
                 if(window.mostrarCategorias) {
                     window.mostrarCategorias();
-                    // Si entramos y no hay productos, forzamos un re-intento de carga
                     if((!window.productos || window.productos.length === 0) && window.cargarInventario) window.cargarInventario();
                 }
             }
+            if (id === 'changuito-tool') { if(window.cargarHistorialChanguito) window.cargarHistorialChanguito(); }
             if (id === 'tablas' && !skipReset) { 
                 if(window.verSubSeccionLab) {
                     window.verSubSeccionLab('calculadora', false); // Aseguramos que entre a calculadoras por defecto

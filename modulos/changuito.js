@@ -1,7 +1,11 @@
 import { db, functions } from './firebase-config.js';
 import { 
     doc, 
-    setDoc 
+    setDoc,
+    collection,
+    getDocs,
+    deleteDoc,
+    getDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { notify } from './herramientaslab.js';
 import { obtenerImagenHTML } from './tienda.js'; // Reutilizamos la función de tienda.js
@@ -22,6 +26,11 @@ export function actualizarMesaInspeccion() {
     const texto = document.getElementById('edit-texto').value;
     const link = document.getElementById('link-referido').value;
 
+    // Si es una edición, aseguramos que el ID se mantenga
+    if (!productoTemporal.id_manual && !productoTemporal.id) {
+         // Generar ID si no existe (raro en este punto)
+    }
+
     // Actualizar Previsualización de Fila
     document.getElementById('row-preview-titulo').innerText = n;
     document.getElementById('row-preview-precio').innerText = "$" + p.toLocaleString();
@@ -40,6 +49,39 @@ export function actualizarMesaInspeccion() {
             </div>
         </div>
     `;
+}
+
+export async function cargarHistorialChanguito() {
+    const hist = document.getElementById('historial-bot');
+    if (!hist) return;
+    hist.innerHTML = '<p style="text-align:center; color:var(--s); font-family:monospace;">📡 SINCRONIZANDO CON LA NUBE...</p>';
+
+    try {
+        const querySnapshot = await getDocs(collection(db, "productos_tienda"));
+        hist.innerHTML = ""; 
+        
+        if (querySnapshot.empty) {
+            hist.innerHTML = '<p style="text-align:center; color:#555; font-size:0.8rem;">No hay productos cargados en Firebase.</p>';
+            return;
+        }
+
+        querySnapshot.forEach((docSnap) => {
+            const p = docSnap.data();
+            const prod = {
+                id: docSnap.id,
+                category_id: p.category_id || p.cat || 'General',
+                title: p.title || p.n || 'Sin nombre',
+                price: p.price || p.p || 0,
+                pictures: Array.isArray(p.pictures || p.i) ? (p.pictures || p.i) : [p.pictures || p.i || '🌿'],
+                permalink: p.permalink || '',
+                description: p.description || p.fichaTecnica || p.texto || ''
+            };
+            renderizar(prod);
+        });
+    } catch (e) {
+        console.error("Error historial:", e);
+        hist.innerHTML = '<p style="text-align:center; color:#ff3131;">ERROR DE CONEXIÓN AL HISTORIAL.</p>';
+    }
 }
 
 export async function probarConexionLlaves() {
@@ -152,6 +194,18 @@ export async function cargarAFirebase() {
     }
 }
 
+export async function eliminarProductoFirebase(id) {
+    if (!await window.confirmAlquimista("¿Deseas desintegrar este producto de la nube? Se eliminará de la tienda inmediatamente.")) return;
+    try {
+        await deleteDoc(doc(db, "productos_tienda", id));
+        notify("🗑️ PRODUCTO ELIMINADO");
+        const item = document.getElementById(`hist-item-${id}`);
+        if (item) item.remove();
+    } catch (e) {
+        notify("❌ ERROR AL ELIMINAR", "error");
+    }
+}
+
 export async function enviarASheetsDirecto() {
     if (!productoTemporal) return;
     const status = document.getElementById('status-bot');
@@ -177,6 +231,38 @@ export async function enviarASheetsDirecto() {
     }
 }
 
+export async function editarProductoFirebase(id) {
+    const status = document.getElementById('status-bot');
+    const editor = document.getElementById('editor-producto');
+    status.innerText = "⏳ RECUPERANDO DATOS...";
+    
+    try {
+        const docSnap = await getDoc(doc(db, "productos_tienda", id));
+        if (!docSnap.exists()) throw new Error("Producto no encontrado");
+        
+        const data = docSnap.data();
+        productoTemporal = { id, ...data };
+
+        document.getElementById('edit-n').value = data.title || "";
+        document.getElementById('edit-p').value = data.price || 0;
+        document.getElementById('edit-cat').value = data.category_id || "cat-nutricion";
+        document.getElementById('edit-texto').value = data.description || "";
+        document.getElementById('link-referido').value = data.permalink || "";
+        
+        const imgUrl = (data.pictures && data.pictures[0]) ? data.pictures[0] : "";
+        document.getElementById('edit-preview-img').src = imgUrl || "https://i.postimg.cc/rF9GqwGS/favicon.png";
+
+        status.innerText = "✏️ MODO EDICIÓN: " + (data.title || id);
+        status.style.color = "var(--s)";
+        actualizarMesaInspeccion();
+        editor.style.display = 'block';
+        editor.scrollIntoView({ behavior: 'smooth' });
+    } catch (e) {
+        status.innerText = "❌ ERROR: " + e.message;
+        notify("Error al cargar para editar", "error");
+    }
+}
+
 export function cancelarEdicion() {
     document.getElementById('editor-producto').style.display = 'none';
     document.getElementById('status-bot').innerText = "OPERACIÓN CANCELADA.";
@@ -185,11 +271,17 @@ export function cancelarEdicion() {
 
 export function renderizar(p) {
     const hist = document.getElementById('historial-bot');
-    const csvRow = `${p.id};${p.category_id};${p.title};${p.price};${p.pictures.join('|')};${p.description_short};${p.attributes};${p.permalink};${p.description};`;
+    if (!hist) return;
+
+    // Evitar duplicados visuales si ya existe
+    if (document.getElementById(`hist-item-${p.id}`)) document.getElementById(`hist-item-${p.id}`).remove();
+
+    const pics = Array.isArray(p.pictures) ? p.pictures : [p.pictures];
+    const csvRow = `${p.id};${p.category_id};${p.title};${p.price};${pics.join('|')};${p.description_short || ''};${p.attributes || ''};${p.permalink};${p.description || ''};`;
 
     // HTML Snippet idéntico al que genera el renderGrid de index.html
     const htmlSnippet = `<div class="tarjeta" onclick="window.irAProducto('${p.id}')" style="display:flex; flex-direction:column;">
-        <div class="contenedor-img">${obtenerImagenHTML(p.pictures)}</div>
+        <div class="contenedor-img">${obtenerImagenHTML(pics)}</div>
         <h3 style="margin: 10px 0; text-align: center;">${p.title}</h3>
         <div id="stars-grid-${p.id}" style="text-align:center; font-size:0.8rem; margin-bottom:5px;"></div>
         <div style="text-align: center; color: var(--p); font-weight: bold;">$${p.price.toLocaleString()}</div>
@@ -197,12 +289,19 @@ export function renderizar(p) {
     </div>`;
 
     const wrapper = document.createElement('div');
-    wrapper.style.marginBottom = "40px";
-    wrapper.style.gridColumn = "span 1";
+    wrapper.id = `hist-item-${p.id}`;
+    wrapper.style.cssText = "margin-bottom: 40px; grid-column: span 1; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid #222;";
     
     wrapper.innerHTML = `
-        <div class="tarjeta">
-            <div class="contenedor-img">${obtenerImagenHTML(p.pictures)}</div>
+        <div style="display:flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+             <span style="font-size: 0.55rem; color: var(--s); font-weight: bold; font-family: monospace;">ID: ${p.id}</span>
+             <div style="display: flex; gap: 12px;">
+                <button onclick="window.editarProductoFirebase('${p.id}')" style="background:none; border:none; color:var(--p); cursor:pointer; font-size: 0.9rem;" title="Editar">✏️</button>
+                <button onclick="window.eliminarProductoFirebase('${p.id}')" style="background:none; border:none; color:#ff3131; cursor:pointer; font-size: 1.1rem;" title="Eliminar">🗑️</button>
+             </div>
+        </div>
+        <div class="tarjeta" style="cursor: default; pointer-events: none; border-color: #333;">
+            <div class="contenedor-img">${obtenerImagenHTML(pics)}</div>
             <h3 style="margin: 10px 0; text-align: center; font-size:1rem;">${p.title}</h3>
             <div style="text-align: center; color: var(--p); font-weight: bold; margin-bottom:10px;">$${p.price.toLocaleString()}</div>
         </div>
@@ -225,3 +324,6 @@ window.cargarAFirebaseChanguito = cargarAFirebase;
 window.enviarASheetsChanguito = enviarASheetsDirecto;
 window.cancelarEdicionChanguito = cancelarEdicion;
 window.renderizar = renderizar;
+window.cargarHistorialChanguito = cargarHistorialChanguito;
+window.eliminarProductoFirebase = eliminarProductoFirebase;
+window.editarProductoFirebase = editarProductoFirebase;
