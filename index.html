@@ -888,7 +888,7 @@
             font-weight: 700;
             font-family: 'Courier New', monospace;
             cursor: pointer;
-            z-index: 20000;
+            z-index: 60000;
             display: none;
             box-shadow: 0 0 15px rgba(57, 255, 20, 0.3);
             transition: 0.3s;
@@ -1925,6 +1925,18 @@
         </div>
     </div>
 
+    <!-- MODAL DE CONFIRMACIÓN ALQUIMISTA -->
+    <div id="modal-confirmacion-alquimista" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 40000; justify-content: center; align-items: center; backdrop-filter: blur(10px); padding: 20px;">
+        <div class="form-box" style="border-color: var(--s); max-width: 400px; text-align: center;">
+            <h3 id="confirm-titulo" style="color: var(--p); letter-spacing: 2px;">🧪 PROTOCOLO</h3>
+            <p id="confirm-mensaje" style="font-family: 'Courier New', monospace; font-size: 0.85rem; color: #eee; margin: 20px 0;"></p>
+            <div style="display: flex; gap: 10px;">
+                <button id="confirm-btn-cancelar" class="btn btn-m" style="flex: 1;">CANCELAR</button>
+                <button id="confirm-btn-aceptar" class="btn btn-v" style="flex: 1;">CONFIRMAR</button>
+            </div>
+        </div>
+    </div>
+
     <!-- CAPA GLOBAL: Visores y Modales (Fuera de las secciones) -->
     <div id="visor-notas" style="display:none;" onclick="window.cerrarNota()">
         <div class="nota-contenido-wrapper" onclick="event.stopPropagation()">
@@ -2305,6 +2317,7 @@ window.mostrarDiagnosticoAPI = () => {
     if (!modal || !list) return;
 
     modal.style.display = 'flex';
+    if (document.getElementById('btn-global-back')) document.getElementById('btn-global-back').style.display = 'block';
     history.pushState({ section: 'diagnostico-api' }, '', '#diagnostico-api');
     const estado = Agente.estado;
     
