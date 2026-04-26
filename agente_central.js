@@ -95,10 +95,14 @@ class AgenteCentral {
             })(),
             // Prueba de Firebase: Usamos obtenerProductoML que es un ping más directo
             this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { action: "test" })
-                .then(() => this.#actualizarEstado('firebase', true))
+                .then(() => {
+                    this.#actualizarEstado('firebase', true);
+                    this.#actualizarEstado('mercadoLibre', true);
+                })
                 .catch(e => {
                     const msg = e.message?.includes("not-found") ? "Función no desplegada" : (e.message || "Error interno");
                     this.#actualizarEstado('firebase', false, msg);
+                    this.#actualizarEstado('mercadoLibre', false, msg);
                 }),
             // Prueba de Vision AI: Aquí sí queremos ver si la llave de Gemini responde
             this.servicios.firebaseFunctions.callCloudFunction('analizarImagenPlanta', { action: "test" })
@@ -114,8 +118,7 @@ class AgenteCentral {
                         msg = "Falta activar facturación/créditos en Google Cloud";
                     }
                     this.#actualizarEstado('visionAI', false, msg);
-                }),
-            this.#actualizarEstado('mercadoLibre', true) // Ahora validado vía obtenerProductoML
+                })
         ];
 
         await Promise.allSettled(pruebas);

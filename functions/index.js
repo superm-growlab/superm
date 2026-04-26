@@ -207,13 +207,16 @@ exports.obtenerProductoML = onCall({
     if (action === "test") {
         try {
             // Intentamos una llamada pública rápida para verificar conectividad del servidor
-            await axios.get("https://api.mercadolibre.com/sites/MLA", { 
-                timeout: 10000
+            const testRes = await axios.get("https://api.mercadolibre.com/sites/MLA", { 
+                timeout: 10000,
+                headers: { 'User-Agent': 'SuperM-Lab-Agente/1.0' }
             });
-            return { message: "Conexión con Mercado Libre Operativa" };
+            return { message: "Conexión con Mercado Libre Operativa", status: testRes.status };
         } catch (e) {
-            logger.error("Error en test de ML:", e.message);
-            throw new HttpsError("unavailable", "La API de Mercado Libre no responde desde el servidor de funciones.");
+            const isForbidden = e.response?.status === 403 || e.code === 'EAI_AGAIN';
+            const errorDetail = isForbidden ? "Acceso denegado (¿Plan Blaze habilitado?)" : e.message;
+            logger.error("Error en test de ML:", errorDetail);
+            throw new HttpsError("unavailable", `La API de Mercado Libre no responde: ${errorDetail}. Nota: Firebase requiere el Plan Blaze para conectar con APIs externas.`);
         }
     }
 
@@ -228,7 +231,10 @@ exports.obtenerProductoML = onCall({
             grant_type: "client_credentials",
             client_id: String(process.env.ML_CLIENT_ID || "").trim(),
             client_secret: String(process.env.ML_CLIENT_SECRET || "").trim()
-        }, { timeout: 5000 });
+        }, { 
+            timeout: 5000,
+            headers: { 'User-Agent': 'SuperM-Lab-Agente/1.0' }
+        });
         accessToken = tokenRes.data.access_token;
         logger.info("Token de ML generado con éxito.");
     } catch (e) {
@@ -271,7 +277,8 @@ exports.obtenerProductoML = onCall({
 
         // 2. CONSULTA AUTORIZADA
         const response = await axios.get(`https://api.mercadolibre.com/items/${finalId}`, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
+            headers: { 'Authorization': `Bearer ${accessToken}`, 'User-Agent': 'SuperM-Lab-Agente/1.0' },
+            timeout: 10000
         });
         const item = response.data;
 
