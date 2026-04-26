@@ -226,11 +226,6 @@ export function verNotaDinamica(id, guardar = true) {
     window.scrollTo(0,0);
 }
 
-export function cerrarNota() {
-    document.getElementById('visor-notas').style.display = 'none'; // Cerrar modal
-    if(window.location.hash.includes('/')) history.pushState({ section: 'info' }, '', '#info');
-}
-
 /** --- INTERACCIONES Y VOTOS (FIREBASE) --- **/
 
 export function abrirModalProponerNota() {
@@ -413,7 +408,6 @@ window.renderMenuNotas = renderMenuNotas;
 window.getNotaCardHTML = getNotaCardHTML;
 window.verNotaDinamica = verNotaDinamica;
 window.sincronizarVotosNotas = sincronizarVotosNotas;
-window.cerrarNota = cerrarNota;
 window.votarNota = votarNota;
 window.aprobarPropuestaNota = aprobarPropuestaNota;
 window.abrirModalProponerNota = abrirModalProponerNota;

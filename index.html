@@ -80,8 +80,9 @@
             50% { box-shadow: 0 0 20px var(--p), 0 0 10px var(--s); }
             100% { box-shadow: 0 0 5px var(--p); }
         }
-        .btn:hover, .tarjeta:hover, .qty-btn:hover { animation: alchemist-pulse 1.5s infinite; }
+        .btn:hover, .tarjeta:hover, .qty-btn:hover, .close-btn:hover { animation: alchemist-pulse 1.5s infinite; }
 
+        .close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--s); font-size: 1.8rem; cursor: pointer; line-height: 1; z-index: 100; transition: 0.3s; }
         #notificacion {
             position: fixed; bottom: 20px; right: 20px; background: #000; border: 2px solid var(--p);
             color: var(--p); padding: 15px 25px; border-radius: 8px; display: none; z-index: 4000;
@@ -532,10 +533,10 @@
             #btn-next-visor { right: 10px !important; font-size: 2.5rem !important; }
 
             /* --- DIARIO DE CULTIVO: VISTA DE LIBRO / SLIDER HORIZONTAL --- */
-            .tabla-historial-diario { min-width: 100% !important; display: block; }
-            .tabla-historial-diario thead { display: none; }
+            .tabla-historial-diario:not(.standard-table) { min-width: 100% !important; display: block; }
+            .tabla-historial-diario:not(.standard-table) thead { display: none; }
             
-            .tabla-historial-diario tbody {
+            .tabla-historial-diario:not(.standard-table) tbody {
                 display: flex !important;
                 overflow-x: auto;
                 scroll-snap-type: x mandatory;
@@ -544,7 +545,7 @@
                 -webkit-overflow-scrolling: touch;
             }
 
-            .tabla-historial-diario tr { 
+            .tabla-historial-diario:not(.standard-table) tr { 
                 display: flex !important;
                 flex-direction: column;
                 flex: 0 0 88%; /* Cada semana ocupa el 88% del ancho para dejar ver un poco de la siguiente */
@@ -559,7 +560,7 @@
                 margin-bottom: 20px;
             }
 
-            .tabla-historial-diario td { 
+            .tabla-historial-diario:not(.standard-table) td { 
                 display: flex !important; 
                 justify-content: space-between; 
                 align-items: center; 
@@ -571,7 +572,7 @@
             }
 
             /* --- TRANSFORMACIÓN DE SEMANA EN TÍTULO --- */
-            .tabla-historial-diario td[data-label="SEMANA"] {
+            .tabla-historial-diario:not(.standard-table) td[data-label="SEMANA"] {
                 order: -1; /* Lo mueve al principio de la lista */
                 background: #161616;
                 color: var(--p);
@@ -587,17 +588,71 @@
                 letter-spacing: 1px;
             }
 
-            .tabla-historial-diario td::before { 
+            .tabla-historial-diario:not(.standard-table) td::before { 
                 content: attr(data-label); 
                 font-weight: 900; 
                 color: var(--p); 
                 font-size: 0.65rem; 
                 text-shadow: 0 0 5px var(--p);
             }
-            .tabla-historial-diario td[data-label="SEMANA"]::before {
+            .tabla-historial-diario:not(.standard-table) td[data-label="SEMANA"]::before {
                 content: "📋 SEMANA " !important;
                 margin-right: 5px;
             }
+        }
+
+        /* CLASE PARA ACTIVAR LA "VISTA MÓVIL" (CARDS) EN WEB / DESKTOP */
+        .tabla-historial-diario.compact-view { min-width: 100% !important; display: block; }
+        .tabla-historial-diario.compact-view thead { display: none; }
+        .tabla-historial-diario.compact-view tbody {
+            display: flex !important;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 15px;
+            padding: 5px 5px 20px 5px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tabla-historial-diario.compact-view tr { 
+            display: flex !important;
+            flex-direction: column;
+            flex: 0 0 320px; /* Ancho fijo de tarjeta para escritorio */
+            scroll-snap-align: center;
+            border: 1px solid var(--s); 
+            border-radius: 15px; 
+            background: #0a0a0a;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            overflow: hidden;
+            margin-bottom: 0;
+        }
+        .tabla-historial-diario.compact-view td { 
+            display: flex !important; 
+            justify-content: space-between; 
+            align-items: center; 
+            text-align: right; 
+            border-bottom: 1px solid #222; 
+            padding: 12px 15px !important; 
+            font-size: 0.85rem !important;
+        }
+        .tabla-historial-diario.compact-view td[data-label="SEMANA"] {
+            order: -1;
+            background: #161616;
+            color: var(--p);
+            font-weight: 900;
+            justify-content: flex-start !important;
+            border-left: 4px solid var(--p);
+            padding: 15px !important;
+        }
+        .tabla-historial-diario.compact-view td::before { 
+            content: attr(data-label); 
+            font-weight: 900; 
+            color: var(--p); 
+            font-size: 0.65rem; 
+            margin-right: 10px;
+            text-shadow: 0 0 5px var(--p);
+        }
+        .tabla-historial-diario.compact-view td[data-label="SEMANA"]::before {
+            content: "📋 SEMANA " !important;
         }
 
         .cat-sel-btn:hover:not(.active) {
@@ -933,8 +988,9 @@
     </div>
 
     <!-- MODAL DE DIAGNÓSTICO -->
-    <div id="modal-diagnostico" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10002; justify-content: center; align-items: center; backdrop-filter: blur(8px);">
-        <div id="diagnostico-contenido" style="background: var(--card); border: 4px solid var(--p); padding: 15px; border-radius: 15px; width: 94%; max-width: 400px; box-shadow: 0 0 40px rgba(57, 255, 20, 0.3); overflow-y: auto; max-height: 95vh; position: relative;">
+    <div id="modal-diagnostico" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10002; justify-content: center; align-items: center; backdrop-filter: blur(8px);" onclick="history.back()">
+        <div id="diagnostico-contenido" style="background: var(--card); border: 4px solid var(--p); padding: 15px; border-radius: 15px; width: 94%; max-width: 400px; box-shadow: 0 0 40px rgba(57, 255, 20, 0.3); overflow-y: auto; max-height: 95vh; position: relative;" onclick="event.stopPropagation()">
+            <button class="close-btn" onclick="history.back()">&times;</button>
             <h3 style="color: var(--s); text-align: center; margin-top: 5px; letter-spacing: 2px; font-size: 1.4rem;">🔮 REPORTE DE ALQUIMIA</h3>
             <p style="font-size: 0.75rem; color: #888; text-align: center; margin-bottom: 12px;">Análisis detallado de tu registro.</p>
 
@@ -977,19 +1033,19 @@
                 </div>
                 <div>
                     <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">pH</label>
-                    <input type="number" id="diario-ph" class="input-lab" step="0.1" min="0" max="14" value="6.0" style="width:100%; border-color: var(--s); color:#fff;" />
+                    <input type="number" id="diario-ph" class="input-lab" step="0.1" min="0" max="14" placeholder="0.0" style="width:100%; border-color: var(--s); color:#fff;" />
                 </div>
                 <div>
                     <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">EC</label>
-                    <input type="number" id="diario-ec" class="input-lab" step="0.1" value="1.2" style="width:100%; border-color: var(--s); color:#fff;" />
+                    <input type="number" id="diario-ec" class="input-lab" step="0.1" placeholder="0.0" style="width:100%; border-color: var(--s); color:#fff;" />
                 </div>
                 <div>
                     <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Temp °C</label>
-                    <input type="number" id="diario-temp" class="input-lab" step="0.5" value="24" style="width:100%; border-color: var(--s); color:#fff;" />
+                    <input type="number" id="diario-temp" class="input-lab" step="0.5" placeholder="0.0" style="width:100%; border-color: var(--s); color:#fff;" />
                 </div>
                 <div>
                     <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:6px;">Humedad %</label>
-                    <input type="number" id="diario-hum" class="input-lab" step="1" min="0" max="100" value="60" style="width:100%; border-color: var(--s); color:#fff;" />
+                    <input type="number" id="diario-hum" class="input-lab" step="1" min="0" max="100" placeholder="0" style="width:100%; border-color: var(--s); color:#fff;" />
                 </div>
                 <div style="grid-column: span 2;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -1012,26 +1068,22 @@
     </div>
 
     <!-- MODAL VISOR DE IMÁGENES -->
-    <div id="modal-visor-imagen" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 30000; justify-content: center; align-items: center; backdrop-filter: blur(12px); padding: 20px; box-sizing: border-box; overflow: auto;" onclick="this.style.display='none'">
+    <div id="modal-visor-imagen" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 30000; justify-content: center; align-items: center; backdrop-filter: blur(12px); padding: 20px; box-sizing: border-box; overflow: auto;" onclick="history.back()">
         <div style="position: relative; max-width: 100%; display: flex; flex-direction: column; align-items: center;" onclick="event.stopPropagation()">
             <img id="imagen-ampliada" src="" style="max-width: 95vw; max-height: 85vh; border: 2px solid var(--s); border-radius: 12px; box-shadow: 0 0 40px rgba(188, 19, 254, 0.4); object-fit: contain; transition: transform 0.3s ease; cursor: zoom-in;" onclick="window.toggleZoom()">
             
             <button id="btn-prev-visor" onclick="window.navVisor(-1)" style="position:absolute; left:-60px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--p); font-size:3.5rem; cursor:pointer; display:none; text-shadow: 0 0 10px var(--p);">❮</button>
             <button id="btn-next-visor" onclick="window.navVisor(1)" style="position:absolute; right:-60px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--p); font-size:3.5rem; cursor:pointer; display:none; text-shadow: 0 0 10px var(--p);">❯</button>
-
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn btn-m" style="border-color: var(--p); color: var(--p); background: rgba(0,0,0,0.5);" onclick="document.getElementById('modal-visor-imagen').style.display='none'">CERRAR VISOR</button>
-            </div>
         </div>
     </div>
 
     <!-- MODAL VISOR DE TEXTO (Observaciones) -->
-    <div id="modal-visor-texto" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 26000; justify-content: center; align-items: center; backdrop-filter: blur(12px); padding: 20px; box-sizing: border-box;" onclick="this.style.display='none'">
+    <div id="modal-visor-texto" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 26000; justify-content: center; align-items: center; backdrop-filter: blur(12px); padding: 20px; box-sizing: border-box;" onclick="history.back()">
         <div style="background: var(--card); border: 2px solid var(--s); border-radius: 15px; padding: 30px; max-width: 500px; width: 100%; box-shadow: 0 0 30px rgba(188, 19, 254, 0.2); position: relative;" onclick="event.stopPropagation()">
+            <button class="close-btn" onclick="history.back()">&times;</button>
             <h3 id="visor-texto-titulo" style="color: var(--p); margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; letter-spacing: 2px;">📜 BITÁCORA DE CULTIVO</h3>
             <div id="texto-completo-visor" style="color: #eee; font-family: 'Courier New', monospace; white-space: pre-wrap; margin: 20px 0; max-height: 60vh; overflow-y: auto; line-height: 1.6; font-size: 0.9rem;"></div>
             <div id="visor-imagenes-contenedor" style="margin-top: 20px;"></div>
-            <button class="btn btn-m" style="width: 100%; border-color: var(--p); color: var(--p);" onclick="document.getElementById('modal-visor-texto').style.display='none'">CERRAR REPORTE</button>
         </div>
     </div>
 
@@ -1308,7 +1360,10 @@
             <div id="vista-diario-cultivo" style="display:none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
                     <h4 style="color: var(--p); margin: 0;">Tu Diario de Cultivo</h4>
-                    <button class="btn btn-m" style="border-color: var(--p);" onclick="window.handleNuevoRegistroDiario()">+ Nuevo registro</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btn-toggle-vista-compacta" class="btn btn-m" style="border-color: var(--s); color: var(--s); display: none; font-size: 0.7rem;" onclick="window.toggleVistaCompacta()">🔄 CAMBIAR VISTA</button>
+                        <button class="btn btn-m" style="border-color: var(--p);" onclick="window.handleNuevoRegistroDiario()">+ Nuevo registro</button>
+                    </div>
                 </div>
 
                 <p id="sin-datos-diario" style="color:#888; text-align:center; margin-top:12px; display:none;">No hay entradas de diario de cultivo para tu usuario.</p>
@@ -1938,9 +1993,9 @@
     </div>
 
     <!-- CAPA GLOBAL: Visores y Modales (Fuera de las secciones) -->
-    <div id="visor-notas" style="display:none;" onclick="window.cerrarNota()">
+    <div id="visor-notas" style="display:none;" onclick="history.back()">
         <div class="nota-contenido-wrapper" onclick="event.stopPropagation()">
-            <button class="close-btn" onclick="window.cerrarNota()" style="position: sticky; top: 0; float: right; background: none; border: none; color: var(--s); font-size: 2rem; cursor: pointer; line-height: 1;">&times;</button>
+            <button class="close-btn" onclick="history.back()">&times;</button>
             <div id="contenido-nota" style="clear: both;">
                 <!-- Contenido dinámico -->
             </div>
@@ -2058,12 +2113,11 @@
                 if (navEl) navEl.classList.add('nav-active');
             }
 
-            // 3. Reset de visores globales
-            const visor = document.getElementById('visor-notas');
-            if (visor) visor.style.display = 'none';
-            if (document.getElementById('modal-diagnostico-api')) document.getElementById('modal-diagnostico-api').style.display = 'none';
-            if (document.getElementById('modal-diagnostico')) document.getElementById('modal-diagnostico').style.display = 'none';
-
+            // 3. Reset de visores y modales globales
+            ['visor-notas', 'modal-diagnostico-api', 'modal-diagnostico', 'modal-visor-texto', 'modal-visor-imagen'].forEach(mId => {
+                const el = document.getElementById(mId);
+                if (el) el.style.display = 'none';
+            });
             // 4. Disparo de Renders (Con guardas de existencia para evitar bloqueos)
             if (id === 'tienda') { 
                 if(window.mostrarCategorias) {

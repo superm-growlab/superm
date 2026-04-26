@@ -1,7 +1,7 @@
 import { db, auth } from './firebase-config.js';
 import { 
     collection, addDoc, serverTimestamp, query, where, 
-    getDocs, deleteDoc, doc, getDoc 
+    getDocs, deleteDoc, doc, getDoc, updateDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { 
     notify, comprimirImagen, renderAcumulado, verImagenAmpliada, 
@@ -19,9 +19,20 @@ export function mostrarFormularioDiario() {
     window.diarioGrupoActivo = null;
     const form = document.getElementById('formulario-diario');
     if (!form) return;
+
+    // Limpiamos los campos para evitar confusión con registros anteriores
+    document.getElementById('diario-nombre').value = '';
+    document.getElementById('diario-semana').value = '1';
+    document.getElementById('diario-ph').value = '';
+    document.getElementById('diario-ec').value = '';
+    document.getElementById('diario-temp').value = '';
+    document.getElementById('diario-hum').value = '';
+    document.getElementById('diario-notas').value = '';
+    window.imgsDiario = [];
+
     const fechaInput = document.getElementById('diario-fecha');
-    if (fechaInput && !fechaInput.value) {
-        fechaInput.value = new Date().toISOString().slice(0, 10);
+    if (fechaInput) {
+        fechaInput.valueAsDate = new Date();
     }
     form.style.display = 'flex';
 }
@@ -158,19 +169,28 @@ function renderDiarioCard(container, data) {
             <div class="expediente-header">
                 <h3 style="margin:0; color: var(--p); font-size:1rem;">🧪 SEGUIMIENTO: ${nombrePlanta.toUpperCase()}</h3>
                 <div style="display:flex; gap:8px;">
-                    <button class="btn btn-m" style="font-size:0.6rem; border-color:var(--p); color:var(--p);" onclick="window.cargarRegistroEnFormulario('${dataJson}')">AÑADIR SEMANA</button>
+                    <button class="btn btn-m btn-add-week" style="font-size:0.6rem; border-color:var(--p); color:var(--p);" onclick="window.cargarRegistroEnFormulario('${dataJson}')">AÑADIR SEMANA</button>
                     <button class="btn btn-m" style="font-size:0.6rem; border-color:#ff4444; color:#ff4444;" onclick="window.eliminarSeguimiento('${nombrePlanta.replace(/'/g, "\\'")}')">ELIMINAR TODO</button>
                 </div>
             </div>
             <div style="overflow-x:auto; width:100%; border-radius:8px;"><table class="tabla-historial-diario"><thead><tr><th>FECHA</th><th>SEMANA</th><th>ETAPA</th><th>PH</th><th>EC</th><th>TEMP</th><th>HUM</th><th>FOTO</th><th>ORÁCULO</th><th>OBSERVACIONES</th><th></th></tr></thead><tbody class="plant-history-body"></tbody></table></div>`;
         container.prepend(plantCard);
+    } else {
+        // Si el expediente ya existe, actualizamos el botón para que use la data más reciente (incremento correcto)
+        const btnAdd = plantCard.querySelector('.btn-add-week');
+        if (btnAdd) btnAdd.setAttribute('onclick', `window.cargarRegistroEnFormulario('${dataJson}')`);
     }
     const tbody = plantCard.querySelector('.plant-history-body');
     const row = document.createElement('tr');
     const notasEscaped = (data.notas || '').replace(/'/g, "\\'").replace(/\n/g, ' ');
     const imgUrlsJson = JSON.stringify(data.imageUrls || []).replace(/"/g, '&quot;');
 
-    const imgHtml = data.imageUrls?.length > 0 ? `<img src="${data.imageUrls[0]}" style="width:35px; height:35px; object-fit:cover; border-radius:6px; cursor:pointer;" onclick="window.verImagenAmpliada('${data.imageUrls[0]}', ${imgUrlsJson})">` : 'N/A';
+    const imgHtml = data.imageUrls?.length > 0 ? `
+        <div style="position:relative; width:35px; height:35px; margin:auto;">
+            <img src="${data.imageUrls[0]}" style="width:35px; height:35px; object-fit:cover; border-radius:6px; cursor:pointer;" onclick="window.verImagenAmpliada('${data.imageUrls[0]}', ${imgUrlsJson})">
+            ${data.imageUrls.length > 1 ? `<span style="position:absolute; top:-5px; right:-5px; background:var(--s); color:white; font-size:9px; width:14px; height:14px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1px solid #000;">${data.imageUrls.length}</span>` : ''}
+        </div>
+    ` : 'N/A';
 
     row.innerHTML = `
         <td data-label="FECHA">${data.fecha?.split(',')[0] || '---'}</td>
@@ -190,12 +210,44 @@ function renderDiarioCard(container, data) {
 
 function renderAnotacionCard(container, data) {
     const card = document.createElement('div');
-    card.className = 'comunidad-card anotacion-card-uniform';
+    card.className = 'tarjeta anotacion-card-uniform';
     card.style.borderLeft = '4px solid var(--s)';
+    card.style.padding = '20px';
+
     const isCalc = ['Nutrición', 'Energía', 'Sustrato', 'Clima (VPD)', 'Análisis pH/EC'].includes(data.nombre);
-    const displayText = data.resultado?.length > 120 ? data.resultado.substring(0, 120) + "..." : data.resultado;
-    const imgUrlsJson = JSON.stringify(data.imageUrls || []).replace(/"/g, '&quot;');
-    card.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:start;"><div><span style="color:var(--p); font-size:0.7rem; font-weight:bold;">${isCalc ? '📊 CÁLCULO' : '📝 NOTA'}</span><div style="color:var(--s); font-size:0.6rem; font-weight:bold; text-transform:uppercase;">${data.nombre}</div></div><button onclick="window.eliminarAnotacion('${data.id}')" style="background:none; border:none; color:#ff4444; cursor:pointer;">✕</button></div><div class="anotacion-content-wrapper" style="font-size:0.75rem; color:#eee; margin-top:10px;">${displayText}</div><button class="btn btn-m" style="width:100%; font-size:0.6rem; padding:4px; border-color:var(--p); color:var(--p); margin-top:auto;" onclick="window.verNotasCompletas(decodeURIComponent('${encodeURIComponent(data.resultado)}'), '${data.nombre}', ${imgUrlsJson})">🔍 VER COMPLETO</button>`;
+    const displayText = data.resultado?.length > 120 ? data.resultado.substring(0, 120) + "..." : (data.resultado || "");
+    
+    const imgUrls = data.imageUrls || [];
+    let imgPreviewHtml = "";
+    if (imgUrls.length > 0) {
+        imgPreviewHtml = `
+            <div style="display:flex; gap:6px; margin-top:12px; flex-wrap: wrap;">
+                ${imgUrls.slice(0, 4).map(url => `<img src="${url}" style="width:35px; height:35px; object-fit:cover; border-radius:6px; border:1px solid rgba(188, 19, 254, 0.2);">`).join('')}
+                ${imgUrls.length > 4 ? `<div style="width:35px; height:35px; background:rgba(0,0,0,0.5); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:0.6rem; color:var(--p); border:1px solid rgba(188, 19, 254, 0.2);">+${imgUrls.length - 4}</div>` : ''}
+            </div>`;
+    }
+
+    // Hacemos que toda la tarjeta sea clickable para ver el contenido completo
+    card.onclick = () => window.verNotasCompletas(data.resultado, data.nombre, data.imageUrls || []);
+
+    card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:start;">
+            <div>
+                <span style="color:var(--p); font-size:0.7rem; font-weight:bold;">${isCalc ? '📊 CÁLCULO' : '📝 NOTA'}</span>
+                <div style="color:var(--s); font-size:0.6rem; font-weight:bold; text-transform:uppercase;">${data.nombre}</div>
+                <div style="color:#555; font-size:0.55rem; margin-top:2px;">${data.fecha?.split(',')[0] || '---'}</div>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <!-- El botón de editar abre el modal de edición manual -->
+                <button onclick="event.stopPropagation(); window.editarAnotacion('${data.id}')" style="background:none; border:none; color:var(--p); cursor:pointer; font-size: 0.9rem; padding: 0;">✏️</button>
+                <!-- El botón de eliminar lleva stopPropagation para evitar que se abra la nota al borrar -->
+                <button onclick="event.stopPropagation(); window.eliminarAnotacion('${data.id}')" style="background:none; border:none; color:#ff4444; cursor:pointer; font-size: 1.1rem; padding: 0;">✕</button>
+            </div>
+        </div>
+        <div class="anotacion-content-wrapper" style="font-size:0.75rem; color:#eee; margin-top:10px;">
+            <div style="white-space: pre-wrap;">${displayText}</div>
+            ${imgPreviewHtml}
+        </div>`;
     container.appendChild(card);
 }
 
@@ -234,6 +286,12 @@ function sincronizarUIVistaDiario(vista) {
         }
     }
     
+    // El botón global de cambio de vista solo se muestra en la sección de Seguimientos
+    const btnCompactView = document.getElementById('btn-toggle-vista-compacta');
+    if (btnCompactView) {
+        btnCompactView.style.display = (vista === 'seguimiento') ? 'block' : 'none';
+    }
+    
     const menu = document.getElementById('diario-menu-desplegable');
     if (menu) menu.classList.remove('active');
     const label = document.getElementById('label-vista-activa');
@@ -244,6 +302,12 @@ export function toggleMenuDiario(e) {
     e.stopPropagation();
     const menu = document.getElementById('diario-menu-desplegable');
     if (menu) menu.classList.toggle('active');
+}
+
+export function toggleVistaCompacta() {
+    // Aplicamos el cambio a todas las tablas de seguimiento presentes
+    const tables = document.querySelectorAll('.tabla-historial-diario');
+    tables.forEach(table => table.classList.toggle('compact-view'));
 }
 
 export function mostrarModalNuevaAnotacion() { document.getElementById('modal-nueva-anotacion').style.display = 'flex'; }
@@ -258,6 +322,54 @@ export async function previsualizarAnotacion() {
     }
     input.value = "";
     renderAcumulado(imgsAnotacion, 'anotacion-img-preview', '--s');
+}
+
+export async function editarAnotacion(id) {
+    const docRef = doc(db, 'seguimientos', id);
+    try {
+        const snap = await getDoc(docRef);
+        if (!snap.exists()) return;
+        const data = snap.data();
+
+        // Usamos el modal de anotación manual para editar
+        mostrarModalNuevaAnotacion();
+        const tituloInput = document.getElementById('anotacion-titulo');
+        const contenidoInput = document.getElementById('anotacion-contenido');
+        
+        tituloInput.value = data.nombre || '';
+        contenidoInput.value = data.resultado || '';
+
+        const btnGuardar = document.querySelector('#modal-nueva-anotacion .btn-v');
+        const originalText = btnGuardar.innerText;
+        
+        const restaurarModal = () => {
+            btnGuardar.innerText = originalText;
+            btnGuardar.onclick = () => window.guardarAnotacionManual();
+            ocultarModalNuevaAnotacion();
+        };
+
+        btnGuardar.innerText = "ACTUALIZAR REGISTRO";
+        btnGuardar.onclick = async () => {
+            const nuevoTitulo = tituloInput.value.trim();
+            const nuevoContenido = contenidoInput.value.trim();
+            if (!nuevoTitulo || !nuevoContenido) return notify("⚠️ Completa los campos.", "info");
+
+            try {
+                await updateDoc(docRef, {
+                    nombre: nuevoTitulo,
+                    resultado: nuevoContenido,
+                    timestamp: serverTimestamp()
+                });
+                notify("✅ Registro actualizado con éxito.", "success");
+                restaurarModal();
+                cargarDiarioCultivo();
+            } catch (err) { console.error(err); notify("❌ Error al actualizar.", "error"); }
+        };
+
+        const btnCancelar = document.querySelector('#modal-nueva-anotacion .btn-m');
+        const originalCancel = btnCancelar.onclick;
+        btnCancelar.onclick = () => { restaurarModal(); btnCancelar.onclick = originalCancel; };
+    } catch (e) { console.error(e); }
 }
 
 export async function eliminarAnotacion(id) {
@@ -325,7 +437,9 @@ window.eliminarRegistroDiario = eliminarRegistroDiario;
 window.eliminarSeguimiento = eliminarSeguimiento;
 window.cambiarVistaDiario = cambiarVistaDiario;
 window.toggleMenuDiario = toggleMenuDiario;
+window.toggleVistaCompacta = toggleVistaCompacta;
 window.mostrarModalNuevaAnotacion = mostrarModalNuevaAnotacion;
+window.editarAnotacion = editarAnotacion;
 window.ocultarModalNuevaAnotacion = ocultarModalNuevaAnotacion;
 window.previsualizarAnotacion = previsualizarAnotacion;
 window.eliminarAnotacion = eliminarAnotacion;

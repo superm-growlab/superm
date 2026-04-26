@@ -544,37 +544,36 @@ export async function prepararGuardadoCalculo(tipo) {
     if (!user) return window.notify("🔒 Inicia sesión para guardar en tu diario.", "info");
 
     let resultado = "";
+    const fechaHeader = `📅 REPORTE DEL: ${new Date().toLocaleString()}\n`;
+
     if (tipo === 'Nutrición') {
         const litros = document.getElementById('m-litros-tacho').value;
         const tachos = document.getElementById('m-tachos').value;
         const total = document.getElementById('m-vol-total').innerText;
-        resultado = `CONFIGURACIÓN: ${litros}L x ${tachos} tachos (Total: ${total})\n\nMEZCLA DE COMPUESTOS:\n` + window.mezclaActual.map(m => `- ${m.nombre}: ${m.dosis}ml/L`).join('\n');
+        resultado = `${fechaHeader}--- DATOS DE ENTRADA ---\nVolumen: ${litros}L x ${tachos} tachos (Total: ${total})\n\n--- MEZCLA DE COMPUESTOS ---\n` + window.mezclaActual.map(m => `- ${m.nombre}: ${m.dosis}ml/L`).join('\n');
     } else if (tipo === 'Energía') {
         const tech = document.getElementById('l-tech').options[document.getElementById('l-tech').selectedIndex].text;
         const watts = document.getElementById('l-watts').value;
         const hs = document.getElementById('l-horas-fija').value;
         const meses = document.getElementById('l-meses').value;
-        const otros = Array.from(document.querySelectorAll('.row-consumo')).map(r => {
-            const selW = r.querySelector('.sel-w');
-            return `- ${selW.options[selW.selectedIndex].text}`;
-        }).join('\n');
-        resultado = `PARÁMETROS: ${tech} (${watts}W) | Ciclo: ${hs}hs | Tiempo: ${meses} mes/es\n${otros ? 'EQUIPOS EXTRA:\n' + otros + '\n' : ''}\n` + document.getElementById('res-luz').innerText;
+        const otros = Array.from(document.querySelectorAll('.row-consumo')).map(r => `- ${r.querySelector('.sel-w').options[r.querySelector('.sel-w').selectedIndex].text}`).join('\n');
+        resultado = `${fechaHeader}--- DATOS DE ENTRADA ---\nLuminaria: ${tech} (${watts}W)\nCiclo: ${hs}hs/día | Tiempo: ${meses} mes/es\n${otros ? 'Equipos extra:\n' + otros : ''}\n\n--- DIAGNÓSTICO ENERGÉTICO ---\n` + document.getElementById('res-luz').innerText;
     } else if (tipo === 'Sustrato') {
         const cap = document.getElementById('s-capacidad').value;
         const cant = document.getElementById('s-cantidad').value;
         const total = (parseFloat(cap) * parseFloat(cant)).toFixed(1);
-        resultado = `CONFIGURACIÓN: ${cap}L x ${cant} maceta/s (Total a preparar: ${total}L)\n\n` + document.getElementById('res-sustrato').innerText;
+        resultado = `${fechaHeader}--- DATOS DE ENTRADA ---\nMaceta: ${cap}L\nCantidad: ${cant} unidades (Total: ${total}L)\n\n--- DIAGNÓSTICO DE MEZCLA ---\n` + document.getElementById('res-sustrato').innerText;
     } else if (tipo === 'Clima (VPD)') {
         const sem = document.getElementById('semana-vpd').options[document.getElementById('semana-vpd').selectedIndex].text;
         const t = document.getElementById('temp-input').value;
         const h = document.getElementById('hum-input').value;
-        resultado = `CONDICIONES: ${sem} | Temp: ${t}°C | Hum: ${h}%\n\n` + document.getElementById('vpd-result').innerText;
+        resultado = `${fechaHeader}--- DATOS DE ENTRADA ---\nEtapa: ${sem}\nTemperatura: ${t}°C | Humedad: ${h}%\n\n--- DIAGNÓSTICO CLIMÁTICO ---\n` + document.getElementById('vpd-result').innerText;
     } else if (tipo === 'Análisis pH/EC') {
         const sem = document.getElementById('semana-nutrientes').options[document.getElementById('semana-nutrientes').selectedIndex].text;
         const ec = document.getElementById('diag-ec-val').value;
         const unit = document.getElementById('diag-unidad').value.toUpperCase();
         const ph = document.getElementById('diag-ph').value;
-        resultado = `ESTADO: ${sem} | EC: ${ec} ${unit} | pH: ${ph}\n\n` + document.getElementById('res-diagnostico').innerText;
+        resultado = `${fechaHeader}--- DATOS DE ENTRADA ---\n${sem}\nEC: ${ec} ${unit} | pH: ${ph}\n\n--- DIAGNÓSTICO TÉCNICO ---\n` + document.getElementById('res-diagnostico').innerText;
     }
 
     try {
