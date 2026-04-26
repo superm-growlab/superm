@@ -26,7 +26,7 @@ exports.consultarOraculo = onCall({
             if (!key.startsWith("AIza")) throw new Error("La API Key no tiene el formato correcto (debe empezar con AIza).");
             
             const genAI = new GoogleGenerativeAI(key);
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
             
             // Validamos la API Key con una operación ligera que no consume cuota de generación
             await model.countTokens("ping");
@@ -48,21 +48,17 @@ exports.consultarOraculo = onCall({
         throw new HttpsError("unauthenticated", "El Oráculo no tiene acceso a su llave de sabiduría. Verifica los Secrets de Firebase.");
     }
 
-    const tagsText = Array.isArray(tags) && tags.length > 0 ? tags.join(", ") : "sin etiquetas";
     const genAI = new GoogleGenerativeAI(key);
-
-    // Log de seguridad para depuración (solo muestra los primeros 4 caracteres)
-    const keyPrefix = key.substring(0, 4);
-    logger.info(`Invocando Oráculo. Prefijo de Key: ${keyPrefix}`);
+    logger.info(`Invocando Oráculo para: ${titulo}. Key inicia con: ${key.substring(0, 5)}`);
 
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash", 
+        model: "models/gemini-1.5-flash", 
         generationConfig: { responseMimeType: "application/json" }
     });
 
     const prompt = `
         Eres el Agente Inteligente de Super M Lab, experto botánico en cultivo de cannabis.
-        Analiza el siguiente síntoma: "${titulo}" con las etiquetas de ADN visual: ${tagsText}.
+        Analiza el siguiente síntoma: "${titulo}" con las etiquetas de ADN visual: ${Array.isArray(tags) ? tags.join(", ") : "sin etiquetas"}.
         
         Tu tarea es generar un diagnóstico técnico detallado basado en literatura técnica de cultivo (GrowWeedEasy, RQS, etc.).
         
@@ -176,7 +172,7 @@ exports.analizarImagenPlanta = onCall({
         if (!image) throw new HttpsError("invalid-argument", "Imagen ausente.");
 
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY?.trim());
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
         const base64Data = image.split(",")[1] || image;
 
         const prompt = "Analiza esta planta de cannabis. Responde en JSON puro: { \"diagnostico\": \"nombre\", \"confianza\": \"X%\", \"accion\": \"instruccion\" }";
@@ -212,8 +208,7 @@ exports.obtenerProductoML = onCall({
         try {
             // Intentamos una llamada pública rápida para verificar conectividad del servidor
             await axios.get("https://api.mercadolibre.com/sites/MLA", { 
-                timeout: 10000,
-                headers: { 'User-Agent': 'SuperM-Lab-Agente/1.0' }
+                timeout: 10000
             });
             return { message: "Conexión con Mercado Libre Operativa" };
         } catch (e) {
@@ -231,10 +226,11 @@ exports.obtenerProductoML = onCall({
     try {
         const tokenRes = await axios.post("https://api.mercadolibre.com/oauth/token", {
             grant_type: "client_credentials",
-            client_id: process.env.ML_CLIENT_ID?.trim(),
-            client_secret: process.env.ML_CLIENT_SECRET?.trim()
-        });
+            client_id: String(process.env.ML_CLIENT_ID || "").trim(),
+            client_secret: String(process.env.ML_CLIENT_SECRET || "").trim()
+        }, { timeout: 5000 });
         accessToken = tokenRes.data.access_token;
+        logger.info("Token de ML generado con éxito.");
     } catch (e) {
         logger.error("Error obteniendo token de ML:", e.message);
         throw new HttpsError("internal", "No se pudo autenticar con Mercado Libre.");
@@ -255,11 +251,11 @@ exports.obtenerProductoML = onCall({
         }
 
         // Extraer el ID (MLA...) del link
-        let idML = productId || (targetUrl?.match(/MLA-?(\d+)/i)?.[1] || url?.match(/MLA-?(\d+)/i)?.[1] || "");
+        let idML = String(productId || targetUrl?.match(/MLA-?(\d+)/i)?.[1] || url?.match(/MLA-?(\d+)/i)?.[1] || "").trim();
         if (!idML) throw new Error("No se pudo extraer un ID válido de Mercado Libre.");
 
         // Limpiar si el usuario ya puso MLA en el ID manual
-        idML = idML.toString().toUpperCase().replace(/MLA-?/g, '');
+        idML = idML.toUpperCase().replace(/MLA-?/g, '');
 
         logger.info(`Consultando producto ML: MLA${idML}`);
 
@@ -288,5 +284,28 @@ exports.obtenerProductoML = onCall({
             throw new HttpsError("not-found", "Producto no encontrado. Verifica el ID o que el link sea de un artículo activo.");
         }
         throw new HttpsError("internal", `Error de comunicación con ML: ${error.message}`);
+    }
+});
+
+/**
+ * FUNCIÓN DE DEPURACIÓN: debugListarModelos
+ * Propósito: Consultar a Google qué modelos están disponibles para tu API Key.
+ * Útil para resolver errores 404 (Modelo no encontrado).
+ */
+exports.debugListarModelos = onCall({
+    region: "us-central1",
+    secrets: ["GEMINI_API_KEY"],
+    cors: [ORIGIN_ALLOWED]
+}, async (request) => {
+    const key = process.env.GEMINI_API_KEY?.trim();
+    if (!key) throw new HttpsError("unauthenticated", "No se encontró la GEMINI_API_KEY en los Secrets.");
+
+    try {
+        const genAI = new GoogleGenerativeAI(key);
+        const result = await genAI.listModels();
+        return result; 
+    } catch (error) {
+        logger.error("Error al listar modelos de Gemini:", error);
+        throw new HttpsError("internal", "Error al consultar modelos: " + error.message);
     }
 });

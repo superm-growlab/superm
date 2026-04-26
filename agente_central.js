@@ -365,6 +365,16 @@ class AgenteCentral {
                  * Propósito: "Ver" imágenes y detectar patrones botánicos.
                  * Costo: Basado en cuota de uso.
                  */
+                debugModelos: async () => {
+                    try {
+                        const data = await this.servicios.firebaseFunctions.callCloudFunction('debugListarModelos', {});
+                        console.log("🧪 Agente: Modelos Gemini disponibles:", data);
+                        return data;
+                    } catch (e) {
+                        console.error("❌ Error de diagnóstico de modelos:", e);
+                        throw e;
+                    }
+                },
                 analizarCarencia: async (base64Image) => {
                     try {
                         this.isWorking = true;
