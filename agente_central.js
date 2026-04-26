@@ -95,8 +95,8 @@ class AgenteCentral {
             })(),
             // Prueba de Firebase: Usamos obtenerProductoML que es un ping más directo
             this.servicios.firebaseFunctions.callCloudFunction('obtenerProductoML', { action: "test" })
-                .then(() => {
-                    if (res.error) {
+                .then(res => {
+                    if (res && res.error) {
                         this.#actualizarEstado('firebase', true); // La función respondió, así que el puente está vivo
                         this.#actualizarEstado('mercadoLibre', false, res.error);
                     } else {
