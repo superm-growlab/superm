@@ -27,9 +27,12 @@ exports.consultarOraculo = onCall({
             if (!key.startsWith("AIza")) throw new Error("La API Key no tiene el formato correcto (debe empezar con AIza).");
             
             const genAI = new GoogleGenerativeAI(key);
-            const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
             
-            // Validamos la API Key con una operación ligera que no consume cuota de generación
+            // PRUEBA REAL: Validamos la API Key con una operación ligera
+            const testRes = await model.generateContent("ping");
+            if (!testRes.response) throw new Error("Google Gemini no respondió al pulso.");
+            
             await model.countTokens("ping");
             return { message: "Conexión con el Oráculo establecida y validada." };
         } catch (e) {
@@ -53,7 +56,7 @@ exports.consultarOraculo = onCall({
     logger.info(`Invocando Oráculo para: ${titulo}. Key inicia con: ${key.substring(0, 5)}`);
 
     const model = genAI.getGenerativeModel({ 
-        model: "models/gemini-1.5-flash", 
+        model: "gemini-1.5-flash", 
         generationConfig: { responseMimeType: "application/json" }
     });
 
@@ -169,11 +172,19 @@ exports.analizarImagenPlanta = onCall({
 }, async (request) => {
     try {
         const { image, action } = request.data;
-        if (action === "test") return { message: "Ojo del Oráculo Operativo" };
+
+        // Prueba de salud real
+        if (action === "test") {
+            const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY?.trim());
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            await model.countTokens("test");
+            return { message: "Ojo del Oráculo Operativo" };
+        }
+
         if (!image) throw new HttpsError("invalid-argument", "Imagen ausente.");
 
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY?.trim());
-        const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const base64Data = image.split(",")[1] || image;
 
         const prompt = "Analiza esta planta de cannabis. Responde en JSON puro: { \"diagnostico\": \"nombre\", \"confianza\": \"X%\", \"accion\": \"instruccion\" }";
@@ -270,14 +281,12 @@ exports.obtenerProductoML = onCall({
             targetUrl = res.request?.res?.responseUrl || res.request?._redirectable?._currentUrl || permalinkToUse;
         }
 
-        // 2. Extraer ID si no lo tenemos (soporta MLA y MLAU)
+        // 2. Extracción "Inteligente" del ID
         if (!finalId) {
-            // Corregimos los paréntesis para capturar el prefijo completo (3 o 4 letras) en el grupo 1
-            const match = targetUrl.match(/((?:MLA|MLB|MLM|MLC|MLU|MLV|MPE|MCO|MEC|MRD|MGT|MCR|MBO|MPY|MSV|MHN|MNI|MPA)[A-Z]?)-?(\d+)/i);
-            if (match) {
-                // Ahora match[1] contiene el prefijo completo (ej: MLAU) y match[2] los números
-                finalId = (match[1] + match[2]).toUpperCase();
-            }
+            const match = targetUrl.match(/((?:MLA|MLB|MLM|MLC|MLU|MLV|MPE|MCO|MEC|MRD|MGT|MCR|MBO|MPY|MSV|MHN|MNI|MPA)[A-Z]?)\D*(\d+)/i);
+            if (!match) throw new Error("No se detectó un ID de producto válido en el link.");
+            
+            finalId = (match[1] + match[2]).toUpperCase();
         }
 
         if (!finalId) throw new Error("No se detectó un ID de producto válido.");
